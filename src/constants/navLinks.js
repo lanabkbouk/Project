@@ -1,4 +1,4 @@
-import { ROUTES } from '../app/routes/paths';
+import { ROUTES } from './paths'
 
 export const linksByRole = {
   volunteer: [

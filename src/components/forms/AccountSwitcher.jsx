@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ROUTES, AUTH_QUERY_KEYS } from "../../app/routes/paths";
+import { ROUTES, AUTH_QUERY_KEYS } from "../../constants/paths";
 import { ACCOUNT_TYPES } from "../../constants/auth/accountTypes";
 
 export default function AccountSwitch({ accountType }) {

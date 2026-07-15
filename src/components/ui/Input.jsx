@@ -3,62 +3,60 @@ export default function Input({
   name,
   register,
   registerOptions,
-  type = 'text',
-  placeholder = '',
-  size = 'medium',
-  variant = 'default',
+  type = "text",
+  placeholder = "",
+  size = "medium",
+  variant = "default",
   fullWidth = false,
   disabled = false,
-  className = '',
-  error = '',
+  className = "",
+  error = "",
   success = false,
   ...props
 }) {
   const sizeStyles = {
-    small: 'px-3 py-2 text-sm',
-    medium: 'px-4 py-3 text-base',
-    large: 'px-5 py-4 text-lg',
-  }
+    small: "px-3 py-2 text-sm",
+    medium: "px-4 py-3 text-base",
+    large: "px-5 py-4 text-lg",
+  };
   const variantStyles = {
-    default: "w-full px-4 py-3 bg-black border rounded-lg text-white placeholder-white/50 transition focus:outline-none focus:border-[#FD7E14]",
-    filled: "w-full px-4 py-3 bg-white border border-black/15 rounded-lg text-black transition focus:outline-none focus:border-[#FD7E14]",
-    underline: "w-full px-4 py-3 border-0 border-b-2 border-gray-300 rounded-none bg-transparent text-black transition focus:border-primary",
-    danger: "w-full px-4 py-3 border border-red-500 bg-red-50 text-red-700 rounded-lg transition focus:border-red-600",
-    success: "w-full px-4 py-3 border border-green-500 bg-green-50 text-green-700 rounded-lg transition focus:border-green-600"
+    default:
+      "w-full px-4 py-3 bg-black border rounded-lg text-white placeholder-white/50 transition focus:outline-none focus:border-[#FD7E14]",
+    filled:
+      "w-full px-4 py-3 bg-white border border-black/15 rounded-lg text-black transition focus:outline-none focus:border-[#FD7E14]",
+    underline:
+      "w-full px-4 py-3 border-0 border-b-2 border-gray-300 rounded-none bg-transparent text-black transition focus:border-primary",
+    danger:
+      "w-full px-4 py-3 border border-red-500 bg-red-50 text-red-700 rounded-lg transition focus:border-red-600",
+    success:
+      "w-full px-4 py-3 border border-green-500 bg-green-50 text-green-700 rounded-lg transition focus:border-green-600",
   };
 
   const textColorStyles = {
-    default: 'text-white placeholder-white/50',
-    success: 'text-green-700 placeholder-green-400',
-    danger: 'text-black placeholder-black/40',
-  }
+    default: "text-white placeholder-white/50",
+    success: "text-green-700 placeholder-green-400",
+    danger: "text-black placeholder-black/40",
+  };
 
-  const appliedVariant =
-    error ? 'danger' :
-      success ? 'success' :
-        variant
+  const appliedVariant = error ? "danger" : success ? "success" : variant;
 
   const borderColorClass =
-    variant === 'default'
-      ? error
-        ? 'border-red-500'
-        : 'border-white/20'
-      : ''
+    variant === "default" ? (error ? "border-red-500" : "border-white/20") : "";
 
   const classes = [
-    'w-full px-4 py-3 rounded-lg transition  focus:outline-none focus:ring-0',
+    "w-full px-4 py-3 rounded-lg transition  focus:outline-none focus:ring-0",
     sizeStyles[size],
     variantStyles[appliedVariant],
     textColorStyles[appliedVariant],
     borderColorClass,
-    disabled ? 'opacity-50 cursor-not-allowed' : 'focus:ring-2',
+    disabled ? "opacity-50 cursor-not-allowed" : "focus:ring-2",
     className,
   ]
     .filter(Boolean)
-    .join(' ')
+    .join(" ");
 
   return (
-    <div className={`flex flex-col gap-1  ${fullWidth ? 'w-full' : ''}`}>
+    <div className={`flex flex-col gap-1  ${fullWidth ? "w-full" : ""}`}>
       {label && (
         <label htmlFor={name} className="mb-1 text-sm font-medium">
           {label}
@@ -85,5 +83,5 @@ export default function Input({
       )}
       {/* {success && !error && <p className="text-green-600 text-xs mt-1">Looks good</p>} */}
     </div>
-  )
+  );
 }

@@ -1,27 +1,23 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { LogIn, Menu, UserPlus, X ,UserIcon , LogOut , ChevronDown } from 'lucide-react'
-import { ROUTES } from '../../app/routes/paths'
- import { linksByRole } from '../../constants/navLinks'
+import { ROUTES } from '../../constants/paths'
+import { linksByRole } from '../../constants/navLinks'
 import LogoIcon from '../../components/ui/LogoIcon'
 import Button from '../../components/ui/Button'
 import NavbarDropdown from '../../components/ui/NavbarDropdown'
-import { useSelector , useDispatch} from 'react-redux'
-import { logout } from '../../app/redux/authSlice'
+import { useAuth } from '../../context/AuthContext'
 
 export default function Navbar({ role = 'guest' }) {
   const navigate = useNavigate()
-  const dispatch = useDispatch();
+  const { user, accountType, isAuthenticated, logout } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
-  
-  // 
-  const { user, accountType, isAuthenticated } = useSelector((state) => state.auth);
-  const [isProfileOpen , setIsProfileOpen] = useState(false)
-    //لتسجيل الخروج 
-    const handleLogout = () => {
-      dispatch(logout());        // يمسح Redux + LocalStorage
-      navigate(ROUTES.HOME);    // يعيد التوجيه لصفحة تسجيل الدخول
-    };
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+
+  const handleLogout = () => {
+    logout()
+    navigate(ROUTES.HOME)
+  }
 
 
   // Combine fixed links (Home, About) with role-based links

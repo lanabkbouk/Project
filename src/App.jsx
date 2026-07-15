@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { ROUTES } from './app/routes/paths'
+import { ROUTES } from './constants/paths'
 import { ACCOUNT_TYPES } from './constants/auth/accountTypes'
 import ProtectedRoute from './app/routes/ProtectedRoute'
 
