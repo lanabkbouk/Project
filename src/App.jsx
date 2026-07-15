@@ -9,7 +9,7 @@ import Participates from './pages/participates'
 import Register from './pages/auth/Register'
 import VolunteerProfile from './pages/volunteerProfile'
 import OrgProfile from './pages/orgProfile'
-import About from './pages /about'
+import About from './pages/about'
 import MainLayout from './layouts/MainLayout'
 
 
