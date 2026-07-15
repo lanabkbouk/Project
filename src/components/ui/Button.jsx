@@ -1,3 +1,4 @@
+
 export default function Button({
   variant = 'primary',
   size = 'medium',
@@ -15,6 +16,7 @@ export default function Button({
     ghost: 'bg-bg border-2 border-heading text-heading hover:bg-zinc-800',
     success: 'bg-green-600 hover:bg-green-700 text-white',
     danger: 'bg-danger hover:bg-red-700 text-white',
+    
     // link: 'bg-transparent text-blue-600 hover:underline hover:text-blue-800',
   }
 
@@ -36,15 +38,19 @@ export default function Button({
     .join(' ')
 
   return (
-    <button
-      type={type}
-      className={classes}
-      onClick={onClick}
-      disabled={disabled}
-      {...props}
-    >
-      {children}
-    </button>
+   
+   
+        <button
+          type={type}
+          className={classes}
+          onClick={onClick}
+          disabled={disabled}
+       
+          {...props}
+        >
+          {children}
+        </button>
+    
   )
 }
 

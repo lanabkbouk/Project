@@ -1,11 +1,14 @@
+import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
 import Input from '../../components/ui/Input'
 import Button from '../../components/ui/Button'
 import { ROUTES, AUTH_QUERY_KEYS } from '../../app/routes/paths'
 import { ACCOUNT_TYPES } from '../../constants/auth/accountTypes'
 import AuthShell from '../../components/auth/AuthShell'
-import useAsyncAction from '../../hooks/useAsyncAction'
+import { loginSuccess, setError as setAuthError, setLoading } from '../../app/redux/authSlice'
+import { selectAuthError, selectAuthLoading } from '../../app/redux/authSekector'
 import { mapZodErrors, parseLoginForm } from '../../utils/auth/validation'
 import { loginUser } from '../../services/auth'
 
@@ -15,8 +18,10 @@ const initialValues = {
 }
 
 export default function Login() {
+  const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { loading, error, execute, clearError } = useAsyncAction(loginUser)
+  const loading = useSelector(selectAuthLoading)
+  const error = useSelector(selectAuthError)
 
   const {
     register,
@@ -26,6 +31,10 @@ export default function Login() {
   } = useForm({
     defaultValues: initialValues,
   })
+
+  const clearError = useCallback(() => {
+    dispatch(setAuthError(''))
+  }, [dispatch])
 
   const onSubmit = async (values) => {
     const validationResult = parseLoginForm(values)
@@ -37,8 +46,31 @@ export default function Login() {
       return
     }
 
-    const result = await execute(validationResult.data)
-    if (result?.success) navigate(ROUTES.HOME)
+    dispatch(setLoading(true))
+    dispatch(setAuthError(''))
+
+    try {
+      const result = await loginUser(validationResult.data)
+
+      if (!result?.success) {
+        dispatch(setAuthError(result?.error || 'Unable to sign in'))
+        return
+      }
+
+      if (!result.data?.user || !result.data?.token || !result.data?.accountType) {
+        dispatch(setAuthError('Received invalid authentication response'))
+        return
+      }
+
+      dispatch(loginSuccess(result.data))
+      // after login, go to Home (authenticated landing)
+      navigate(ROUTES.HOME)
+    } catch (submitError) {
+      const message = submitError instanceof Error ? submitError.message : 'Unexpected error'
+      dispatch(setAuthError(message))
+    } finally {
+      dispatch(setLoading(false))
+    }
   }
 
   return (

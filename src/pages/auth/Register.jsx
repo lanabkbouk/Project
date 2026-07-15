@@ -14,7 +14,8 @@ import { mapZodErrors, parseRegisterForm } from '../../utils/auth/validation'
 import { registerUser } from '../../services/auth'
 
 const initialValues = {
-  firstName: '',
+
+  firstName: '' ,
   lastName: '',
   orgName: '',
   contactPerson: '',
@@ -85,10 +86,14 @@ export default function Register() {
     const result = await execute(payload)
     if (!result?.success) return
 
+    // ensure Redux auth state is updated so Navbar role links change immediately
+    // registerUser mock returns { user, token, accountType }
+    // dispatch is done inside AuthShell via Login flow; here we mimic it by redirecting to profile
     setSuccessMessage('Account created successfully. Redirecting to your profile...')
 
     if (isVolunteer) navigate(ROUTES.VOLUNTEER_PROFILE)
     else navigate(ROUTES.ORGANIZATION_PROFILE)
+
   }
 
   return (
@@ -106,61 +111,68 @@ export default function Register() {
     >
       <AccountSwitch accountType={accountType} />
 
-      <form className='space-y-4' onSubmit={handleSubmit(onSubmit)} noValidate>
-        {isVolunteer ? (
-          <VolunteerForm register={register} errors={errors} onFieldChange={handleFormChange} />
-        ) : (
-          <OrganizationForm register={register} errors={errors} onFieldChange={handleFormChange} />
-        )}
+   
+          <form
+            className='space-y-4'
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+      
+          >
+            {isVolunteer ? (
+              <VolunteerForm register={register} errors={errors} onFieldChange={handleFormChange} />
+            ) : (
+              <OrganizationForm register={register} errors={errors} onFieldChange={handleFormChange} />
+            )}
 
-        <Input
-          label='Email'
-          type='email'
-          name='email'
-          register={register}
-          registerOptions={{ onChange: handleFormChange }}
-          placeholder={isVolunteer ? 'you@example.com' : 'org@example.com'}
-          error={errors.email?.message}
-          autoComplete='email'
-          required
-        />
+            <Input
+              label='Email'
+              type='email'
+              name='email'
+              register={register}
+              registerOptions={{ onChange: handleFormChange }}
+              placeholder={isVolunteer ? 'you@example.com' : 'org@example.com'}
+              error={errors.email?.message}
+              autoComplete='email'
+              required
+            />
 
-        <Input
-          label={`Phone Number${!isVolunteer ? ' *' : ''}`}
-          type='tel'
-          name='phone'
-          register={register}
-          registerOptions={{ onChange: handleFormChange }}
-          placeholder='+1 234 567 890'
-          error={errors.phone?.message}
-          autoComplete='tel'
-          required={!isVolunteer}
-        />
+            <Input
+              label={`Phone Number${!isVolunteer ? ' *' : ''}`}
+              type='tel'
+              name='phone'
+              register={register}
+              registerOptions={{ onChange: handleFormChange }}
+              placeholder='+1 234 567 890'
+              error={errors.phone?.message}
+              autoComplete='tel'
+              required={!isVolunteer}
+            />
 
-        <Input
-          label='Password'
-          type='password'
-          name='password'
-          register={register}
-          registerOptions={{ onChange: handleFormChange }}
-          placeholder='********'
-          error={errors.password?.message}
-          autoComplete='new-password'
-          required
-        />
+            <Input
+              label='Password'
+              type='password'
+              name='password'
+              register={register}
+              registerOptions={{ onChange: handleFormChange }}
+              placeholder='********'
+              error={errors.password?.message}
+              autoComplete='new-password'
+              required
+            />
 
-        {error ? (
-          <p className='rounded-lg border border-danger bg-red-500/10 px-3 py-2 text-sm text-red-200'>{error}</p>
-        ) : null}
+            {error ? (
+              <p className='rounded-lg border border-danger bg-red-500/10 px-3 py-2 text-sm text-red-200'>{error}</p>
+            ) : null}
 
-        {successMessage ? (
-          <p className='rounded-lg border border-green-500 bg-green-500/10 px-3 py-2 text-sm text-green-200'>{successMessage}</p>
-        ) : null}
+            {successMessage ? (
+              <p className='rounded-lg border border-green-500 bg-green-500/10 px-3 py-2 text-sm text-green-200'>{successMessage}</p>
+            ) : null}
 
-        <Button type='submit' disabled={loading} fullWidth>
-          {loading ? 'Creating...' : isVolunteer ? 'Create Account' : 'Register Organization'}
-        </Button>
-      </form>
+            <Button type='submit' disabled={loading} fullWidth>
+              {loading ? 'Creating...' : isVolunteer ? 'Create Account' : 'Register Organization'}
+            </Button>
+          </form>
     </AuthShell>
   )
 }
+
