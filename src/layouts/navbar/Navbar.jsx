@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { LogIn, Menu, UserPlus, X ,UserIcon , LogOut , ChevronDown } from 'lucide-react'
 import { ROUTES } from '../../constants/paths'
+import { ACCOUNT_TYPES } from '../../constants/auth/accountTypes'
 import { linksByRole } from '../../constants/navLinks'
 import LogoIcon from '../../components/ui/LogoIcon'
 import Button from '../../components/ui/Button'
 import NavbarDropdown from '../../components/ui/NavbarDropdown'
 import { useAuth } from '../../context/AuthContext'
+import { getUserDisplayName } from '../../utils/auth/displayName'
 
 export default function Navbar({ role = 'guest' }) {
   const navigate = useNavigate()
@@ -105,7 +107,7 @@ export default function Navbar({ role = 'guest' }) {
                   trigger={
                     <button className="flex items-center gap-2 rounded-full px-3 py-2 text-white cursor-pointer transition-colors duration-200 hover:bg-white/10">
                       <UserIcon className="h-5 w-5" />
-                      <span className="text-sm sm:text-base">{user?.name || "User"}</span>
+                      <span className="text-sm sm:text-base">{getUserDisplayName(user)}</span>
                       <ChevronDown
                         className={`w-4 h-4 transition-transform duration-200 ${
                           isProfileOpen ? "rotate-180" : ""
@@ -117,7 +119,7 @@ export default function Navbar({ role = 'guest' }) {
                     {
                       name: "My Profile",
                       href:
-                        accountType === "volunteer"
+                        accountType === ACCOUNT_TYPES.VOLUNTEER
                           ? ROUTES.VOLUNTEER_PROFILE
                           : ROUTES.ORGANIZATION_PROFILE,
                     },

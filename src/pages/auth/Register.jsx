@@ -9,6 +9,7 @@ import VolunteerForm from '../../components/forms/volunteerForm'
 import { ROUTES, AUTH_QUERY_KEYS } from '../../constants/paths'
 import { ACCOUNT_TYPES, isAccountType } from '../../constants/auth/accountTypes'
 import AuthShell from '../../components/auth/AuthShell'
+import { useAuth } from '../../context/AuthContext'
 import useAsyncAction from '../../hooks/useAsyncAction'
 import { mapZodErrors, parseRegisterForm } from '../../utils/auth/validation'
 import { registerUser } from '../../services/auth'
@@ -27,6 +28,7 @@ const initialValues = {
 
 export default function Register() {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [searchParams] = useSearchParams()
   const [successMessage, setSuccessMessage] = useState('')
   const { loading, error, execute, clearError } = useAsyncAction(registerUser)
@@ -86,14 +88,19 @@ export default function Register() {
     const result = await execute(payload)
     if (!result?.success) return
 
-    // ensure Redux auth state is updated so Navbar role links change immediately
-    // registerUser mock returns { user, token, accountType }
-    // dispatch is done inside AuthShell via Login flow; here we mimic it by redirecting to profile
+    if (!login(result.data)) {
+      setSuccessMessage('')
+      setError('root', {
+        type: 'manual',
+        message: 'Account created but session could not be started. Please sign in.',
+      })
+      return
+    }
+
     setSuccessMessage('Account created successfully. Redirecting to your profile...')
 
     if (isVolunteer) navigate(ROUTES.VOLUNTEER_PROFILE)
     else navigate(ROUTES.ORGANIZATION_PROFILE)
-
   }
 
   return (
@@ -160,8 +167,10 @@ export default function Register() {
               required
             />
 
-            {error ? (
-              <p className='rounded-lg border border-danger bg-red-500/10 px-3 py-2 text-sm text-red-200'>{error}</p>
+            {error || errors.root?.message ? (
+              <p className='rounded-lg border border-danger bg-red-500/10 px-3 py-2 text-sm text-red-200'>
+                {error || errors.root?.message}
+              </p>
             ) : null}
 
             {successMessage ? (

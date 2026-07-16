@@ -1,13 +1,28 @@
 import { ACCOUNT_TYPES } from '../constants/auth/accountTypes'
+import { MOCK_USERS_STORAGE_KEY } from '../constants/auth/storage'
 import { apiClient, getApiErrorMessage } from './api/client'
 
 const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_AUTH || 'true') === 'true'
-const mockUsers = []
 
 function wait(duration = 300) {
   return new Promise((resolve) => {
     setTimeout(resolve, duration)
   })
+}
+
+function loadMockUsers() {
+  try {
+    const raw = localStorage.getItem(MOCK_USERS_STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function saveMockUsers(users) {
+  localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(users))
 }
 
 function sanitizeUser(user) {
@@ -44,6 +59,7 @@ export async function registerUser(payload) {
   await wait()
 
   if (MOCK_MODE) {
+    const mockUsers = loadMockUsers()
     const normalizedEmail = payload.email.trim().toLowerCase()
     const existingUser = mockUsers.find((user) => user.email === normalizedEmail)
 
@@ -56,12 +72,13 @@ export async function registerUser(payload) {
     }
 
     mockUsers.push(normalizedUser)
-    return { success: true, data:  buildAuthPayload(normalizedUser, normalizedEmail) }
+    saveMockUsers(mockUsers)
+    return { success: true, data: buildAuthPayload(normalizedUser, normalizedEmail) }
   }
 
   try {
     const response = await apiClient.post('/auth/register', payload)
-    return { success: true, data: response.data }
+    return { success: true, data: buildAuthPayload(response.data, payload.email.trim().toLowerCase()) }
   } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Unable to register account') }
   }
@@ -71,6 +88,7 @@ export async function loginUser(payload) {
   await wait()
 
   if (MOCK_MODE) {
+    const mockUsers = loadMockUsers()
     const normalizedEmail = payload.email.trim().toLowerCase()
     const existingUser = mockUsers.find((user) => user.email === normalizedEmail)
 

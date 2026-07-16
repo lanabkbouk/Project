@@ -1,7 +1,6 @@
 import { createContext, useContext, useState } from 'react'
 import { isAccountType } from '../constants/auth/accountTypes'
-
-const AUTH_STORAGE_KEY = 'auth_session'
+import { AUTH_STORAGE_KEY } from '../constants/auth/storage'
 
 const AuthContext = createContext(null)
 

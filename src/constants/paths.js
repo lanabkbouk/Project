@@ -14,6 +14,13 @@ export const ROUTES = {
   ORGANIZATIONS: '/organizations',
 }
 
+export const LEGACY_REDIRECTS = [
+  { from: '/Login', to: ROUTES.LOGIN },
+  { from: '/Register', to: ROUTES.REGISTER },
+  { from: '/signUp', to: ROUTES.REGISTER },
+  { from: '/volunteerProfile', to: ROUTES.VOLUNTEER_PROFILE },
+  { from: '/orgProfile', to: ROUTES.ORGANIZATION_PROFILE },
+]
 
 export const AUTH_QUERY_KEYS = {
   TYPE: 'type',
