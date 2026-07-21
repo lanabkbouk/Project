@@ -21,6 +21,7 @@ export default function Navbar({ role = 'guest' }) {
     navigate(ROUTES.HOME)
   }
 
+  const avatarUrl = user?.imageUrl || user?.avatarUrl || ''
 
   // Combine fixed links (Home, About) with role-based links
   const baseLinks = [
@@ -45,7 +46,7 @@ export default function Navbar({ role = 'guest' }) {
         <div className='flex items-center justify-between'>
           <NavLink to={ROUTES.HOME} className='flex items-center space-x-3 rtl:space-x-reverse'>
             <LogoIcon className='h-6 w-6' />
-            <span className='self-center whitespace-nowrap text-2xl font-semibold text-white'>Charity</span>
+            <span className='self-center whitespace-nowrap text-2xl font-semibold text-white'>Volunteer Platform </span>
           </NavLink>
 
 
@@ -105,15 +106,23 @@ export default function Navbar({ role = 'guest' }) {
                   isOpen={isProfileOpen}
                   setIsOpen={setIsProfileOpen}
                   trigger={
-                    <button className="flex items-center gap-2 rounded-full px-3 py-2 text-white cursor-pointer transition-colors duration-200 hover:bg-white/10">
-                      <UserIcon className="h-5 w-5" />
+                    <div className="flex items-center gap-2 rounded-full px-3 py-2 text-white transition-colors duration-200 hover:bg-white/10">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={getUserDisplayName(user)}
+                          className="h-7 w-7 rounded-full object-cover border border-white/20"
+                        />
+                      ) : (
+                        <UserIcon className="h-5 w-5" />
+                      )}
                       <span className="text-sm sm:text-base">{getUserDisplayName(user)}</span>
                       <ChevronDown
                         className={`w-4 h-4 transition-transform duration-200 ${
                           isProfileOpen ? "rotate-180" : ""
                         }`}
                       />
-                    </button>
+                    </div>
                   }
                   items={[
                     {
@@ -180,4 +189,3 @@ export default function Navbar({ role = 'guest' }) {
     </nav>
   )
 }
-

@@ -19,32 +19,32 @@ export default function NavbarDropdown({
   return (
     <div className={`relative ${className}`}>
       {/* Trigger */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="
-          flex items-center gap-2
-          text-white bg-gray-800
-          hover:bg-gray-700
-          border border-gray-600
-          font-medium text-[14px]
-          px-4 py-2.5
-          rounded-[30px]
-          transition
-        "
-      >
-        {trigger ? (
-          trigger
-        ) : (
-          <>
-            <span>Profile</span>
-            <ChevronDown
-              className={`w-4 h-4 transition-transform ${
-                isOpen ? "rotate-180" : ""
-              }`}
-            />
-          </>
-        )}
-      </button>
+      {trigger ? (
+        <div onClick={() => setIsOpen(!isOpen)} className="cursor-pointer select-none">
+          {trigger}
+        </div>
+      ) : (
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="
+            flex items-center gap-2
+            text-white bg-gray-800
+            hover:bg-gray-700
+            border border-gray-600
+            font-medium text-[14px]
+            px-4 py-2.5
+            rounded-[30px]
+            transition
+          "
+        >
+          <span>Profile</span>
+          <ChevronDown
+            className={`w-4 h-4 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      )}
 
       {/* Menu */}
       {isOpen && (

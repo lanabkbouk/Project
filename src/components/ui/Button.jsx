@@ -7,6 +7,8 @@ export default function Button({
   fullWidth = false,
   className = "",
   type = "button",
+  isLoading = false, // الحالة الجديدة
+  loadingText = "Saving...", // نص التحميل الافتراضي
   ...props
 }) {
   const variantStyles = {
@@ -15,8 +17,6 @@ export default function Button({
     ghost: "bg-bg border-2 border-heading text-heading hover:bg-zinc-800",
     success: "bg-green-600 hover:bg-green-700 text-white",
     danger: "bg-danger hover:bg-red-700 text-white",
-
-    // link: 'bg-transparent text-blue-600 hover:underline hover:text-blue-800',
   };
 
   const sizeStyles = {
@@ -26,10 +26,10 @@ export default function Button({
   };
 
   const classes = [
-    "rounded-2xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 ",
-    variantStyles[variant] || variantStyles.primary,
-    sizeStyles[size] || sizeStyles.medium,
-    disabled
+    "rounded-2xl font-medium transition-all duration-200 focus:outline-none focus:ring-2",
+    variantStyles[variant],
+    sizeStyles[size],
+    (disabled || isLoading)
       ? "opacity-50 cursor-not-allowed"
       : "cursor-pointer hover:shadow-md",
     fullWidth ? "w-full" : "",
@@ -43,10 +43,10 @@ export default function Button({
       type={type}
       className={classes}
       onClick={onClick}
-      disabled={disabled}
+      disabled={disabled || isLoading}
       {...props}
     >
-      {children}
+      {isLoading ? loadingText : children}
     </button>
   );
 }

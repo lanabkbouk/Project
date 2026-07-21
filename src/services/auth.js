@@ -2,7 +2,7 @@ import { ACCOUNT_TYPES } from '../constants/auth/accountTypes'
 import { MOCK_USERS_STORAGE_KEY } from '../constants/auth/storage'
 import { apiClient, getApiErrorMessage } from './api/client'
 
-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_AUTH || 'true') === 'true'
+const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_AUTH || 'true') === 'true' 
 
 function wait(duration = 300) {
   return new Promise((resolve) => {
@@ -24,7 +24,7 @@ function loadMockUsers() {
 function saveMockUsers(users) {
   localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(users))
 }
-
+  // إزالة كلمة المرور من بيانات المستخدم
 function sanitizeUser(user) {
   if (!user || typeof user !== 'object') return null
 
@@ -32,7 +32,7 @@ function sanitizeUser(user) {
   delete safeUser.password
   return safeUser
 }
-
+  // تحديد نوع الحساب
 function resolveAccountType(data) {
   if (data?.accountType === ACCOUNT_TYPES.ORGANIZATION) return ACCOUNT_TYPES.ORGANIZATION
   if (data?.accountType === ACCOUNT_TYPES.VOLUNTEER) return ACCOUNT_TYPES.VOLUNTEER
