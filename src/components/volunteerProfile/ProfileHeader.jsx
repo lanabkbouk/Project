@@ -3,7 +3,8 @@ import GenderBadge from "./GenderBadge";
 
 export default function ProfileHeader({ fullName, gender, imagePreview, onImageChange }) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center gap-8 bg-bg">
+    <div className="flex flex-col md:flex-row md:items-center gap-8 
+           rounded-xl p-6 bg-white/40 backdrop-blur-md border border-white/20 shadow-sm">
       <div className="flex items-center gap-6">
         <div className="relative">
           <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl overflow-hidden border border-primary/30 bg-heading/5">

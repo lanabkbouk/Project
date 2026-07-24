@@ -42,7 +42,7 @@ export default function Register() {
 
   const subtitle = useMemo(() => {
     if (isVolunteer) return 'Join our community and make a difference!'
-    return 'Register your charity or NGO to connect with volunteers.'
+    return 'Register your Volunteer Platform or NGO to connect with volunteers.'
   }, [isVolunteer])
 
   const {

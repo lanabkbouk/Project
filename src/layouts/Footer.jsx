@@ -67,7 +67,7 @@ export default function Footer() {
           >
             <LogoIcon className="h-6 w-6" />
             <span className="self-center whitespace-nowrap text-2xl font-semibold text-white">
-              Charity
+              Volunteer Platform
             </span>
           </NavLink>
 
@@ -155,7 +155,7 @@ export default function Footer() {
 
       <div className="border-t border-white/10 bg-black">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-sm text-white/70 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <p>© {new Date().getFullYear()} Charity. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Volunteer Platform. All rights reserved.</p>
           <div className="flex items-center gap-5">
             <NavLink
               className="hover:text-primary"

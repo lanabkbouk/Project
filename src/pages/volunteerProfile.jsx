@@ -122,7 +122,7 @@ export default function VolunteerProfile() {
 
   return (
     <FormProvider {...methods}>
-      <div className="min-h-screen bg-bg text-heading">
+      <div className="mx-auto w-full flex-1 max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="container mx-auto px-4 md:px-16 py-10 md:py-14">
           <ProfileHeader
             fullName={fullName}
