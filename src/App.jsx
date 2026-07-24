@@ -11,6 +11,8 @@ import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import VolunteerProfile from './pages/volunteerProfile'
 import OrgProfile from './pages/orgProfile'
+import OpportunitiesListPage from './pages/opportunities/OpportunitiesListPage'
+import OpportunityDetailsPage from './pages/opportunities/OpportunityDetailsPage'
 
 function ComingSoon({ title }) {
   return <div>{title} Page (Coming Soon)</div>
@@ -25,14 +27,15 @@ function App() {
           <Route path={ROUTES.HOME} element={<Home />} />
           <Route path={ROUTES.ABOUT} element={<About />} />
           <Route path={ROUTES.PARTICIPATES} element={<Participates />} />
-          <Route path={ROUTES.OPPORTUNITIES} element={<ComingSoon title='Opportunities' />} />
+          <Route path={ROUTES.OPPORTUNITIES} element={<OpportunitiesListPage />} />
+          <Route path={ROUTES.OPPORTUNITY_DETAILS} element={<OpportunityDetailsPage />} />
           <Route path={ROUTES.ORGANIZATIONS} element={<ComingSoon title='Organizations' />} />
 
           {/* Volunteer */}
           <Route element={<ProtectedRoute allowedAccountTypes={[ACCOUNT_TYPES.VOLUNTEER]} />}>
             <Route path={ROUTES.VOLUNTEER_PROFILE} element={<VolunteerProfile />} />
-            <Route path={ROUTES.EXPLORE} element={<ComingSoon title='Explore' />} />
-            <Route path={ROUTES.MY_VOLUNTEERING} element={<ComingSoon title='My Volunteering' />} />
+            <Route path={ROUTES.EXPLORE} element={<OpportunitiesListPage />} />
+            <Route path={ROUTES.MY_VOLUNTEERING} element={<Participates />} />
           </Route>
 
           {/* Organization */}

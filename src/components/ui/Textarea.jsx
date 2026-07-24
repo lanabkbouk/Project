@@ -1,7 +1,8 @@
 export default function Textarea({
   label = "",
-  value,
-  onChange,
+  name,
+  register,
+  registerOptions,
   placeholder = "",
   rows = 5,
   fullWidth = true,
@@ -11,24 +12,25 @@ export default function Textarea({
   className = "",
   ...props
 }) {
+  const registerProps = register ? register(name, registerOptions) : {};
+
   return (
     <div className={`flex flex-col gap-2 ${fullWidth ? "w-full" : ""}`}>
-      
-      {/* Label */}
       {label && (
-        <label className="text-heading font-medium text-[15px]">
+        <label htmlFor={name} className="text-heading font-medium text-[15px]">
           {label}
           {required && <span className="text-primary ml-1">*</span>}
         </label>
       )}
 
-      {/* Textarea */}
       <textarea
-        value={value}
-        onChange={onChange}
+        id={name}
+        name={name}
         rows={rows}
         placeholder={placeholder}
         disabled={disabled}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${name}-error` : undefined}
         className={`
           px-4 py-3
           rounded-lg
@@ -50,12 +52,12 @@ export default function Textarea({
 
           ${className}
         `}
+        {...registerProps}
         {...props}
       />
 
-      {/* Error */}
       {error && (
-        <p className="text-danger text-sm">
+        <p id={`${name}-error`} className="text-danger text-sm">
           {error}
         </p>
       )}

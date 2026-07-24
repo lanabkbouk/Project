@@ -3,6 +3,12 @@ import InfoRow from "../ui/InfoRow";
 import Chip from "../ui/Chip";
 import { calculateAge } from "../../utils/validators";
 
+import {
+  CATEGORY_ICONS,
+  CATEGORY_COLORS
+} from "../../utils/categoryStyles";
+
+// Helpers
 const splitCsvToChips = (input) => {
   if (!input) return [];
   return String(input)
@@ -11,18 +17,18 @@ const splitCsvToChips = (input) => {
     .filter(Boolean);
 };
 
-export default function ProfilePreview({ fullName, email, availableSkillsMap }) {
+export default function ProfilePreview({ fullName, email, availableSkills }) {
   const { watch } = useFormContext();
-
-  // watch() بيرجع كل قيم الفورم الحية بدون ما نكرر الـ state
   const values = watch();
 
   const age = calculateAge(values.dateOfBirth);
   const isAdult = age !== null && age >= 18;
 
-  const selectedSkillNames = (values.skills || []).map(
-    (id) => availableSkillsMap?.[id] || id
+  // Full skill objects (now include category object)
+  const selectedSkills = (values.skills || []).map((id) =>
+    availableSkills.find((s) => s.id === id)
   );
+
   const interestsChips = splitCsvToChips(values.interests);
 
   return (
@@ -33,20 +39,42 @@ export default function ProfilePreview({ fullName, email, availableSkillsMap }) 
         <InfoRow label="Full Name" value={fullName} />
         <InfoRow label="Email" value={email} />
         <InfoRow label="Education Level" value={values.educationLevel} />
-        {/* تاريخ الميلاد يظهر بس لو العمر 18+ */}
+
         {isAdult && <InfoRow label="Date of Birth" value={values.dateOfBirth} />}
+
         <InfoRow label="Gender" value={values.gender} />
         <InfoRow label="City" value={values.city} />
 
+        {/* Skills */}
         <div className="pt-2 border-t border-heading/10">
           <h3 className="font-semibold mb-2 text-heading">Skills</h3>
+
           <div className="flex flex-wrap gap-2">
-            {(selectedSkillNames.length ? selectedSkillNames : ["—"]).map((s) => (
-              <Chip key={s}>{s}</Chip>
-            ))}
+            {selectedSkills.length ? (
+              selectedSkills.map((skill) => {
+                if (!skill) return null;
+
+                const categoryName = skill.category?.name;
+                const Icon = CATEGORY_ICONS[categoryName];
+                const color = CATEGORY_COLORS[categoryName];
+
+                return (
+                  <span
+                    key={skill.id}
+                    className={`px-2.5 py-1 rounded-full text-xs border flex items-center gap-1.5 ${color}`}
+                  >
+                    {Icon && <Icon size={14} />}
+                    {skill.name}
+                  </span>
+                );
+              })
+            ) : (
+              <Chip>—</Chip>
+            )}
           </div>
         </div>
 
+        {/* Interests */}
         <div className="pt-2 border-t border-heading/10">
           <h3 className="font-semibold mb-2 text-heading">Interests</h3>
           <div className="flex flex-wrap gap-2">
@@ -56,6 +84,7 @@ export default function ProfilePreview({ fullName, email, availableSkillsMap }) 
           </div>
         </div>
 
+        {/* About */}
         <div className="pt-2 border-t border-heading/10">
           <h3 className="font-semibold mb-2 text-heading">About</h3>
           <p className="text-sm text-heading/80 leading-relaxed">

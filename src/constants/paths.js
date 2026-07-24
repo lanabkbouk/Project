@@ -11,6 +11,7 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   MY_CAUSES: '/my-causes',
   OPPORTUNITIES: '/opportunities',
+  OPPORTUNITY_DETAILS: '/opportunities/:id',
   ORGANIZATIONS: '/organizations',
 }
 
@@ -24,4 +25,4 @@ export const LEGACY_REDIRECTS = [
 
 export const AUTH_QUERY_KEYS = {
   TYPE: 'type',
-}
+} 

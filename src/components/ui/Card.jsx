@@ -1,4 +1,3 @@
-
 import { ImageOff } from 'lucide-react'
 
 import Button from './Button'
@@ -17,6 +16,7 @@ export default function Card({
 	description,
 	imageSrc,
 	imageAlt,
+	imageFallback,
 	goalAmount = 200000,
 	raisedAmount = 8000,
 	donationsCount = 6,
@@ -55,6 +55,8 @@ export default function Card({
 						alt={imageAlt || title || 'Project image'}
 						className='w-full aspect-video object-cover block'
 					/>
+				) : imageFallback ? (
+					imageFallback
 				) : (
 					<div className='flex w-full aspect-video items-center justify-center bg-slate-100 text-slate-400'>
 						<ImageOff className='h-8 w-8' aria-hidden='true' />
@@ -118,4 +120,3 @@ export default function Card({
 		</Component>
 	)
 }
-

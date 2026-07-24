@@ -7,10 +7,15 @@ import Textarea from "../ui/Textarea";
 import Button from "../ui/Button"; 
 import { fetchAvailableSkills } from "../../services/skills";
 
+import {
+  CATEGORY_ICONS,
+  CATEGORY_COLORS,
+  CATEGORY_SELECTED_COLORS
+} from "../../utils/categoryStyles";
+
 const GENDER_ITEMS = [
   { name: "Female", value: "Female" },
   { name: "Male", value: "Male" },
-  { name: "Prefer not to say", value: "Prefer not to say" },
 ];
 
 const GOVERNORATE_ITEMS = [
@@ -40,7 +45,6 @@ export default function ProfileForm({ submitting }) {
   const [availableSkills, setAvailableSkills] = useState([]);
   const [skillsLoading, setSkillsLoading] = useState(true);
 
-  // جلب قائمة المهارات المقترحة من الباك عند تحميل الفورم
   useEffect(() => {
     let isMounted = true;
 
@@ -84,9 +88,8 @@ export default function ProfileForm({ submitting }) {
           fullWidth
         />
 
-        {/* Gender بمكوّن Dropdown الموحّد بدل select الافتراضي */}
         <div className="flex flex-col gap-1">
-          <label className="mb-1 text-sm font-medium text-heading">Gender</label>
+          <label className="mb-1 text-sm font-medium text-heading">Your Gender</label>
           <Controller
             name="gender"
             control={control}
@@ -105,7 +108,6 @@ export default function ProfileForm({ submitting }) {
           />
         </div>
 
-        {/* المحافظة بمكوّن Dropdown الموحّد بدل select الافتراضي */}
         <div className="flex flex-col gap-1">
           <label className="mb-1 text-sm font-medium text-heading">Governorate of Residence</label>
           <Controller
@@ -127,7 +129,7 @@ export default function ProfileForm({ submitting }) {
         </div>
       </div>
 
-      {/* المهارات: اختيار من قائمة جاهزة من الباك، بدون كتابة حرة — عبر Controller لأنها مش input عادي */}
+      {/* Skills Section */}
       <div>
         <label className="block text-sm font-medium mb-2 text-heading">Skills</label>
         <p className="text-xs text-heading/50 mb-3">Select at least one skill from the list</p>
@@ -139,33 +141,74 @@ export default function ProfileForm({ submitting }) {
             name="skills"
             control={control}
             defaultValue={[]}
-            render={({ field: { value = [], onChange } }) => (
-              <div className="flex flex-wrap gap-2">
-                {availableSkills.map((skill) => {
-                  const isSelected = value.includes(skill.id);
-                  return (
-                    <button
-                      key={skill.id}
-                      type="button"
-                      onClick={() =>
-                        onChange(
-                          isSelected
-                            ? value.filter((id) => id !== skill.id)
-                            : [...value, skill.id]
-                        )
-                      }
-                      className={`px-4 py-2 rounded-full text-sm border transition ${
-                        isSelected
-                          ? "bg-primary text-bg border-primary"
-                          : "bg-bg text-heading/70 border-heading/15 hover:border-primary/50"
-                      }`}
-                    >
-                      {skill.name}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            render={({ field: { value = [], onChange } }) => {
+
+              // 🔥 تقسيم المهارات حسب التصنيف الديناميكي
+              const grouped = availableSkills.reduce((acc, skill) => {
+                const category = skill.category?.name || "Other";
+                if (!acc[category]) acc[category] = [];
+                acc[category].push(skill);
+                return acc;
+              }, {});
+
+              return (
+                <div className="space-y-4">
+                  {Object.entries(grouped).map(([category, skills]) => {
+                    const Icon = CATEGORY_ICONS[category];
+                    const color = CATEGORY_COLORS[category];
+
+                    return (
+                      <div
+                        key={category}
+                        className="rounded-lg border border-heading/10 bg-white p-3 shadow-sm"
+                      >
+                        {/* Category Header */}
+                        <div className="mb-2 flex items-center gap-2">
+                          <span
+                            className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-md border ${color}`}
+                          >
+                            {Icon && <Icon size={14} />}
+                            {category}
+                          </span>
+                          <div className="h-px flex-1 bg-heading/10"></div>
+                        </div>
+
+                        {/* Skills List */}
+                        <div className="flex flex-wrap gap-2">
+                          {skills.map((skill) => {
+                            const isSelected = value.includes(skill.id);
+                            const selectedClass =
+                              CATEGORY_SELECTED_COLORS[category] ||
+                              "bg-primary text-white border-primary";
+
+                            return (
+                              <button
+                                key={skill.id}
+                                type="button"
+                                onClick={() =>
+                                  onChange(
+                                    isSelected
+                                      ? value.filter((id) => id !== skill.id)
+                                      : [...value, skill.id]
+                                  )
+                                }
+                                className={`px-3 py-1.5 rounded-full text-xs border transition ${
+                                  isSelected
+                                    ? selectedClass
+                                    : "bg-gray-50 text-heading/70 border-heading/15 hover:border-primary/50"
+                                }`}
+                              >
+                                {skill.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            }}
           />
         )}
 
@@ -192,7 +235,7 @@ export default function ProfileForm({ submitting }) {
       />
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between pt-2">
-        <Button type="submit" isLoading={submitting} >
+        <Button type="submit" isLoading={submitting}>
           {submitting ? "Saving..." : "Save Profile"}
         </Button>
       </div>

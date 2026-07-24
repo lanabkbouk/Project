@@ -1,12 +1,15 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../context/AuthContext";
 import { getUserDisplayName } from "../utils/auth/displayName";
+import { updateVolunteerProfile } from "../services/volunteer";
+import { fetchAvailableSkills } from "../services/skills";
 
 import ProfileHeader from "../components/volunteerProfile/ProfileHeader";
 import ProfileForm from "../components/volunteerProfile/ProfileForm";
 import ProfilePreview from "../components/volunteerProfile/ProfilePreview";
+import AchievementsList from "../components/volunteerProfile/AchievementsList";
 import { profileSchema } from "../utils/auth/VolunteerProfileValidation";
 
 const normalizeGenderFromUser = (gender) => {
@@ -21,11 +24,28 @@ const normalizeGenderFromUser = (gender) => {
 export default function VolunteerProfile() {
   const { user, updateUser } = useAuth();
 
-  const [imagePreview, setImagePreview] = useState(
-    user?.imageUrl || ""
-  );
+  const [availableSkills, setAvailableSkills] = useState([]);
+  const [skillsLoading, setSkillsLoading] = useState(true);
+
+  const [imagePreview, setImagePreview] = useState(user?.imageUrl || "");
   const [imageFile, setImageFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  // 🔥 جلب المهارات هنا أيضًا حتى نمرّرها للـ Preview
+  useEffect(() => {
+    async function loadSkills() {
+      try {
+        const skills = await fetchAvailableSkills();
+        setAvailableSkills(skills);
+      } catch (err) {
+        console.error("Failed to load skills:", err);
+      } finally {
+        setSkillsLoading(false);
+      }
+    }
+    loadSkills();
+  }, []);
 
   const defaultValues = useMemo(
     () => ({
@@ -64,16 +84,15 @@ export default function VolunteerProfile() {
 
   const onSubmit = async (data) => {
     setSubmitting(true);
+    setSubmitError("");
 
     try {
       const formData = new FormData();
 
-      // رفع الصورة
       if (imageFile) {
         formData.append("image", imageFile);
       }
 
-      // رفع باقي البيانات
       formData.append("educationLevel", data.educationLevel);
       formData.append("dateOfBirth", data.dateOfBirth);
       formData.append("gender", data.gender);
@@ -82,36 +101,20 @@ export default function VolunteerProfile() {
       formData.append("interests", data.interests);
       formData.append("about", data.about);
 
-      // إرسال للباك (عدّلي الرابط حسب API الخاص بك)
-      const res = await fetch("/api/profile", {
-        method: "POST",
-        body: formData,
-      });
+      const result = await updateVolunteerProfile(formData);
 
-      const result = await res.json();
+      if (!result.success) {
+        setSubmitError(result.error || "Failed to save profile");
+        return;
+      }
 
-      // حفظ البيانات في الـ Context
       updateUser({
         ...data,
-        imageUrl: result.imageUrl, // الرابط القادم من الباك
+        skillIds: data.skills,
+        imageUrl: result.data?.imageUrl || imagePreview,
       });
-
-      // تفريغ الحقول والصورة
-      methods.reset({
-        educationLevel: "",
-        dateOfBirth: "",
-        gender: "",
-        city: "",
-        skills: [],
-        interests: "",
-        about: "",
-      });
-
-      setImagePreview("");
-      setImageFile(null);
-
     } catch (err) {
-      console.error("Failed to save profile:", err);
+      setSubmitError(err.message || "Failed to save profile");
     } finally {
       setSubmitting(false);
     }
@@ -134,10 +137,23 @@ export default function VolunteerProfile() {
           >
             <div className="lg:col-span-2 rounded-3xl bg-heading/5 border border-heading/10 p-6 md:p-8">
               <ProfileForm submitting={submitting} />
+              {submitError && (
+                <p className="mt-4 text-sm text-danger">{submitError}</p>
+              )}
             </div>
 
-            <ProfilePreview fullName={fullName} email={user?.email} />
+            {/* 🔥 تمرير المهارات للـ Preview */}
+            <ProfilePreview
+              fullName={fullName}
+              email={user?.email}
+              availableSkills={availableSkills}
+            />
           </form>
+
+          <section className="mt-8 rounded-3xl bg-heading/5 border border-heading/10 p-6 md:p-8">
+            <h2 className="text-lg font-semi bold mb-4 text-heading">Achievements</h2>
+            <AchievementsList />
+          </section>
         </div>
       </div>
     </FormProvider>

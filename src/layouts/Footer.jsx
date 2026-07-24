@@ -51,7 +51,7 @@ const contactLinks = [
 
 const quickLinks = [
   { label: "Home", to: ROUTES.HOME },
-  { label: "Opportunities", to: ROUTES.PARTICIPATES },
+  { label: "Opportunities", to: ROUTES.OPPORTUNITIES },
   { label: "Organization", to: ROUTES.ORGANIZATION_PROFILE },
   { label: "About Us", to: ROUTES.ABOUT },
 ];
