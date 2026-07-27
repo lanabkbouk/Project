@@ -1,7 +1,15 @@
-import { isMockMode } from './api/mockMode'
+
+// إحصائيات صفحة "About" (عدد المتطوعين/المنظمات/الفرص). نفس نمط باقي
+
+// الاستجابة المتوقعة: { volunteersCount, organizationsCount, opportunitiesCount }
+//
+// ملاحظة: "citiesCoveredCount" مو مؤكد إذا رح يوفرها الباك اند — لازم
+// نسأل فريق الباك اند إذا في مصدر بيانات لعدد المدن المغطاة، وإلا نشيل
+// هالإحصائية من الصفحة نهائيًا بدل ما نخترعها.
+
 import { apiClient, getApiErrorMessage } from './api/client'
 
-// بيانات تجريبية لوضع المحاكاة فقط — يجب استبدالها بالكامل من الباك عبر Endpoint واحد
+const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_STATS || 'true') === 'true'
 
 const MOCK_STATS = {
   volunteersCount: 1240,
@@ -9,8 +17,13 @@ const MOCK_STATS = {
   opportunitiesCount: 312,
 }
 
+function wait(duration = 300) {
+  return new Promise((resolve) => setTimeout(resolve, duration))
+}
+
 export async function fetchPlatformStats() {
-  if (isMockMode()) {
+  if (MOCK_MODE) {
+    await wait()
     return { success: true, data: MOCK_STATS }
   }
 

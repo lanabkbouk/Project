@@ -18,33 +18,14 @@ export default function NavbarDropdown({
 
   return (
     <div className={`relative ${className}`}>
+      
       {/* Trigger */}
-      {trigger ? (
-        <div onClick={() => setIsOpen(!isOpen)} className="cursor-pointer select-none">
-          {trigger}
-        </div>
-      ) : (
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="
-            flex items-center gap-2
-            text-white bg-gray-800
-            hover:bg-gray-700
-            border border-gray-600
-            font-medium text-[14px]
-            px-4 py-2.5
-            rounded-[30px]
-            transition
-          "
-        >
-          <span>Profile</span>
-          <ChevronDown
-            className={`w-4 h-4 transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-      )}
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="cursor-pointer select-none"
+      >
+        {trigger}
+      </div>
 
       {/* Menu */}
       {isOpen && (
@@ -52,15 +33,16 @@ export default function NavbarDropdown({
           className={`
             absolute ${alignStyles[align]} ${width}
             mt-2 z-50
-            bg-[#1A1A1A]
-            border border-white/10
-            rounded-lg
-            shadow-xl
+            bg-bg
+            border border-heading/10
+            rounded-xl
+            shadow-lg
+            backdrop-blur-sm
           `}
         >
           {/* Header */}
           {header && (
-            <div className="px-4 py-3 border-b border-white/10">
+            <div className="px-4 py-3 border-b border-heading/10">
               {header}
             </div>
           )}
@@ -71,13 +53,15 @@ export default function NavbarDropdown({
               const isLogout = item.name === "Logout";
 
               const baseClasses =
-                "w-full flex items-center gap-3 px-4 py-2 text-sm transition";
+                "w-full flex items-center gap-3 px-4 py-2 text-sm transition rounded-lg";
+
               const textClasses = isLogout
-                ? "text-red-400 hover:bg-red-500/10"
-                : "text-gray-300 hover:bg-primary/20 hover:text-white";
+                ? "text-danger hover:bg-danger/10"
+                : "text-heading hover:bg-heading/5";
+
               const iconClasses = isLogout
-                ? "w-4 h-4 text-red-400"
-                : "w-4 h-4 text-gray-300";
+                ? "w-4 h-4 text-danger"
+                : "w-4 h-4 text-heading/70";
 
               const content = (
                 <>
@@ -92,7 +76,7 @@ export default function NavbarDropdown({
                   to={item.href}
                   onClick={item.onClick}
                   className={`${baseClasses} ${textClasses} ${
-                    isLogout ? "border-t border-white/10 mt-1 pt-2" : ""
+                    isLogout ? "border-t border-heading/10 mt-1 pt-2" : ""
                   }`}
                 >
                   {content}
@@ -102,7 +86,7 @@ export default function NavbarDropdown({
                   key={item.name}
                   onClick={item.onClick}
                   className={`${baseClasses} ${textClasses} ${
-                    isLogout ? "border-t border-white/10 mt-1 pt-2" : ""
+                    isLogout ? "border-t border-heading/10 mt-1 pt-2" : ""
                   }`}
                 >
                   {content}

@@ -33,10 +33,10 @@ export default function Textarea({
         aria-describedby={error ? `${name}-error` : undefined}
         className={`
           px-4 py-3
-          rounded-lg
+          rounded-xl
           border
           bg-bg
-          text-body
+          text-heading
           placeholder:text-body/60
           outline-none
           resize-none
@@ -47,7 +47,7 @@ export default function Textarea({
           ${
             error
               ? "border-danger focus:border-danger"
-              : "border-heading/15 focus:border-primary"
+              : "border-heading/10 focus:border-primary focus:ring-2 focus:ring-primary/20"
           }
 
           ${className}

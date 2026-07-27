@@ -7,16 +7,16 @@ export default function Button({
   fullWidth = false,
   className = "",
   type = "button",
-  isLoading = false, // الحالة الجديدة
-  loadingText = "Saving...", // نص التحميل الافتراضي
+  isLoading = false,
+  loadingText = "Saving...",
   ...props
 }) {
   const variantStyles = {
-    primary: "bg-primary hover:opacity-80 text-bg",
-    secondary: "bg-black hover:bg-gray-700 text-white",
-    ghost: "bg-bg border-2 border-heading text-heading hover:bg-zinc-800",
-    success: "bg-green-600 hover:bg-green-700 text-white",
-    danger: "bg-danger hover:bg-red-700 text-white",
+    primary: "bg-primary text-bg hover:bg-primary/90",
+    secondary: "bg-secondary text-bg hover:bg-secondary/90",
+    ghost: "bg-bg border border-heading/20 text-heading hover:bg-heading/5",
+    success: "bg-green-600 text-white hover:bg-green-700",
+    danger: "bg-danger text-white hover:bg-dangerHover",
   };
 
   const sizeStyles = {
@@ -26,12 +26,13 @@ export default function Button({
   };
 
   const classes = [
-    "rounded-2xl font-medium transition-all duration-200 focus:outline-none focus:ring-2",
+    "rounded-xl font-medium transition-all duration-200",
+    "focus:outline-none focus:ring-2 focus:ring-primary/40",
     variantStyles[variant],
     sizeStyles[size],
     (disabled || isLoading)
-      ? "opacity-50 cursor-not-allowed"
-      : "cursor-pointer hover:shadow-md",
+      ? "opacity-60 cursor-not-allowed"
+      : "cursor-pointer hover:shadow-sm",
     fullWidth ? "w-full" : "",
     className,
   ]

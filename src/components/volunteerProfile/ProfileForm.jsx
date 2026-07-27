@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { MapPin, User2 } from "lucide-react";
+
 import Input from "../ui/Input";
 import Dropdown from "../ui/Dropdown";
-import Textarea from "../ui/Textarea"; 
-import Button from "../ui/Button"; 
+import Textarea from "../ui/Textarea";
+import Button from "../ui/Button";
+import Typography from "../ui/Typography";
+
 import { fetchAvailableSkills } from "../../services/skills";
 
 import {
@@ -67,6 +70,14 @@ export default function ProfileForm({ submitting }) {
 
   return (
     <div className="space-y-7">
+
+      {/* ===========================
+          Basic Info
+      ============================ */}
+      <Typography variant="h3" gutterBottom>
+        Basic Information
+      </Typography>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <Input
           label="Education Level"
@@ -88,8 +99,12 @@ export default function ProfileForm({ submitting }) {
           fullWidth
         />
 
+        {/* Gender */}
         <div className="flex flex-col gap-1">
-          <label className="mb-1 text-sm font-medium text-heading">Your Gender</label>
+          <Typography variant="bodySm" weight="medium" color="heading">
+            Your Gender
+          </Typography>
+
           <Controller
             name="gender"
             control={control}
@@ -108,8 +123,12 @@ export default function ProfileForm({ submitting }) {
           />
         </div>
 
+        {/* Governorate */}
         <div className="flex flex-col gap-1">
-          <label className="mb-1 text-sm font-medium text-heading">Governorate of Residence</label>
+          <Typography variant="bodySm" weight="medium" color="heading">
+            Governorate of Residence
+          </Typography>
+
           <Controller
             name="city"
             control={control}
@@ -129,94 +148,102 @@ export default function ProfileForm({ submitting }) {
         </div>
       </div>
 
-      {/* Skills Section */}
-      <div>
-        <label className="block text-sm font-medium mb-2 text-heading">Skills</label>
-        <p className="text-xs text-heading/50 mb-3">Select at least one skill from the list</p>
+      {/* ===========================
+          Skills Section
+      ============================ */}
+      <Typography variant="h3" gutterBottom>
+        Skills
+      </Typography>
 
-        {skillsLoading ? (
-          <p className="text-sm text-heading/50">Loading skills...</p>
-        ) : (
-          <Controller
-            name="skills"
-            control={control}
-            defaultValue={[]}
-            render={({ field: { value = [], onChange } }) => {
+      <Typography variant="caption" color="muted" gutterBottom>
+        Select at least one skill from the list
+      </Typography>
 
-              // 🔥 تقسيم المهارات حسب التصنيف الديناميكي
-              const grouped = availableSkills.reduce((acc, skill) => {
-                const category = skill.category?.name || "Other";
-                if (!acc[category]) acc[category] = [];
-                acc[category].push(skill);
-                return acc;
-              }, {});
+      {skillsLoading ? (
+        <Typography variant="bodySm" color="muted">
+          Loading skills...
+        </Typography>
+      ) : (
+        <Controller
+          name="skills"
+          control={control}
+          defaultValue={[]}
+          render={({ field: { value = [], onChange } }) => {
+            const grouped = availableSkills.reduce((acc, skill) => {
+              const category = skill.category?.name || "Other";
+              if (!acc[category]) acc[category] = [];
+              acc[category].push(skill);
+              return acc;
+            }, {});
 
-              return (
-                <div className="space-y-4">
-                  {Object.entries(grouped).map(([category, skills]) => {
-                    const Icon = CATEGORY_ICONS[category];
-                    const color = CATEGORY_COLORS[category];
+            return (
+              <div className="space-y-4">
+                {Object.entries(grouped).map(([category, skills]) => {
+                  const Icon = CATEGORY_ICONS[category];
+                  const color = CATEGORY_COLORS[category];
 
-                    return (
-                      <div
-                        key={category}
-                        className="rounded-lg border border-heading/10 bg-white p-3 shadow-sm"
-                      >
-                        {/* Category Header */}
-                        <div className="mb-2 flex items-center gap-2">
-                          <span
-                            className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-md border ${color}`}
-                          >
-                            {Icon && <Icon size={14} />}
-                            {category}
-                          </span>
-                          <div className="h-px flex-1 bg-heading/10"></div>
-                        </div>
-
-                        {/* Skills List */}
-                        <div className="flex flex-wrap gap-2">
-                          {skills.map((skill) => {
-                            const isSelected = value.includes(skill.id);
-                            const selectedClass =
-                              CATEGORY_SELECTED_COLORS[category] ||
-                              "bg-primary text-white border-primary";
-
-                            return (
-                              <button
-                                key={skill.id}
-                                type="button"
-                                onClick={() =>
-                                  onChange(
-                                    isSelected
-                                      ? value.filter((id) => id !== skill.id)
-                                      : [...value, skill.id]
-                                  )
-                                }
-                                className={`px-3 py-1.5 rounded-full text-xs border transition ${
-                                  isSelected
-                                    ? selectedClass
-                                    : "bg-gray-50 text-heading/70 border-heading/15 hover:border-primary/50"
-                                }`}
-                              >
-                                {skill.name}
-                              </button>
-                            );
-                          })}
-                        </div>
+                  return (
+                    <div
+                      key={category}
+                      className="rounded-xl border border-heading/10 bg-bg p-4 shadow-sm"
+                    >
+                      {/* Category Header */}
+                      <div className="mb-3 flex items-center gap-2">
+                        <span
+                          className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-md border ${color}`}
+                        >
+                          {Icon && <Icon size={14} />}
+                          {category}
+                        </span>
+                        <div className="h-px flex-1 bg-heading/10"></div>
                       </div>
-                    );
-                  })}
-                </div>
-              );
-            }}
-          />
-        )}
 
-        {errors.skills && (
-          <p className="mt-2 text-xs text-red-500">{errors.skills.message}</p>
-        )}
-      </div>
+                      {/* Skills List */}
+                      <div className="flex flex-wrap gap-2">
+                        {skills.map((skill) => {
+                          const isSelected = value.includes(skill.id);
+                          const selectedClass =
+                            CATEGORY_SELECTED_COLORS[category] ||
+                            "bg-primary text-bg border-primary";
 
+                          return (
+                            <button
+                              key={skill.id}
+                              type="button"
+                              onClick={() =>
+                                onChange(
+                                  isSelected
+                                    ? value.filter((id) => id !== skill.id)
+                                    : [...value, skill.id]
+                                )
+                              }
+                              className={`px-3 py-1.5 rounded-full text-xs border transition ${
+                                isSelected
+                                  ? selectedClass
+                                  : "bg-bg text-heading/70 border-heading/15 hover:border-primary/50"
+                              }`}
+                            >
+                              {skill.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          }}
+        />
+      )}
+
+      {errors.skills && (
+        <Typography variant="caption" color="danger">
+          {errors.skills.message}
+        </Typography>
+      )}
+
+      {/* Interests */}
       <Input
         label="Interests"
         name="interests"
@@ -226,6 +253,7 @@ export default function ProfileForm({ submitting }) {
         fullWidth
       />
 
+      {/* About */}
       <Textarea
         label="About"
         name="about"
@@ -234,6 +262,7 @@ export default function ProfileForm({ submitting }) {
         placeholder="Write a short intro about yourself..."
       />
 
+      {/* Submit */}
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between pt-2">
         <Button type="submit" isLoading={submitting}>
           {submitting ? "Saving..." : "Save Profile"}

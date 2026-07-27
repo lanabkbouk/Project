@@ -4,9 +4,8 @@
 // (personal info, skills, photo). Keeps the API call out of the page
 // component, consistent with every other service in this project.
 //
-// TODO: once Laravel is ready, set VITE_USE_MOCK_VOLUNTEER_PROFILE=false
 // POST /api/volunteers/me  (multipart/form-data, because of the photo)
-// Expected response: { user: {...}, imageUrl: string }
+// Laravel requires POST + _method: PUT for file uploads in updates.
 
 import { apiClient, getApiErrorMessage } from './api/client'
 
@@ -24,18 +23,19 @@ function wait(duration = 300) {
 export async function updateVolunteerProfile(formData) {
   if (MOCK_MODE) {
     await wait()
-    // No real backend yet, so there is no uploaded file URL to return.
-    // The page already shows the local image preview via FileReader,
-    // so this is fine until Laravel is connected.
     return { success: true, data: { imageUrl: null } }
   }
 
   try {
+    // IMPORTANT:
+    // PHP does NOT read files in PUT multipart/form-data.
+    // So we send POST + _method: PUT to allow Laravel to process the file.
+    formData.append('_method', 'PUT')
+
     const response = await apiClient.post('/volunteers/me', formData, {
-      // Let the browser set the multipart boundary itself — overriding
-      // the default JSON Content-Type from apiClient would break the upload.
-      headers: { 'Content-Type': undefined },
+      headers: { 'Content-Type': undefined }, // allow browser to set boundary
     })
+
     return { success: true, data: response.data }
   } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Failed to save profile') }

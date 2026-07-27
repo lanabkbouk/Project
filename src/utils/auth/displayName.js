@@ -5,10 +5,10 @@ export function getUserDisplayName(user) {
     return user.name.trim()
   }
 
-  const fullName = [user.firstName, user.lastName]
-    .filter((part) => typeof part === 'string' && part.trim())
-    .join(' ')
-    .trim()
+  const fullName = [user.first_name || user.firstName, user.last_name || user.lastName]
+  .filter((part) => typeof part === 'string' && part.trim())
+  .join(' ')
+  .trim()
 
   if (fullName) return fullName
 

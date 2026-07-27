@@ -1,112 +1,113 @@
-import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
-import { LogIn, Menu, UserPlus, X ,UserIcon , LogOut , ChevronDown } from 'lucide-react'
-import { ROUTES } from '../../constants/paths'
-import { ACCOUNT_TYPES } from '../../constants/auth/accountTypes'
-import { linksByRole } from '../../constants/navLinks'
-import LogoIcon from '../../components/ui/LogoIcon'
-import Button from '../../components/ui/Button'
-import NavbarDropdown from '../../components/ui/NavbarDropdown'
-import { useAuth } from '../../context/AuthContext'
-import { getUserDisplayName } from '../../utils/auth/displayName'
+import { useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import {
+  LogIn,
+  Menu,
+  UserPlus,
+  X,
+  UserIcon,
+  LogOut,
+  ChevronDown,
+} from "lucide-react";
 
-export default function Navbar({ role = 'guest' }) {
-  const navigate = useNavigate()
-  const { user, accountType, isAuthenticated, logout } = useAuth()
-  const [isOpen, setIsOpen] = useState(false)
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
+import { ROUTES } from "../../constants/paths";
+import { ACCOUNT_TYPES } from "../../constants/auth/accountTypes";
+import { linksByRole } from "../../constants/navLinks";
+
+import LogoIcon from "../../components/ui/LogoIcon";
+import Button from "../../components/ui/Button";
+import NavbarDropdown from "../../components/ui/NavbarDropdown";
+import { useAuth } from "../../context/AuthContext";
+import { getUserDisplayName } from "../../utils/auth/displayName";
+
+export default function Navbar({ role = "guest" }) {
+  const navigate = useNavigate();
+  const { user, accountType, isAuthenticated, logout } = useAuth();
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const avatarUrl = user?.imageUrl || user?.avatarUrl || "";
 
   const handleLogout = () => {
-    logout()
-    navigate(ROUTES.HOME)
-  }
+    logout();
+    navigate(ROUTES.HOME);
+  };
 
-  const avatarUrl = user?.imageUrl || user?.avatarUrl || ''
-
-  // Combine fixed links (Home, About) with role-based links
   const baseLinks = [
-    { name: 'Home', href: ROUTES.HOME },
-    { name: 'About Us', href: ROUTES.ABOUT },
-  ]
-  
-  const roleLinks = linksByRole[role]  || [] 
-  const allLinks = [...baseLinks, ...roleLinks]
+    { name: "Home", href: ROUTES.HOME },
+    { name: "About Us", href: ROUTES.ABOUT },
+  ];
 
-  const homeLinkClass = ({ isActive }) =>
-    `relative inline-flex w-fit py-2 transition duration-300 after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-[#FD7E14] after:transition-transform after:duration-300 hover:after:scale-x-100 ${
-      isActive ? 'text-primary' : 'text-white hover:text-primary'
-    }`
+  const roleLinks = linksByRole[role] || [];
+  const allLinks = [...baseLinks, ...roleLinks];
 
-  const otherLinkClass = ({ isActive }) =>
-    `block py-2 px-3 md:p-0 transition duration-300 ${isActive ? 'text-primary' : 'text-white hover:text-primary'}`
+  const linkClass = ({ isActive }) =>
+    `relative inline-flex py-2 transition duration-300 ${
+      isActive ? "text-primary" : "text-white hover:text-primary"
+    }`;
 
   return (
-    <nav className='top-0 z-50 w-full bg-black'>
-      <div className='mx-auto max-w-7xl px-6 py-4'>
-        <div className='flex items-center justify-between'>
-          <NavLink to={ROUTES.HOME} className='flex items-center space-x-3 rtl:space-x-reverse'>
-            <LogoIcon className='h-6 w-6' />
-            <span className='self-center whitespace-nowrap text-2xl font-semibold text-white'>Volunteer Platform </span>
+    <nav className="top-0 z-50 w-full bg-black border-b border-white/10">
+      <div className="mx-auto max-w-7xl px-6 py-4">
+        <div className="flex items-center justify-between">
+
+          {/* Logo */}
+          <NavLink to={ROUTES.HOME} className="flex items-center gap-3">
+            <LogoIcon className="h-6 w-6" />
+            <span className="text-2xl font-semibold text-white">
+              Volunteer Platform
+            </span>
           </NavLink>
 
-
+          {/* Right Section */}
           <div className="flex items-center gap-3 md:order-2">
 
-  {/* إذا المستخدم غير مسجّل */}
             {!isAuthenticated ? (
-              <>
-                {/* Create Account Desktop */}
+              <div className="flex items-center gap-3">
+
+                {/* Create Account */}
                 <Button
                   onClick={() => navigate(ROUTES.REGISTER)}
-                  className="hidden md:flex items-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-[15px] font-medium text-white transition hover:opacity-90"
                   variant="primary"
                   size="medium"
+                  className="flex items-center gap-2 rounded-2xl px-5 py-2.5 
+                             text-[15px] font-medium shadow-sm hover:shadow-md 
+                             border border-primary/40"
                 >
                   <UserPlus className="h-4 w-4" />
                   <span>Create Account</span>
                 </Button>
 
-                {/* Create Account Mobile */}
-                <Button
-                  onClick={() => navigate(ROUTES.REGISTER)}
-                  className="flex md:hidden items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-[14px] font-medium text-white transition hover:opacity-90"
-                  variant="primary"
-                  size="medium"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  <span>Create Account</span>
-                </Button>
-
-                {/* Sign In Desktop */}
+                {/* Sign In */}
                 <Button
                   onClick={() => navigate(ROUTES.LOGIN)}
-                  className="hidden lg:flex items-center gap-2 border-primary rounded-2xl bg-black px-5 py-2.5 text-[15px] font-medium text-white transition hover:opacity-90"
                   variant="ghost"
                   size="medium"
+                  className="
+                    hidden lg:flex items-center gap-2
+                    rounded-2xl
+                    bg-black
+                    text-white
+                    border border-primary
+                    px-5 py-2.5 text-[15px] font-medium
+                    transition hover:opacity-90
+                  "
                 >
                   <LogIn className="h-4 w-4" />
                   <span>Sign In</span>
                 </Button>
 
-                {/* Sign In Mobile */}
-                <Button
-                  onClick={() => navigate(ROUTES.LOGIN)}
-                  className="flex md:hidden items-center gap-2 border-primary rounded-2xl bg-black px-4 py-2.5 text-[14px] font-medium text-white transition hover:opacity-90"
-                  variant="ghost"
-                  size="medium"
-                >
-                  <LogIn className="h-4 w-4" />
-                  <span>Sign In</span>
-                </Button>
-              </>
+
+              </div>
             ) : (
-              /* إذا المستخدم مسجّل → Dropdown */
-              <div className="relative">
+              <div className="relative bg-heading/10 rounded-2xl border border-heading/20">
                 <NavbarDropdown
                   isOpen={isProfileOpen}
                   setIsOpen={setIsProfileOpen}
                   trigger={
-                    <div className="flex items-center gap-2 rounded-full px-3 py-2 text-white transition-colors duration-200 hover:bg-white/10">
+                    <div className="flex items-center gap-2 rounded-2xl px-3 py-2 
+                                    text-white hover:bg-white/10 transition">
                       {avatarUrl ? (
                         <img
                           src={avatarUrl}
@@ -116,9 +117,11 @@ export default function Navbar({ role = 'guest' }) {
                       ) : (
                         <UserIcon className="h-5 w-5" />
                       )}
-                      <span className="text-sm sm:text-base">{getUserDisplayName(user)}</span>
+                      <span className="text-sm sm:text-base">
+                        {getUserDisplayName(user)}
+                      </span>
                       <ChevronDown
-                        className={`w-4 h-4 transition-transform duration-200 ${
+                        className={`w-4 h-4 transition-transform ${
                           isProfileOpen ? "rotate-180" : ""
                         }`}
                       />
@@ -145,23 +148,22 @@ export default function Navbar({ role = 'guest' }) {
             {/* Mobile Menu Button */}
             <Button
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2 text-white focus:outline-none md:hidden"
-              aria-label="Toggle menu"
               variant="ghost"
               size="small"
+              className="p-2 rounded-xl bg-heading/10 text-white 
+                         hover:bg-heading/20 md:hidden"
             >
-              {isOpen ? <X className="h-8 w-8" /> : <Menu className="h-8 w-8" />}
+              {isOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
             </Button>
 
           </div>
 
-
-
-          <div className='hidden items-center md:order-1 md:flex md:w-auto'>
-            <ul className='flex flex-row items-center space-x-8 font-medium text-[16px] rtl:space-x-reverse'>
+          {/* Desktop Links */}
+          <div className="hidden md:flex md:w-auto md:order-1">
+            <ul className="flex flex-row items-center gap-8 font-medium text-[16px]">
               {allLinks.map((link) => (
                 <li key={link.name}>
-                  <NavLink to={link.href} className={link.name === 'Home' ? homeLinkClass : otherLinkClass}>
+                  <NavLink to={link.href} className={linkClass}>
                     {link.name}
                   </NavLink>
                 </li>
@@ -170,14 +172,23 @@ export default function Navbar({ role = 'guest' }) {
           </div>
         </div>
 
-        <div className={`overflow-hidden transition-all duration-300 ease-in-out md:hidden ${isOpen ? 'mt-4 max-h-150 pb-4 opacity-100' : 'max-h-0 opacity-0'}`}>
-          <ul className='flex flex-col items-start space-y-1 border-t border-white/10 pt-4 font-medium text-[15px]'>
+        {/* Mobile Menu */}
+        <div
+          className={`overflow-hidden transition-all duration-300 md:hidden ${
+            isOpen ? "mt-4 max-h-150 pb-4 opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          <ul className="flex flex-col items-start space-y-1 border-t border-white/10 pt-4 font-medium text-[15px]">
             {allLinks.map((link) => (
-              <li key={link.name} className='w-full'>
-                <NavLink 
-                  to={link.href} 
-                  onClick={() => setIsOpen(false)} 
-                  className={({ isActive }) => `block w-full px-3 py-3 transition duration-300 ${isActive ? 'text-primary' : 'text-white'}`}
+              <li key={link.name} className="w-full">
+                <NavLink
+                  to={link.href}
+                  onClick={() => setIsOpen(false)}
+                  className={({ isActive }) =>
+                    `block w-full px-3 py-3 transition ${
+                      isActive ? "text-primary" : "text-white"
+                    }`
+                  }
                 >
                   {link.name}
                 </NavLink>
@@ -187,5 +198,5 @@ export default function Navbar({ role = 'guest' }) {
         </div>
       </div>
     </nav>
-  )
+  );
 }

@@ -32,6 +32,7 @@ function getRegisterSchema(accountType) {
       .extend({
         firstName: requiredText('First name is required'),
         lastName: requiredText('Last name is required'),
+        phone: requiredText('Phone number is required for volunteers'),
       })
   }
 

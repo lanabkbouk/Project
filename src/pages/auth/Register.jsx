@@ -70,20 +70,21 @@ export default function Register() {
     }
 
     const payload = {
-      type: accountType,
-      email: validationResult.data.email,
-      password: validationResult.data.password,
-      phone: validationResult.data.phone,
-      ...(isVolunteer
-        ? {
-            firstName: validationResult.data.firstName,
-            lastName: validationResult.data.lastName,
-          }
-        : {
-            orgName: validationResult.data.orgName,
-            contactPerson: validationResult.data.contactPerson,
-          }),
-    }
+    type: accountType,
+    email: validationResult.data.email,
+    password: validationResult.data.password,
+    password_confirmation: validationResult.data.password,
+    phone_number: validationResult.data.phone,
+    ...(isVolunteer
+      ? {
+          first_name: validationResult.data.firstName,
+          last_name: validationResult.data.lastName,
+        }
+      : {
+          orgName: validationResult.data.orgName,
+          contactPerson: validationResult.data.contactPerson,
+        }),
+  }
 
     const result = await execute(payload)
     if (!result?.success) return

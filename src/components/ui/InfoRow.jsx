@@ -1,10 +1,24 @@
+import Typography from "./Typography";
+
 export default function InfoRow({ label, value }) {
   return (
     <div className="flex justify-between items-center py-1 gap-3">
-      <span className="text-sm text-heading/50 whitespace-nowrap">{label}</span>
-      <span className="text-sm text-heading font-medium text-left truncate">
+      <Typography
+        variant="bodySm"
+        color="muted"
+        className="whitespace-nowrap"
+      >
+        {label}
+      </Typography>
+
+      <Typography
+        variant="bodySm"
+        color="heading"
+        weight="medium"
+        className="truncate text-left"
+      >
         {value || "—"}
-      </span>
+      </Typography>
     </div>
   );
 }

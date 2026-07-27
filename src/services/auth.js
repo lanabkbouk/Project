@@ -2,12 +2,10 @@ import { ACCOUNT_TYPES } from '../constants/auth/accountTypes'
 import { MOCK_USERS_STORAGE_KEY } from '../constants/auth/storage'
 import { apiClient, getApiErrorMessage } from './api/client'
 
-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_AUTH || 'true') === 'true' 
+const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_AUTH || 'true') === 'true'
 
 function wait(duration = 300) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, duration)
-  })
+  return new Promise((resolve) => setTimeout(resolve, duration))
 }
 
 function loadMockUsers() {
@@ -24,15 +22,16 @@ function loadMockUsers() {
 function saveMockUsers(users) {
   localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(users))
 }
-  // إزالة كلمة المرور من بيانات المستخدم
+
+// إزالة كلمة المرور من بيانات المستخدم
 function sanitizeUser(user) {
   if (!user || typeof user !== 'object') return null
-
   const safeUser = { ...user }
   delete safeUser.password
   return safeUser
 }
-  // تحديد نوع الحساب
+
+// تحديد نوع الحساب
 function resolveAccountType(data) {
   if (data?.accountType === ACCOUNT_TYPES.ORGANIZATION) return ACCOUNT_TYPES.ORGANIZATION
   if (data?.accountType === ACCOUNT_TYPES.VOLUNTEER) return ACCOUNT_TYPES.VOLUNTEER
@@ -42,10 +41,17 @@ function resolveAccountType(data) {
   return ACCOUNT_TYPES.VOLUNTEER
 }
 
-function buildAuthPayload(data, fallbackEmail = '') {
-  const user = sanitizeUser(data?.user || data)
-  const accountType = resolveAccountType(data)
-  const tokenFromApi = typeof data?.token === 'string' ? data.token : null
+// بناء بيانات المصادقة بشكل صحيح
+function buildAuthPayload(responseData, fallbackEmail = '') {
+  // استجابة الباك الحقيقي
+  const apiUser = responseData?.data?.user
+  const apiToken = responseData?.data?.token
+
+  // يدعم mock + api
+  const user = sanitizeUser(apiUser || responseData)
+  const accountType = resolveAccountType(apiUser || responseData)
+
+  const tokenFromApi = typeof apiToken === 'string' ? apiToken : null
   const token = tokenFromApi || `mock-token-${fallbackEmail || 'user'}-${Date.now()}`
 
   return {
@@ -57,6 +63,9 @@ function buildAuthPayload(data, fallbackEmail = '') {
 
 export async function registerUser(payload) {
   await wait()
+
+  // إضافة password_confirmation حسب قواعد Laravel
+  payload.password_confirmation = payload.password
 
   if (MOCK_MODE) {
     const mockUsers = loadMockUsers()
@@ -73,13 +82,14 @@ export async function registerUser(payload) {
 
     mockUsers.push(normalizedUser)
     saveMockUsers(mockUsers)
+
     return { success: true, data: buildAuthPayload(normalizedUser, normalizedEmail) }
   }
 
   try {
-    const response = await apiClient.post('/auth/register', payload)
-    return { success: true, data: buildAuthPayload(response.data, payload.email.trim().toLowerCase()) }
-  } catch (error) {
+    const response = await apiClient.post('/register', payload)
+      return { success: true, data: buildAuthPayload(response.data.data, payload.email.trim().toLowerCase()) }
+        } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Unable to register account') }
   }
 }
@@ -103,12 +113,13 @@ export async function loginUser(payload) {
   }
 
   try {
-    const response = await apiClient.post('/auth/login', payload)
-    return {
-      success: true,
-      data: buildAuthPayload(response.data, payload.email.trim().toLowerCase()),
-    }
+    const response = await apiClient.post('/login', payload)
+      return {
+        success: true,
+        data: buildAuthPayload(response.data.data, payload.email.trim().toLowerCase()),
+}
   } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Unable to sign in') }
+  
   }
 }

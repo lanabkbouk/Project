@@ -82,5 +82,5 @@ export async function fetchAvailableSkills() {
 export async function fetchSkillsByCategory(categoryId) {
   const skills = await fetchAvailableSkills();
   if (!categoryId) return skills;
-  return skills.filter((skill) => skill.categoryId === categoryId);
+  return skills.filter(( skill) => skill.categoryId === categoryId);
 }

@@ -1,44 +1,46 @@
-import { Camera } from "lucide-react";
-import GenderBadge from "./GenderBadge";
+import ImageUploader from "../common/ImageUploader";
+import GenderBadge from "../common/GenderBadge";
+import Badge from "../common/Badge";
+import Typography from "../ui/Typography";
 
-export default function ProfileHeader({ fullName, gender, imagePreview, onImageChange }) {
+export default function ProfileHeader({
+  fullName,
+  gender,
+  imagePreview,
+  onImageChange,
+}) {
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-8 
-           rounded-xl p-6 bg-white/40 backdrop-blur-md border border-white/20 shadow-sm">
+                    bg-heading/5 border border-heading/10 
+                    px-8 py-10 rounded-xl shadow-sm">
+
+      {/* الصورة + الاسم */}
       <div className="flex items-center gap-6">
-        <div className="relative">
-          <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl overflow-hidden border border-primary/30 bg-heading/5">
-            {imagePreview ? (
-              <img src={imagePreview} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-primary font-bold text-2xl">
-                {fullName?.[0]?.toUpperCase?.() || "V"}
-              </div>
-            )}
-          </div>
 
-          <label className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-primary/10 border border-primary/40 flex items-center justify-center cursor-pointer">
-            <span className="sr-only">Upload profile photo</span>
-            <Camera size={16} className="text-primary" />
-            <input type="file" accept="image/*" className="hidden" onChange={onImageChange} />
-          </label>
-        </div>
+        <ImageUploader
+          previewUrl={imagePreview}
+          onFileChange={onImageChange}
+          shape="square"
+          size="md"
+          fallbackIcon={null}
+          fallbackText={fullName?.[0]?.toUpperCase() || "V"}
+        />
 
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold leading-tight text-heading">{fullName}</h1>
-          <p className="text-sm md:text-base text-heading/60 mt-1">Volunteer Profile</p>
+        <div className="flex flex-col">
+          <Typography variant="h2" color="heading">
+            {fullName}
+          </Typography>
+
+          <Typography variant="bodySm" color="muted" className="mt-1">
+            Volunteer Profile
+          </Typography>
         </div>
       </div>
 
-      <div className="md:ml-auto">
-        <div className="flex flex-col items-end gap-3">
-          <div className="inline-flex items-center gap-3 rounded-2xl bg-heading/5 border border-heading/10 px-4 py-3">
-            <span className="text-primary font-semibold text-sm">Status</span>
-            <span className="text-sm text-heading/70">Active</span>
-          </div>
-
-          <GenderBadge gender={gender} />
-        </div>
+      {/* الحالة + الجنس */}
+      <div className="md:ml-auto flex flex-col items-end gap-4">
+        <Badge label="Active" tone="primary" />
+        <GenderBadge gender={gender} />
       </div>
     </div>
   );

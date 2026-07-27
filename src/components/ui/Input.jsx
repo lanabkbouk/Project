@@ -26,37 +26,20 @@ export default function Input({
   }
 
   const variantStyles = {
-    default: "w-full px-4 py-3 bg-black border rounded-lg text-white placeholder-white/50 transition focus:outline-none focus:border-primary",
-    filled: "w-full px-4 py-3 bg-white border border-black/15 rounded-lg text-black transition focus:outline-none focus:border-primary",
-    underline: "w-full px-4 py-3 border-0 border-b-2 border-gray-300 rounded-none bg-transparent text-black transition focus:border-primary",
-    danger: "w-full px-4 py-3 border border-red-500 bg-red-50 text-red-700 rounded-lg transition focus:border-red-600",
-    success: "w-full px-4 py-3 border border-green-500 bg-green-50 text-green-700 rounded-lg transition focus:border-green-600"
-  }
-
-  const textColorStyles = {
-    default: 'text-white placeholder-white/50',
-    filled: 'text-black placeholder-black/40',
-    underline: 'text-black placeholder-black/40',
-    success: 'text-green-700 placeholder-green-400',
-    danger: 'text-black placeholder-black/40',
+    default: "bg-bg border border-heading/10 text-heading placeholder-body/60 rounded-xl focus:border-primary",
+    filled: "bg-white border border-heading/10 text-heading placeholder-body/60 rounded-xl focus:border-primary",
+    underline: "border-0 border-b-2 border-heading/20 bg-transparent text-heading placeholder-body/60 rounded-none focus:border-primary",
+    danger: "border border-danger bg-danger/10 text-danger rounded-xl focus:border-dangerHover",
+    success: "border border-green-600 bg-green-50 text-green-700 rounded-xl focus:border-green-700"
   }
 
   const appliedVariant = error ? 'danger' : success ? 'success' : variant
 
-  const borderColorClass =
-    variant === 'default'
-      ? error
-        ? 'border-red-500'
-        : 'border-white/20'
-      : ''
-
   const classes = [
-    'w-full rounded-lg transition focus:outline-none focus:ring-0',
+    'w-full transition focus:outline-none',
     sizeStyles[size],
     variantStyles[appliedVariant],
-    textColorStyles[appliedVariant],
-    borderColorClass,
-    disabled ? 'opacity-50 cursor-not-allowed' : 'focus:ring-2',
+    disabled ? 'opacity-50 cursor-not-allowed' : 'focus:ring-2 focus:ring-primary/30',
     as === 'select' ? 'appearance-none cursor-pointer pr-10' : '',
     Icon ? 'pl-10' : '',
     className,
@@ -75,12 +58,12 @@ export default function Input({
     ...props,
   }
 
-  const iconColorClass = error ? 'text-red-500' : 'text-primary'
+  const iconColorClass = error ? 'text-danger' : 'text-primary'
 
   return (
     <div className={`flex flex-col gap-1 ${fullWidth ? 'w-full' : ''}`}>
       {label && (
-        <label htmlFor={name} className="mb-1 text-sm font-medium">
+        <label htmlFor={name} className="mb-1 text-sm font-medium text-heading">
           {label}
         </label>
       )}
@@ -105,7 +88,7 @@ export default function Input({
             </select>
             <ChevronDown
               size={16}
-              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-black/40"
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-heading/40"
             />
           </>
         )}
