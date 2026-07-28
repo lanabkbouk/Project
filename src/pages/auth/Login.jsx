@@ -95,6 +95,7 @@ export default function Login() {
           placeholder='you@example.com'
           error={errors.email?.message}
           autoComplete='email'
+          labelClassName="text-white"
           required
         />
 
@@ -107,6 +108,7 @@ export default function Login() {
           placeholder='********'
           error={errors.password?.message}
           autoComplete='current-password'
+          labelClassName="text-white"
           required
         />
 

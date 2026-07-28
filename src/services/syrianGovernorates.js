@@ -1,3 +1,18 @@
+// src/services/syrianGovernorates.js
+
+/**
+ * قائمة المحافظات السورية (بيانات ثابتة - Mock Data)
+ * ----------------------------------------------------
+ * بيانات تجريبية ثابتة لحين ربط المشروع بالـ Laravel API فعليًا.
+ * البنية مصممة لتطابق الشكل المتوقع من الباك اند مستقبلًا (id, nameAr, nameEn, slug)
+ * بحيث عند استبدال هذا الملف باستدعاء API حقيقي (fetch/axios لهذا الملف نفسه)
+ * لا تحتاج أي Component لتغيير طريقة التعامل مع البيانات.
+ *
+ * id     : المعرف الفعلي الذي يُرسل/يُستقبل من الباك اند (Foreign Key لاحقًا)
+ * nameAr : اسم المحافظة بالعربية (لعرضها في الواجهة)
+ * nameEn : اسم المحافظة بالإنجليزية (يُستخدم حاليًا كقيمة حقل "city")
+ * slug   : معرف نصي مختصر (مفيد للروابط أو الفلترة في الـ URL)
+ */
 export const syrianGovernorates = [
   { id: 1, nameAr: "دمشق", nameEn: "Damascus", slug: "damascus" },
   { id: 2, nameAr: "ريف دمشق", nameEn: "Rural Damascus", slug: "rural-damascus" },
@@ -16,21 +31,33 @@ export const syrianGovernorates = [
 ];
 
 /**
- * عدد المحافظات السورية
- * مفيد للصفحات التي تحتاج عرض رقم ثابت بدون حسابه كل مرة
+ * Alias بأحرف كبيرة للتوافق مع الـ Components التي تستورد بهذا الاسم
+ * (مثل ProfileForm.jsx و ProfileHeader.jsx). نفس المرجع، بدون تكرار البيانات.
  */
+export const SYRIAN_GOVERNORATES = syrianGovernorates;
+
+/** عدد المحافظات السورية */
 export const SYRIAN_GOVERNORATES_COUNT = syrianGovernorates.length;
 
 /**
  * دالة مساعدة لجلب محافظة عبر الـ id
- * @param {number} id - معرف المحافظة
- * @returns {object|undefined} 
+ * @param {number} id
+ * @returns {object|undefined}
  */
 export const getGovernorateById = (id) =>
   syrianGovernorates.find((governorate) => governorate.id === id);
 
 /**
- * دالة مساعدة لتحويل القائمة إلى الشكل المتوقع من مكونات الـ Select
+ * دالة مساعدة لجلب محافظة عبر الاسم الإنجليزي (nameEn)
+ * مفيدة عند التعامل مع حقل "city" الذي يخزّن نصًا إنجليزيًا وليس id
+ * @param {string} nameEn
+ * @returns {object|undefined}
+ */
+export const getGovernorateByNameEn = (nameEn) =>
+  syrianGovernorates.find((governorate) => governorate.nameEn === nameEn);
+
+/**
+ * تحويل القائمة إلى شكل عناصر Dropdown/Select
  * (value = id, label = الاسم بالعربية)
  */
 export const getGovernorateOptions = () =>

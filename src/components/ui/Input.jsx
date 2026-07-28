@@ -13,6 +13,7 @@ export default function Input({
   fullWidth = false,
   disabled = false,
   className = '',
+  labelClassName = 'text-heading', // لون الـ label الافتراضي؛ يمكن تجاوزه حسب خلفية الصفحة
   error = '',
   success = false,
   options = [],
@@ -29,7 +30,7 @@ export default function Input({
     default: "bg-bg border border-heading/10 text-heading placeholder-body/60 rounded-xl focus:border-primary",
     filled: "bg-white border border-heading/10 text-heading placeholder-body/60 rounded-xl focus:border-primary",
     underline: "border-0 border-b-2 border-heading/20 bg-transparent text-heading placeholder-body/60 rounded-none focus:border-primary",
-    danger: "border border-danger bg-danger/10 text-danger rounded-xl focus:border-dangerHover",
+    danger: "w-full px-4 py-3 border border-red-500 bg-red-50 text-red-700 rounded-lg transition focus:border-red-600",
     success: "border border-green-600 bg-green-50 text-green-700 rounded-xl focus:border-green-700"
   }
 
@@ -63,7 +64,7 @@ export default function Input({
   return (
     <div className={`flex flex-col gap-1 ${fullWidth ? 'w-full' : ''}`}>
       {label && (
-        <label htmlFor={name} className="mb-1 text-sm font-medium text-heading">
+        <label htmlFor={name} className={`mb-1 text-sm font-medium ${labelClassName}`}>
           {label}
         </label>
       )}

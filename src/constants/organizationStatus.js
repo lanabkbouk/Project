@@ -1,32 +1,55 @@
-// constants/organizationStatus.js
-//
-// حالة توثيق حساب المنظمة من قبل السوبر أدمن. مكان واحد لهالثوابت حتى
-// أي مكان بالموقع (بروفايل المنظمة، لاحقًا زر نشر فرصة...) يتحقق من نفس
-// القيم بالضبط، ونفس التسميات المعروضة للمستخدم.
-
+// حالات توثيق المنظمة الممكنة
 export const ORGANIZATION_STATUS = {
-  PENDING: 'pending',
-  VERIFIED: 'verified',
-  REJECTED: 'rejected',
-}
+  PENDING: "pending", // بانتظار المراجعة والتوثيق
+  VERIFIED: "verified", // موثّقة ومفعّلة بالكامل
+  REJECTED: "rejected", // تم رفض طلب التوثيق
+  SUSPENDED: "suspended", // موقوفة مؤقتًا من قبل الإدارة
+};
 
+/**
+ * بيانات وصفية (Meta) موحّدة لكل حالة، تُستخدم في كل مكونات البروفايل
+ * (Badge بالـ Header، Badge بالـ Preview، و Banner بأعلى الصفحة)
+ * بدون تكرار النصوص أو الألوان في أكثر من مكان.
+ *
+ * label            -> النص القصير الظاهر بالـ Badge (مثال: "Pending")
+ * message          -> شرح أطول يظهر بالـ Banner فقط
+ * badgeClassName   -> ألوان الـ Badge الصغير (Header / Preview)
+ * bannerClassName  -> ألوان الـ Banner الكامل (VerificationStatusBanner)
+ */
 export const ORGANIZATION_STATUS_META = {
   [ORGANIZATION_STATUS.PENDING]: {
-    label: 'Pending Review',
-    message:
-      'Your account is currently under review. Some services (such as posting a volunteer opportunity) will remain disabled until your verification document is approved.',
-    className: 'bg-yellow-500/10 border-yellow-500/40 text-yellow-700',
+    label: "Pending Review",
+    message: "Your organization is awaiting verification by our team. This may take a few days.",
+    badgeClassName: "bg-yellow-100 text-yellow-800",
+    bannerClassName: "bg-yellow-50 border-yellow-200 text-yellow-800",
   },
   [ORGANIZATION_STATUS.VERIFIED]: {
-    label: 'Verified',
-    message:
-      'Your account has been successfully verified. All platform services are now available.',
-    className: 'bg-secondary/10 border-secondary/40 text-secondary',
+    label: "Verified",
+    message: "Your organization has been verified and can post volunteer opportunities.",
+    badgeClassName: "bg-green-100 text-green-800",
+    bannerClassName: "bg-green-50 border-green-200 text-green-800",
   },
   [ORGANIZATION_STATUS.REJECTED]: {
-    label: 'Verification Rejected',
-    message:
-      'Your submitted verification document was rejected. Please upload a new, clear document that proves your organization’s identity.',
-    className: 'bg-danger/10 border-danger/40 text-danger',
+    label: "Rejected",
+    message: "Your verification request was rejected. Please review the reason below and update your information.",
+    badgeClassName: "bg-red-100 text-red-800",
+    bannerClassName: "bg-red-50 border-red-200 text-red-800",
   },
-}
+  [ORGANIZATION_STATUS.SUSPENDED]: {
+    label: "Suspended",
+    message: "Your organization account has been suspended by the platform administrators.",
+    badgeClassName: "bg-gray-200 text-gray-700",
+    bannerClassName: "bg-gray-50 border-gray-200 text-gray-700",
+  },
+};
+
+/**
+ * دالة مساعدة لجلب البيانات الوصفية لحالة معينة بأمان
+ * تُعيد بيانات حالة "Pending" كقيمة افتراضية إذا كانت الحالة غير معروفة
+ * @param {string} status - إحدى قيم ORGANIZATION_STATUS
+ * @returns {{label: string, message: string, badgeClassName: string, bannerClassName: string}}
+ */
+export const getOrganizationStatusMeta = (status) =>
+  ORGANIZATION_STATUS_META[status] ?? ORGANIZATION_STATUS_META[ORGANIZATION_STATUS.PENDING];
+
+export default ORGANIZATION_STATUS;

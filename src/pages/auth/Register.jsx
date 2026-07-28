@@ -141,6 +141,7 @@ export default function Register() {
               placeholder={isVolunteer ? 'you@example.com' : 'org@example.com'}
               error={errors.email?.message}
               autoComplete='email'
+              labelClassName="text-white"
               required
             />
 
@@ -153,6 +154,7 @@ export default function Register() {
               placeholder='+1 234 567 890'
               error={errors.phone?.message}
               autoComplete='tel'
+              labelClassName="text-white"
               required={!isVolunteer}
             />
 
@@ -165,6 +167,7 @@ export default function Register() {
               placeholder='********'
               error={errors.password?.message}
               autoComplete='new-password'
+              labelClassName="text-white"
               required
             />
 
@@ -185,4 +188,3 @@ export default function Register() {
     </AuthShell>
   )
 }
-
