@@ -2,7 +2,6 @@ import { useMemo, useState, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../context/AuthContext";
-import { getUserDisplayName } from "../utils/auth/displayName";
 import { updateVolunteerProfile } from "../services/volunteer";
 import { fetchAvailableSkills } from "../services/skills";
 
@@ -68,7 +67,7 @@ export default function VolunteerProfile() {
     mode: "onSubmit",
   });
 
-  const fullName = getUserDisplayName(user);
+  const fullName = user?.displayName;
 
   const onImageChange = (e) => {
     const file = e.target.files?.[0];
@@ -87,21 +86,7 @@ export default function VolunteerProfile() {
     setSubmitError("");
 
     try {
-      const formData = new FormData();
-
-      if (imageFile) {
-        formData.append("image", imageFile);
-      }
-
-      formData.append("educationLevel", data.educationLevel);
-      formData.append("dateOfBirth", data.dateOfBirth);
-      formData.append("gender", data.gender);
-      formData.append("city", data.city);
-      formData.append("skills", JSON.stringify(data.skills));
-      formData.append("interests", data.interests);
-      formData.append("about", data.about);
-
-      const result = await updateVolunteerProfile(formData);
+      const result = await updateVolunteerProfile({ values: data, photoFile: imageFile });
 
       if (!result.success) {
         setSubmitError(result.error || "Failed to save profile");

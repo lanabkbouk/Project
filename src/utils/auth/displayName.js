@@ -16,6 +16,10 @@ export function getUserDisplayName(user) {
     return user.orgName.trim()
   }
 
+  if (typeof user.organization_name === 'string' && user.organization_name.trim()) {
+    return user.organization_name.trim()
+  }
+
   if (typeof user.email === 'string' && user.email.trim()) {
     return user.email.trim()
   }

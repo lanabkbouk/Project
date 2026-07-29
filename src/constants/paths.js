@@ -10,6 +10,8 @@ export const ROUTES = {
   MY_VOLUNTEERING: '/my-volunteering',
   DASHBOARD: '/dashboard',
   MY_CAUSES: '/my-causes',
+  CREATE_CAUSE: '/my-causes/new',
+  APPLICANTS: '/my-causes/applicants',
   OPPORTUNITIES: '/opportunities',
   OPPORTUNITY_DETAILS: '/opportunities/:id',
   ORGANIZATIONS: '/organizations',
@@ -25,4 +27,4 @@ export const LEGACY_REDIRECTS = [
 
 export const AUTH_QUERY_KEYS = {
   TYPE: 'type',
-} 
+}

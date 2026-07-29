@@ -1,6 +1,7 @@
 import { ACCOUNT_TYPES } from '../constants/auth/accountTypes'
 import { MOCK_USERS_STORAGE_KEY } from '../constants/auth/storage'
 import { apiClient, getApiErrorMessage } from './api/client'
+import { normalizeUser } from '../utils/auth/normalizeUser'
 
 const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_AUTH || 'true') === 'true'
 
@@ -23,7 +24,7 @@ function saveMockUsers(users) {
   localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(users))
 }
 
-// إزالة كلمة المرور من بيانات المستخدم
+// إزالة كلمة المرور من بيانات المستخدم قبل تخزينها في الـ Context
 function sanitizeUser(user) {
   if (!user || typeof user !== 'object') return null
   const safeUser = { ...user }
@@ -31,41 +32,72 @@ function sanitizeUser(user) {
   return safeUser
 }
 
-// تحديد نوع الحساب
+// استخراج ملف واحد سواء وصل كـ FileList (من react-hook-form) أو كـ File مباشرة
+function extractFile(value) {
+  if (typeof FileList !== 'undefined' && value instanceof FileList) return value[0] || null
+  return value || null
+}
+
+// تحديد نوع الحساب من استجابة الباك اند الحقيقي (roles) أو من بيانات الـ Mock (accountType)
 function resolveAccountType(data) {
+  const roles = data?.roles
+  if (Array.isArray(roles)) {
+    if (roles.includes(ACCOUNT_TYPES.ORGANIZATION)) return ACCOUNT_TYPES.ORGANIZATION
+    if (roles.includes(ACCOUNT_TYPES.VOLUNTEER)) return ACCOUNT_TYPES.VOLUNTEER
+  }
+
   if (data?.accountType === ACCOUNT_TYPES.ORGANIZATION) return ACCOUNT_TYPES.ORGANIZATION
   if (data?.accountType === ACCOUNT_TYPES.VOLUNTEER) return ACCOUNT_TYPES.VOLUNTEER
-  if (data?.type === ACCOUNT_TYPES.ORGANIZATION) return ACCOUNT_TYPES.ORGANIZATION
-  if (data?.type === ACCOUNT_TYPES.VOLUNTEER) return ACCOUNT_TYPES.VOLUNTEER
-  if (data?.user?.type === ACCOUNT_TYPES.ORGANIZATION) return ACCOUNT_TYPES.ORGANIZATION
+
   return ACCOUNT_TYPES.VOLUNTEER
 }
 
-// بناء بيانات المصادقة بشكل صحيح
+// بناء بيانات المصادقة (user/token/accountType) من استجابة الـ API أو الـ Mock
+// ملاحظة مهمة: responseData هنا هو بالفعل response.data.data القادم من Laravel
+// أي أنه على شكل { user, token } مباشرة، وليس فيه مستوى "data" إضافي
 function buildAuthPayload(responseData, fallbackEmail = '') {
-  // استجابة الباك الحقيقي
-  const apiUser = responseData?.data?.user
-  const apiToken = responseData?.data?.token
+  const apiUser = responseData?.user
+  const apiToken = responseData?.token
 
-  // يدعم mock + api
-  const user = sanitizeUser(apiUser || responseData)
+  // يدعم كلا الحالتين: استجابة الـ API الحقيقي (apiUser) أو كائن الـ Mock المسطّح
+  // normalizeUser هي نقطة التطبيع الوحيدة: تُنتج displayName و avatarUrl جاهزين
+  const user = normalizeUser(sanitizeUser(apiUser || responseData))
   const accountType = resolveAccountType(apiUser || responseData)
 
   const tokenFromApi = typeof apiToken === 'string' ? apiToken : null
   const token = tokenFromApi || `mock-token-${fallbackEmail || 'user'}-${Date.now()}`
 
-  return {
-    user,
-    token,
-    accountType,
+  return { user, token, accountType }
+}
+
+// تحويل بيانات نموذج التسجيل (camelCase) إلى FormData بأسماء حقول Laravel (snake_case)
+// نستخدم FormData دائمًا لأن حساب المنظمة يتطلب رفع ملف verification_document
+function buildRegisterFormData(payload) {
+  const formData = new FormData()
+
+  formData.append('account_type', payload.accountType)
+  formData.append('email', payload.email.trim().toLowerCase())
+  formData.append('password', payload.password)
+  formData.append('password_confirmation', payload.password)
+
+  if (payload.phone) formData.append('phone_number', payload.phone)
+
+  if (payload.accountType === ACCOUNT_TYPES.VOLUNTEER) {
+    formData.append('first_name', payload.firstName)
+    formData.append('last_name', payload.lastName)
+  } else {
+    formData.append('organization_name', payload.orgName)
+    formData.append('contact_person', payload.contactPerson)
+
+    const verificationFile = extractFile(payload.verificationImage)
+    if (verificationFile) formData.append('verification_document', verificationFile)
   }
+
+  return formData
 }
 
 export async function registerUser(payload) {
   await wait()
-
-  // إضافة password_confirmation حسب قواعد Laravel
-  payload.password_confirmation = payload.password
 
   if (MOCK_MODE) {
     const mockUsers = loadMockUsers()
@@ -76,7 +108,7 @@ export async function registerUser(payload) {
 
     const normalizedUser = {
       ...payload,
-      type: payload.type || ACCOUNT_TYPES.VOLUNTEER,
+      accountType: payload.accountType || ACCOUNT_TYPES.VOLUNTEER,
       email: normalizedEmail,
     }
 
@@ -87,9 +119,10 @@ export async function registerUser(payload) {
   }
 
   try {
-    const response = await apiClient.post('/register', payload)
-      return { success: true, data: buildAuthPayload(response.data.data, payload.email.trim().toLowerCase()) }
-        } catch (error) {
+    const formData = buildRegisterFormData(payload)
+    const response = await apiClient.post('/register', formData)
+    return { success: true, data: buildAuthPayload(response.data.data, payload.email.trim().toLowerCase()) }
+  } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Unable to register account') }
   }
 }
@@ -114,12 +147,11 @@ export async function loginUser(payload) {
 
   try {
     const response = await apiClient.post('/login', payload)
-      return {
-        success: true,
-        data: buildAuthPayload(response.data.data, payload.email.trim().toLowerCase()),
-}
+    return {
+      success: true,
+      data: buildAuthPayload(response.data.data, payload.email.trim().toLowerCase()),
+    }
   } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Unable to sign in') }
-  
   }
 }

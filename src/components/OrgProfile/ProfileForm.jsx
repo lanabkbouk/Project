@@ -87,7 +87,7 @@ export default function OrgProfileForm({ submitting }) {
         disabled={submitting}
         className="self-start mt-2 px-6 py-2"
       >
-        {submitting ? 'Saving...' : 'Save Changes'}
+        {submitting ? 'Saving...' : 'Save'}
       </Button>
     </div>
   )

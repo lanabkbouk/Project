@@ -15,18 +15,37 @@ function wait(duration = 300) {
   return new Promise((resolve) => setTimeout(resolve, duration))
 }
 
+// يبني FormData بأسماء وقيَم حقول Laravel الصحيحة انطلاقًا من بيانات الفورم الخام (camelCase)
+// هذا هو المكان الوحيد الذي يعرف شكل الباك اند، بدل تكرار هذا التحويل داخل صفحة الـ Profile
+function buildVolunteerFormData({ values, photoFile }) {
+  const formData = new FormData()
+
+  formData.append('education_level', values.educationLevel || '')
+  formData.append('birth_date', values.dateOfBirth || '')
+  // الباك اند يتحقق من هذا الحقل بحروف صغيرة فقط: in:male,female
+  formData.append('gendre', (values.gender || '').toLowerCase())
+  formData.append('city', values.city || '')
+  formData.append('about', values.about || '')
+
+  if (photoFile) formData.append('photo', photoFile)
+
+  return formData
+}
+
 /**
- * Saves the volunteer's profile.
- * @param {FormData} formData - multipart payload (fields + optional image file)
+ * يحفظ بروفايل المتطوع.
+ * @param {{ values: object, photoFile?: File }} payload - بيانات الفورم الخام + الصورة (اختياري)
  * @returns {Promise<{success: boolean, data?: {imageUrl?: string}, error?: string}>}
  */
-export async function updateVolunteerProfile(formData) {
+export async function updateVolunteerProfile({ values, photoFile } = {}) {
   if (MOCK_MODE) {
     await wait()
     return { success: true, data: { imageUrl: null } }
   }
 
   try {
+    const formData = buildVolunteerFormData({ values, photoFile })
+
     // IMPORTANT:
     // PHP does NOT read files in PUT multipart/form-data.
     // So we send POST + _method: PUT to allow Laravel to process the file.

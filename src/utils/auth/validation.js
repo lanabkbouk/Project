@@ -23,7 +23,7 @@ const registerBaseSchema = z.object({
   contactPerson: z.string().optional(),
   email: requiredText('Email is required').email('Invalid email address'),
   phone: z.string().optional(),
-  password: requiredText('Password is required').min(6, 'Password must be at least 6 characters'),
+  password: requiredText('Password is required').min(8, 'Password must be at least 8 characters'),
 })
 
 function getRegisterSchema(accountType) {

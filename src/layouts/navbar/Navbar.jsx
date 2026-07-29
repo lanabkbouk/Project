@@ -18,7 +18,6 @@ import LogoIcon from "../../components/ui/LogoIcon";
 import Button from "../../components/ui/Button";
 import NavbarDropdown from "../../components/ui/NavbarDropdown";
 import { useAuth } from "../../context/AuthContext";
-import { getUserDisplayName } from "../../utils/auth/displayName";
 
 export default function Navbar({ role = "guest" }) {
   const navigate = useNavigate();
@@ -26,8 +25,6 @@ export default function Navbar({ role = "guest" }) {
 
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-
-  const avatarUrl = user?.imageUrl || user?.avatarUrl || "";
 
   const handleLogout = () => {
     logout();
@@ -108,17 +105,17 @@ export default function Navbar({ role = "guest" }) {
                   trigger={
                     <div className="flex items-center gap-2 rounded-2xl px-3 py-2 
                                     text-white hover:bg-white/10 transition">
-                      {avatarUrl ? (
+                      {user?.avatarUrl ? (
                         <img
-                          src={avatarUrl}
-                          alt={getUserDisplayName(user)}
+                          src={user.avatarUrl}
+                          alt={user.displayName}
                           className="h-7 w-7 rounded-full object-cover border border-white/20"
                         />
                       ) : (
                         <UserIcon className="h-5 w-5" />
                       )}
                       <span className="text-sm sm:text-base">
-                        {getUserDisplayName(user)}
+                        {user?.displayName}
                       </span>
                       <ChevronDown
                         className={`w-4 h-4 transition-transform ${
@@ -142,6 +139,8 @@ export default function Navbar({ role = "guest" }) {
                     },
                   ]}
                 />
+
+
               </div>
             )}
 

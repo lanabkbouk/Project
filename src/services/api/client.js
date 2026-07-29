@@ -3,11 +3,10 @@ import { AUTH_STORAGE_KEY } from '../../constants/auth/storage'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
+// لا نضبط Content-Type بشكل ثابت هنا: axios يحدده تلقائيًا
+// (application/json للكائنات العادية، أو multipart/form-data مع الـ boundary الصحيح عند إرسال FormData)
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 })
 
 apiClient.interceptors.request.use((config) => {

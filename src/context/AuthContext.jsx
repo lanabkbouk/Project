@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from 'react'
 import { isAccountType } from '../constants/auth/accountTypes'
 import { AUTH_STORAGE_KEY } from '../constants/auth/storage'
+import { normalizeUser } from '../utils/auth/normalizeUser'
 
 const AuthContext = createContext(null)
 
@@ -68,7 +69,7 @@ export function AuthProvider({ children }) {
     setSession((current) => {
       if (!current.isAuthenticated) return current
 
-      const user = { ...(current.user || {}), ...nextUser }
+      const user = normalizeUser({ ...(current.user || {}), ...nextUser })
       const next = { ...current, user }
       persistSession(next)
       return next

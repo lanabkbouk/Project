@@ -1,5 +1,3 @@
-// services/participations.js
-//
 // Matches the "participates" relation in the ERD (volunteer <-> opportunity).
 // Returns the opportunities the currently logged-in volunteer has joined,
 // each enriched with participation-specific fields (status, hours logged).
@@ -10,14 +8,30 @@
 
 import { apiClient, getApiErrorMessage } from './api/client'
 import { fetchOpportunities } from './opportunities'
+import { PARTICIPATION_STATUS } from '../constants/participationStatus'
 
 const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_PARTICIPATIONS || 'true') === 'true'
 
-// Which opportunities (by id) the mock volunteer has joined, and their status.
+// مثال واحد على كل حالة من الحالات الست، لعرضها بالتصميم قبل الربط مع الباك اند
 const MOCK_PARTICIPATIONS = [
-  { opportunityId: 'o3', status: 'completed', hoursLogged: 5, joinedDate: '2026-06-01' },
-  { opportunityId: 'o1', status: 'ongoing', hoursLogged: 4, joinedDate: '2026-07-10' },
+  { id: 'p1', opportunityId: 'o1', status: PARTICIPATION_STATUS.PENDING, hoursLogged: 0, joinedDate: '2026-07-25' },
+  { id: 'p2', opportunityId: 'o2', status: PARTICIPATION_STATUS.ACCEPTED, hoursLogged: 0, joinedDate: '2026-07-20' },
+  { id: 'p3', opportunityId: 'o3', status: PARTICIPATION_STATUS.ONGOING, hoursLogged: 4, joinedDate: '2026-07-10' },
+  { id: 'p4', opportunityId: 'o4', status: PARTICIPATION_STATUS.COMPLETED, hoursLogged: 12, joinedDate: '2026-06-01' },
+  { id: 'p5', opportunityId: 'o1', status: PARTICIPATION_STATUS.REJECTED, hoursLogged: 0, joinedDate: '2026-05-15' },
+  { id: 'p6', opportunityId: 'o2', status: PARTICIPATION_STATUS.WITHDRAWN, hoursLogged: 0, joinedDate: '2026-05-01' },
 ]
+
+// بيانات متطوع تجريبية لكل مشاركة، تُستخدم فقط بجانب المنظمة (قائمة المتقدمين)
+// حيث تحتاج المنظمة ترى معلومات المتطوع نفسه، لا فقط حالة طلبه
+const MOCK_APPLICANT_PROFILES = {
+  p1: { name: 'Lina Haddad', photo: null, city: 'Damascus', skills: ['First Aid', 'Communication'], phone: '+963911111111' },
+  p2: { name: 'Omar Khalil', photo: null, city: 'Aleppo', skills: ['Teaching'], phone: '+963922222222' },
+  p3: { name: 'Sara Youssef', photo: null, city: 'Homs', skills: ['Event Management'], phone: '+963933333333' },
+  p4: { name: 'Adam Nasser', photo: null, city: 'Latakia', skills: ['Environmental Awareness'], phone: '+963944444444' },
+  p5: { name: 'Maya Saleh', photo: null, city: 'Damascus', skills: ['Photography'], phone: '+963955555555' },
+  p6: { name: 'Tariq Amin', photo: null, city: 'Homs', skills: ['Coaching', 'Team Leadership'], phone: '+963966666666' },
+}
 
 function wait(duration = 300) {
   return new Promise((resolve) => setTimeout(resolve, duration))
@@ -43,4 +57,60 @@ export async function fetchMyParticipations() {
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load your volunteering history'))
   }
+}
+
+/**
+ * يجلب المتقدمين على فرصة معيّنة (لصفحة "قائمة المتقدمين" عند المنظمة).
+ * @param {string} opportunityId
+ */
+export async function fetchApplicantsForOpportunity(opportunityId) {
+  if (MOCK_MODE) {
+    await wait()
+    return MOCK_PARTICIPATIONS.filter((participation) => participation.opportunityId === opportunityId).map(
+      (participation) => ({
+        id: participation.id,
+        status: participation.status,
+        participatedAt: participation.joinedDate,
+        volunteer: MOCK_APPLICANT_PROFILES[participation.id] || null,
+      }),
+    )
+  }
+
+  try {
+    const response = await apiClient.get(`/opportunities/${opportunityId}/participants`)
+    return Array.isArray(response.data) ? response.data : response.data?.data || []
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, 'Failed to load applicants'))
+  }
+}
+
+/**
+ * نقطة موحّدة لتغيير حالة طلب مشاركة — تُستخدم من طرف المنظمة (accepted/rejected)
+ * ومن طرف المتطوع (withdrawn) على حد سواء، عبر نفس الـ Endpoint.
+ * @param {string} participationId
+ * @param {string} status
+ */
+export async function updateParticipationStatus(participationId, status) {
+  if (MOCK_MODE) {
+    await wait()
+    const participation = MOCK_PARTICIPATIONS.find((item) => item.id === participationId)
+    if (participation) participation.status = status
+    return { success: true }
+  }
+
+  try {
+    await apiClient.put(`/participations/${participationId}`, { status })
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: getApiErrorMessage(error, 'Failed to update this request') }
+  }
+}
+
+/**
+ * يسحب المتطوع طلب مشاركته بنفسه (فقط إن كانت حالته pending أو accepted).
+ * @param {string} participationId
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function withdrawParticipation(participationId) {
+  return updateParticipationStatus(participationId, PARTICIPATION_STATUS.WITHDRAWN)
 }

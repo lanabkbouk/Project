@@ -12,8 +12,14 @@
 // POST /api/opportunities/{id}/participate -> join an opportunity
 
 import { apiClient, getApiErrorMessage } from './api/client'
+import { OPPORTUNITY_STATUS } from '../constants/opportunityStatus'
 
 const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_OPPORTUNITIES || 'true') === 'true'
+
+// فرص "حسابي" (يخص حساب المنظمة المسجّلة دخولها بالـ Mock) — تبدأ فاضية
+// عمدًا، لأن أي حساب منظمة جديد فعليًا لم ينشر أي فرصة بعد. منفصلة تمامًا
+// عن MOCK_OPPORTUNITIES أدناه (يلي هي بيانات تصفح عامة تجريبية للمتطوعين).
+let MOCK_MY_OPPORTUNITIES = []
 
 const MOCK_OPPORTUNITIES = [
   {
@@ -98,6 +104,20 @@ function wait(duration = 300) {
   return new Promise((resolve) => setTimeout(resolve, duration))
 }
 
+// يبني FormData لطلب إنشاء/تعديل فرصة، مع إرفاق الصورة إن وُجدت
+function buildOpportunityFormData(payload, imageFile) {
+  const formData = new FormData()
+
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value === undefined || value === null) return
+    formData.append(key, typeof value === 'object' ? JSON.stringify(value) : value)
+  })
+
+  if (imageFile) formData.append('image', imageFile)
+
+  return formData
+}
+
 function matchesFilters(opportunity, filters = {}) {
   const { search = '', categoryId = '', skillId = '', location = '' } = filters
 
@@ -139,10 +159,11 @@ export async function fetchOpportunities(filters = {}) {
 export async function fetchOpportunityById(id) {
   if (MOCK_MODE) {
     await wait()
-    const opportunity = MOCK_OPPORTUNITIES.find((item) => item.id === id) || null
+    const allOpportunities = [...MOCK_OPPORTUNITIES, ...MOCK_MY_OPPORTUNITIES]
+    const opportunity = allOpportunities.find((item) => item.id === id) || null
     const similar = opportunity
-      ? MOCK_OPPORTUNITIES.filter(
-          (item) => item.id !== id && item.category.id === opportunity.category.id,
+      ? allOpportunities.filter(
+          (item) => item.id !== id && item.category?.id === opportunity.category?.id,
         ).slice(0, 3)
       : []
 
@@ -154,6 +175,97 @@ export async function fetchOpportunityById(id) {
     return response.data
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load opportunity details'))
+  }
+}
+
+/**
+ * يجلب الفرص الخاصة بالمنظمة المسجّلة دخولها حاليًا (لصفحة "My Causes").
+ * ملاحظة Mock: نرجع كل قائمة الفرص التجريبية كأنها فرص نفس المنظمة، بما إنه
+ * حساب Mock واحد بس متاح للتجربة حاليًا — سيُستبدل بفلترة حقيقية حسب
+ * organization_id لما يجهز GET /organizations/me/opportunities.
+ */
+export async function fetchMyOpportunities() {
+  if (MOCK_MODE) {
+    await wait()
+    return MOCK_MY_OPPORTUNITIES
+  }
+
+  try {
+    const response = await apiClient.get('/organizations/me/opportunities')
+    return Array.isArray(response.data) ? response.data : response.data?.data || []
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, 'Failed to load your causes'))
+  }
+}
+
+/**
+ * يحذف فرصة تنشرها المنظمة (بعد تأكيد المستخدم).
+ */
+export async function deleteOpportunity(id) {
+  if (MOCK_MODE) {
+    await wait()
+    MOCK_MY_OPPORTUNITIES = MOCK_MY_OPPORTUNITIES.filter((item) => item.id !== id)
+    return { success: true }
+  }
+
+  try {
+    await apiClient.delete(`/opportunities/${id}`)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: getApiErrorMessage(error, 'Failed to delete this cause') }
+  }
+}
+/**
+ * ينشئ فرصة جديدة (من طرف المنظمة).
+ */
+export async function createOpportunity({ imageFile, ...payload }) {
+  if (MOCK_MODE) {
+    await wait()
+    const newOpportunity = {
+      ...payload,
+      id: `o${Date.now()}`,
+      status: OPPORTUNITY_STATUS.OPEN,
+      currentVolunteers: 0,
+      organization: { id: 'org-mock', name: 'My Organization' },
+      image: imageFile ? URL.createObjectURL(imageFile) : null,
+    }
+    MOCK_MY_OPPORTUNITIES.unshift(newOpportunity)
+    return { success: true, data: newOpportunity }
+  }
+
+  try {
+    const formData = buildOpportunityFormData(payload, imageFile)
+    const response = await apiClient.post('/opportunities', formData)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return { success: false, error: getApiErrorMessage(error, 'Failed to create this cause') }
+  }
+}
+
+/**
+ * يعدّل فرصة موجودة (من طرف المنظمة).
+ */
+export async function updateOpportunity(id, { imageFile, ...payload }) {
+  if (MOCK_MODE) {
+    await wait()
+    const index = MOCK_MY_OPPORTUNITIES.findIndex((item) => item.id === id)
+    if (index !== -1) {
+      MOCK_MY_OPPORTUNITIES[index] = {
+        ...MOCK_MY_OPPORTUNITIES[index],
+        ...payload,
+        image: imageFile ? URL.createObjectURL(imageFile) : MOCK_MY_OPPORTUNITIES[index].image,
+      }
+    }
+    return { success: true, data: MOCK_MY_OPPORTUNITIES[index] }
+  }
+
+  try {
+    const formData = buildOpportunityFormData(payload, imageFile)
+    formData.append('_method', 'PUT')
+    const response = await apiClient.post(`/opportunities/${id}`, formData)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return { success: false, error: getApiErrorMessage(error, 'Failed to update this cause') }
   }
 }
 

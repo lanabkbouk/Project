@@ -1,5 +1,6 @@
 import { ChevronDown } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import useClickOutside from "../../hooks/useClickOutside";
 
 export default function NavbarDropdown({
   trigger,
@@ -16,8 +17,11 @@ export default function NavbarDropdown({
     left: "left-0",
   };
 
+  // إغلاق القائمة تلقائيًا عند الضغط في أي مكان خارجها
+  const rootRef = useClickOutside(isOpen, () => setIsOpen(false));
+
   return (
-    <div className={`relative ${className}`}>
+    <div ref={rootRef} className={`relative ${className}`}>
       
       {/* Trigger */}
       <div
@@ -34,10 +38,10 @@ export default function NavbarDropdown({
             absolute ${alignStyles[align]} ${width}
             mt-2 z-50
             bg-bg
-            border border-heading/10
+            border-2 border-heading/20
             rounded-xl
-            shadow-lg
-            backdrop-blur-sm
+            shadow-2xl
+            ring-1 ring-black/5
           `}
         >
           {/* Header */}

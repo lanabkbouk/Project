@@ -11,6 +11,9 @@ import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import VolunteerProfile from './pages/volunteerProfile'
 import OrgProfile from './pages/orgProfile'
+import MyCauses from './pages/myCauses'
+import CreateEditCause from './pages/createEditCause'
+import ApplicantsList from './pages/applicantsList'
 import OpportunitiesListPage from './pages/opportunities/OpportunitiesListPage'
 import OpportunityDetailsPage from './pages/opportunities/OpportunityDetailsPage'
 
@@ -42,7 +45,10 @@ function App() {
           <Route element={<ProtectedRoute allowedAccountTypes={[ACCOUNT_TYPES.ORGANIZATION]} />}>
             <Route path={ROUTES.ORGANIZATION_PROFILE} element={<OrgProfile />} />
             <Route path={ROUTES.DASHBOARD} element={<ComingSoon title='Dashboard' />} />
-            <Route path={ROUTES.MY_CAUSES} element={<ComingSoon title='My Causes' />} />
+            <Route path={ROUTES.MY_CAUSES} element={<MyCauses />} />
+            <Route path={ROUTES.CREATE_CAUSE} element={<CreateEditCause />} />
+            <Route path={`${ROUTES.MY_CAUSES}/:id/edit`} element={<CreateEditCause />} />
+            <Route path={`${ROUTES.APPLICANTS}/:id`} element={<ApplicantsList />} />
           </Route>
         </Route>
 

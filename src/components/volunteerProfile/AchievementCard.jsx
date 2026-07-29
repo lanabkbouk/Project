@@ -1,5 +1,7 @@
-import { Award, Lock } from "lucide-react";
+// src/components/volunteerProfile/AchievementCard.jsx
+import { Lock } from "lucide-react";
 import Typography from "../ui/Typography";
+import { getAchievementStyle } from "../../utils/achievementStyles";
 
 function formatDate(dateString) {
   if (!dateString) return "";
@@ -12,13 +14,10 @@ function formatDate(dateString) {
   });
 }
 
-// Achievements aren't tied to a category, so they get one fixed color
-// identity (amber/gold, the classic "badge" color) instead of a
-// category-based one — only the locked/unlocked state changes how it looks.
-const ACHIEVEMENT_COLOR = "bg-amber-100 text-amber-600";
-
 export default function AchievementCard({ achievement }) {
   const isUnlocked = Boolean(achievement.unlocked);
+  // كل إنجاز ياخد لونه وأيقونته الخاصة حسب نوعه
+  const { icon: Icon, colorClasses } = getAchievementStyle(achievement.name);
 
   return (
     <div
@@ -28,14 +27,8 @@ export default function AchievementCard({ achievement }) {
         ${isUnlocked ? "border-heading/10 hover:shadow-lg hover:-translate-y-1" : "border-heading/10 grayscale opacity-70"}
       `}
     >
-      <div
-        className={`w-12 h-12 rounded-xl flex items-center justify-center ${ACHIEVEMENT_COLOR}`}
-      >
-        {isUnlocked ? (
-          <Award size={22} aria-hidden="true" />
-        ) : (
-          <Lock size={20} aria-hidden="true" />
-        )}
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorClasses}`}>
+        {isUnlocked ? <Icon size={22} aria-hidden="true" /> : <Lock size={20} aria-hidden="true" />}
       </div>
 
       <Typography variant="h6" as="h3" className="text-heading font-semibold">

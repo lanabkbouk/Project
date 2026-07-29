@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Typography from "../components/ui/Typography";
 import Button from "../components/ui/Button";
 import ParticipationCard from "../components/opportunity/ParticipationCard";
-import { fetchMyParticipations } from "../services/participations";
+import { fetchMyParticipations, withdrawParticipation } from "../services/participations";
 import { ROUTES } from "../constants/paths";
 
 export default function Participates() {
@@ -30,6 +30,22 @@ export default function Participates() {
       isMounted = false;
     };
   }, []);
+
+  const handleWithdraw = async (participationId) => {
+    const result = await withdrawParticipation(participationId);
+    if (!result.success) {
+      setError(result.error || "Failed to withdraw your request");
+      return;
+    }
+
+    setParticipations((current) =>
+      current.map((participation) =>
+        participation.id === participationId
+          ? { ...participation, status: "withdrawn" }
+          : participation
+      )
+    );
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -59,7 +75,7 @@ export default function Participates() {
       ) : (
         <div className="flex flex-col gap-4">
           {participations.map((participation) => (
-            <ParticipationCard key={participation.opportunityId} participation={participation} />
+            <ParticipationCard key={participation.id} participation={participation} onWithdraw={handleWithdraw} />
           ))}
         </div>
       )}
