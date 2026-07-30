@@ -98,27 +98,31 @@ export default function Navbar({ role = "guest" }) {
 
               </div>
             ) : (
-              <div className="relative bg-heading/10 rounded-2xl border border-heading/20">
+              <div className="relative">
                 <NavbarDropdown
                   isOpen={isProfileOpen}
                   setIsOpen={setIsProfileOpen}
                   trigger={
                     <div className="flex items-center gap-2 rounded-2xl px-3 py-2 
-                                    text-white hover:bg-white/10 transition">
+                                    bg-white/10 border border-white/15
+                                    text-white hover:bg-white/15 hover:border-white/25 
+                                    transition">
                       {user?.avatarUrl ? (
                         <img
                           src={user.avatarUrl}
                           alt={user.displayName}
-                          className="h-7 w-7 rounded-full object-cover border border-white/20"
+                          className="h-7 w-7 rounded-full object-cover border-2 border-primary/70"
                         />
                       ) : (
-                        <UserIcon className="h-5 w-5" />
+                        <div className="h-7 w-7 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
+                          <UserIcon className="h-4 w-4 text-primary" />
+                        </div>
                       )}
                       <span className="text-sm sm:text-base">
                         {user?.displayName}
                       </span>
                       <ChevronDown
-                        className={`w-4 h-4 transition-transform ${
+                        className={`w-4 h-4 text-white/60 transition-transform ${
                           isProfileOpen ? "rotate-180" : ""
                         }`}
                       />
@@ -139,8 +143,6 @@ export default function Navbar({ role = "guest" }) {
                     },
                   ]}
                 />
-
-
               </div>
             )}
 

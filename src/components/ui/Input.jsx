@@ -13,7 +13,7 @@ export default function Input({
   fullWidth = false,
   disabled = false,
   className = '',
-  labelClassName = 'text-heading', // لون الـ label الافتراضي؛ يمكن تجاوزه حسب خلفية الصفحة
+  labelClassName = 'text-heading', // لون الـ label الافتراضي فقط؛ يمكن تجاوزه حسب خلفية الصفحة (مثال: text-white بصفحات Login/Register)
   error = '',
   success = false,
   options = [],
@@ -27,10 +27,10 @@ export default function Input({
   }
 
   const variantStyles = {
-    default: "bg-bg border border-heading/10 text-heading placeholder-body/60 rounded-xl focus:border-primary",
-    filled: "bg-white border border-heading/10 text-heading placeholder-body/60 rounded-xl focus:border-primary",
+    default: "bg-field border border-heading/10 text-heading placeholder-body/60 rounded-xl focus:border-primary",
+    filled: "bg-field border border-heading/10 text-heading placeholder-body/60 rounded-xl focus:border-primary",
     underline: "border-0 border-b-2 border-heading/20 bg-transparent text-heading placeholder-body/60 rounded-none focus:border-primary",
-    danger: "w-full px-4 py-3 border border-red-500 bg-red-50 text-red-700 rounded-lg transition focus:border-red-600",
+    danger: "w-full px-4 py-3 border border-danger bg-danger/5 text-danger rounded-lg transition focus:border-dangerHover",
     success: "border border-green-600 bg-green-50 text-green-700 rounded-xl focus:border-green-700"
   }
 

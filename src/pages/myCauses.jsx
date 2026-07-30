@@ -74,11 +74,11 @@ export default function MyCauses() {
         </div>
       </div>
 
-      {loading ? (
-        <p className="text-sm text-heading/50">Loading your causes...</p>
-      ) : error ? (
-        <p className="text-sm text-danger">{error}</p>
-      ) : opportunities.length === 0 ? (
+      {error && <p className="text-sm text-danger mb-4">{error}</p>}
+
+          {loading ? (
+            <p>Loading your causes...</p>
+          ) : opportunities.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-heading/20 bg-heading/5 p-12 text-center">
           <Typography variant="h4" className="mb-2">
             You haven't posted any causes yet

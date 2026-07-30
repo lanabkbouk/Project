@@ -115,10 +115,10 @@ export default function OrgProfile() {
           {/* FORM + PREVIEW */}
           <form
               onSubmit={methods.handleSubmit(onSubmit)}
-              className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch"
+              className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6"
             >
             {/* LEFT: FORM */}
-            <div className="lg:col-span-2 rounded-3xl bg-heading/5 border border-heading/10 p-6 md:p-8 h-full">
+            <div className="lg:col-span-2 rounded-3xl bg-heading/5 border border-heading/10 p-6 md:p-8">
               <OrgProfileForm submitting={submitting} />
               {submitError && (
                 <p className="mt-4 text-sm text-danger">{submitError}</p>

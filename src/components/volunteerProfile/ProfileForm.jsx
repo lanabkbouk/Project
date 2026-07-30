@@ -100,52 +100,40 @@ export default function ProfileForm({ submitting }) {
         />
 
         {/* Gender */}
-        <div className="flex flex-col gap-1">
-          <Typography variant="bodySm" weight="medium" color="heading">
-            Your Gender
-          </Typography>
-
-          <Controller
-            name="gender"
-            control={control}
-            defaultValue=""
-            render={({ field: { value, onChange } }) => (
-              <Dropdown
-                items={GENDER_ITEMS}
-                value={value}
-                onChange={onChange}
-                placeholder="Select your gender"
-                icon={User2}
-                variant="filled"
-                error={errors.gender?.message}
-              />
-            )}
-          />
-        </div>
+        <Controller
+          name="gender"
+          control={control}
+          defaultValue=""
+          render={({ field: { value, onChange } }) => (
+            <Dropdown
+              label="Your Gender"
+              items={GENDER_ITEMS}
+              value={value}
+              onChange={onChange}
+              placeholder="Select your gender"
+              icon={User2}
+              error={errors.gender?.message}
+            />
+          )}
+        />
 
         {/* Governorate */}
-        <div className="flex flex-col gap-1">
-          <Typography variant="bodySm" weight="medium" color="heading">
-            Governorate of Residence
-          </Typography>
-
-          <Controller
-            name="city"
-            control={control}
-            defaultValue=""
-            render={({ field: { value, onChange } }) => (
-              <Dropdown
-                items={GOVERNORATE_ITEMS}
-                value={value}
-                onChange={onChange}
-                placeholder="Choose your governorate"
-                icon={MapPin}
-                variant="filled"
-                error={errors.city?.message}
-              />
-            )}
-          />
-        </div>
+        <Controller
+          name="city"
+          control={control}
+          defaultValue=""
+          render={({ field: { value, onChange } }) => (
+            <Dropdown
+              label="Governorate of Residence"
+              items={GOVERNORATE_ITEMS}
+              value={value}
+              onChange={onChange}
+              placeholder="Choose your governorate"
+              icon={MapPin}
+              error={errors.city?.message}
+            />
+          )}
+        />
       </div>
 
       {/* ===========================

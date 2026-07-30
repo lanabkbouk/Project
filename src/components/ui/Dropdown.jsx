@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import { FIELD_LABEL, FIELD_ERROR } from "../../utils/fieldStyles";
 
 export default function Dropdown({
-  label = "Select",
+  label = "",
+  triggerLabel = "Select",
   items = [],
   onItemClick,
   value,
@@ -11,7 +13,6 @@ export default function Dropdown({
   placeholder = "",
   icon: Icon = null,
   error = "",
-  variant = "filled",
   as = "div",
   className = "",
 }) {
@@ -33,7 +34,7 @@ export default function Dropdown({
     ? items.find((i) => i.value === value)
     : null;
 
-  const triggerText = selectedItem ? selectedItem.name : placeholder || label;
+  const triggerText = selectedItem ? selectedItem.name : placeholder || triggerLabel;
 
   const handleItemClick = (item) => {
     if (isSelectionMode) {
@@ -46,78 +47,83 @@ export default function Dropdown({
   const Root = as;
 
   return (
-    <Root ref={rootRef} className={`relative w-full ${className}`}>
-      {/* Trigger */}
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className={`flex items-center justify-between w-full gap-2 
-          px-4 py-3 rounded-xl bg-white shadow-sm 
-          hover:shadow-md transition-all duration-300 
-          border ${error ? "border-red-500" : "border-black/10"}`}
-      >
-        <span className="flex items-center gap-2 truncate">
-          {Icon && (
-            <Icon
-              size={18}
-              className={error ? "text-red-500" : "text-primary"}
-            />
-          )}
-          <span className={!selectedItem ? "text-black/40" : ""}>
-            {triggerText}
-          </span>
-        </span>
+    <div className="flex flex-col gap-1 w-full">
+      {label && <label className={FIELD_LABEL}>{label}</label>}
 
-        <ChevronDown
-          size={16}
-          className={`transition-transform duration-300 ${
-            isOpen ? "rotate-180" : ""
-          } text-black/40`}
-        />
-      </button>
-
-      {/* Menu */}
-      <div
-        className={`absolute z-20 mt-2 w-full overflow-hidden 
-          transition-all duration-300 ease-out
-          ${isOpen ? "max-h-72 opacity-100" : "max-h-0 opacity-0"}`}
-      >
-        <ul
-          className="py-2 px-1 space-y-1 text-sm font-medium 
-            rounded-xl backdrop-blur-md bg-white/80 
-            border border-black/10 shadow-lg max-h-64 overflow-y-auto"
+      <Root ref={rootRef} className={`relative w-full ${className}`}>
+        {/* Trigger — نفس لون وحدود وحجم بقية الحقول (Input/Textarea) */}
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className={`flex items-center justify-between w-full gap-2
+            px-4 py-3 rounded-xl bg-field
+            transition-colors duration-200
+            border ${error ? "border-danger" : "border-heading/10"}
+            focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary`}
         >
-          {items.map((item) =>
-            item.href ? (
-              <li key={item.name}>
-                <NavLink
-                  to={item.href}
-                  onClick={() => handleItemClick(item)}
-                  className="block px-4 py-3 hover:bg-primary hover:text-white rounded-md transition-colors"
-                >
-                  {item.name}
-                </NavLink>
-              </li>
-            ) : (
-              <li key={item.value ?? item.name}>
-                <button
-                  type="button"
-                  onClick={() => handleItemClick(item)}
-                  className={`w-full text-left block px-4 py-3 rounded-md transition-colors ${
-                    selectedItem?.value === item.value
-                      ? "bg-primary/15 text-primary border border-primary/30"
-                      : "hover:bg-primary/10 hover:text-primary"
-                  }`}
-                >
-                  {item.name}
-                </button>
-              </li>
-            )
-          )}
-        </ul>
-      </div>
+          <span className="flex items-center gap-2 truncate">
+            {Icon && (
+              <Icon
+                size={18}
+                className={error ? "text-danger" : "text-primary"}
+              />
+            )}
+            <span className={!selectedItem ? "text-body/60" : "text-heading"}>
+              {triggerText}
+            </span>
+          </span>
 
-      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
-    </Root>
+          <ChevronDown
+            size={16}
+            className={`transition-transform duration-300 ${
+              isOpen ? "rotate-180" : ""
+            } text-heading/40`}
+          />
+        </button>
+
+        {/* Menu */}
+        <div
+          className={`absolute z-20 mt-2 w-full overflow-hidden 
+            transition-all duration-300 ease-out
+            ${isOpen ? "max-h-72 opacity-100" : "max-h-0 opacity-0"}`}
+        >
+          <ul
+            className="py-2 px-1 space-y-1 text-sm font-medium 
+              rounded-xl backdrop-blur-md bg-field/95 
+              border border-heading/10 shadow-lg max-h-64 overflow-y-auto"
+          >
+            {items.map((item) =>
+              item.href ? (
+                <li key={item.name}>
+                  <NavLink
+                    to={item.href}
+                    onClick={() => handleItemClick(item)}
+                    className="block px-4 py-3 hover:bg-primary hover:text-white rounded-md transition-colors"
+                  >
+                    {item.name}
+                  </NavLink>
+                </li>
+              ) : (
+                <li key={item.value ?? item.name}>
+                  <button
+                    type="button"
+                    onClick={() => handleItemClick(item)}
+                    className={`w-full text-left block px-4 py-3 rounded-md transition-colors ${
+                      selectedItem?.value === item.value
+                        ? "bg-primary/15 text-primary border border-primary/30"
+                        : "hover:bg-primary/10 hover:text-primary"
+                    }`}
+                  >
+                    {item.name}
+                  </button>
+                </li>
+              )
+            )}
+          </ul>
+        </div>
+
+        {error && <p className={FIELD_ERROR}>{error}</p>}
+      </Root>
+    </div>
   );
 }

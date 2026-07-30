@@ -13,6 +13,8 @@
 
 import { apiClient, getApiErrorMessage } from './api/client'
 import { ORGANIZATION_STATUS } from '../constants/organizationStatus'
+import { AUTH_STORAGE_KEY } from '../constants/auth/storage'
+import { loadMockUsers, updateMockUser } from './mock/mockUserStore'
 
 const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_ORGANIZATION_PROFILE || 'true') === 'true'
 
@@ -20,8 +22,22 @@ function wait(duration = 300) {
   return new Promise((resolve) => setTimeout(resolve, duration))
 }
 
-const MOCK_ORGANIZATION = {
+// إيميل المستخدم المسجّل دخوله حاليًا (من نفس الجلسة يلي AuthContext خزّنها)
+// بنستخدمه لنلاقي سجل هالمنظمة بالضبط جوا mockUsers، بدل ما نرجّع بيانات ثابتة
+function getCurrentSessionEmail() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw)?.user?.email || null
+  } catch {
+    return null
+  }
+}
+
+const EMPTY_ORGANIZATION = {
   name: '',
+  email: '',
+  contactPerson: '',
   description: '',
   city: '',
   website: '',
@@ -36,7 +52,27 @@ const MOCK_ORGANIZATION = {
 export async function fetchOrganizationProfile() {
   if (MOCK_MODE) {
     await wait()
-    return { success: true, data: MOCK_ORGANIZATION }
+
+    const email = getCurrentSessionEmail()
+    const mockUser = email ? loadMockUsers().find((u) => u.email === email) : null
+
+    // لو ما لقينا مستخدم (نادرًا)، نرجع كائن فاضي بدل ما نكسر الصفحة
+    if (!mockUser) return { success: true, data: EMPTY_ORGANIZATION }
+
+    return {
+      success: true,
+      data: {
+        name: mockUser.orgName || '',
+        email: mockUser.email || '',
+        contactPerson: mockUser.contactPerson || '',
+        description: mockUser.description || '',
+        city: mockUser.city || '',
+        website: mockUser.website || '',
+        imageUrl: mockUser.imageUrl || null,
+        status: mockUser.status || ORGANIZATION_STATUS.PENDING,
+        rejectionReason: mockUser.rejectionReason || null,
+      },
+    }
   }
 
   try {
@@ -53,6 +89,19 @@ export async function fetchOrganizationProfile() {
 export async function updateOrganizationProfile(formData) {
   if (MOCK_MODE) {
     await wait()
+
+    // نحفظ التعديلات فعليًا بنفس مخزن المستخدمين، عشان لما نرجع نفتح
+    // البروفايل (أو نعمل refresh) البيانات تضل موجودة، مو ترجع فاضية
+    const email = getCurrentSessionEmail()
+    if (email) {
+      updateMockUser(email, {
+        orgName: formData.get('name') || '',
+        description: formData.get('description') || '',
+        city: formData.get('city') || '',
+        website: formData.get('website') || '',
+      })
+    }
+
     return { success: true, data: { imageUrl: null } }
   }
 

@@ -1,3 +1,5 @@
+import { FIELD_LABEL, FIELD_ERROR, FIELD_SURFACE, FIELD_PLACEHOLDER } from "../../utils/fieldStyles";
+
 export default function Textarea({
   label = "",
   name,
@@ -17,7 +19,7 @@ export default function Textarea({
   return (
     <div className={`flex flex-col gap-2 ${fullWidth ? "w-full" : ""}`}>
       {label && (
-        <label htmlFor={name} className="text-heading font-medium text-[15px]">
+        <label htmlFor={name} className={FIELD_LABEL}>
           {label}
           {required && <span className="text-primary ml-1">*</span>}
         </label>
@@ -34,10 +36,9 @@ export default function Textarea({
         className={`
           px-4 py-3
           rounded-xl
-          border
-          bg-bg
+          ${FIELD_SURFACE}
           text-heading
-          placeholder:text-body/60
+          ${FIELD_PLACEHOLDER}
           outline-none
           resize-none
           transition-all duration-200
@@ -47,7 +48,7 @@ export default function Textarea({
           ${
             error
               ? "border-danger focus:border-danger"
-              : "border-heading/10 focus:border-primary focus:ring-2 focus:ring-primary/20"
+              : "focus:border-primary focus:ring-2 focus:ring-primary/20"
           }
 
           ${className}
@@ -57,7 +58,7 @@ export default function Textarea({
       />
 
       {error && (
-        <p id={`${name}-error`} className="text-danger text-sm">
+        <p id={`${name}-error`} className={FIELD_ERROR}>
           {error}
         </p>
       )}
