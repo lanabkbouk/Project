@@ -1,5 +1,4 @@
-// components/about/StatsGrid.jsx
-//
+
 // شبكة الإحصائيات (متطوعين/منظمات/فرص...). البيانات تجي كـ prop "stats"
 // من الصفحة الأب. البطاقة نفسها (StatCard) صارت بـ components/common
 // لأنها تُستخدم هون وبصفحة Home كمان.
@@ -14,7 +13,7 @@ export default function StatsGrid({ stats }) {
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
       viewport={{ once: true }}
-      className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16"
+      className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-24"
     >
       {stats.map((stat) => (
         <StatCard key={stat.label} number={stat.number} label={stat.label} />

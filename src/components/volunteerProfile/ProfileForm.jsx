@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useFormContext, Controller } from "react-hook-form";
-import { MapPin, User2 } from "lucide-react";
+import { MapPin, User2, GraduationCap } from "lucide-react";
 
 import Input from "../ui/Input";
 import Dropdown from "../ui/Dropdown";
@@ -19,6 +19,15 @@ import {
 const GENDER_ITEMS = [
   { name: "Female", value: "Female" },
   { name: "Male", value: "Male" },
+];
+
+const EDUCATION_LEVEL_ITEMS = [
+  { name: "No Formal Education", value: "No Formal Education" },
+  { name: "High School", value: "High School" },
+  { name: "Diploma", value: "Diploma" },
+  { name: "Bachelor's Degree", value: "Bachelor's Degree" },
+  { name: "Master's Degree", value: "Master's Degree" },
+  { name: "PhD", value: "PhD" },
 ];
 
 const GOVERNORATE_ITEMS = [
@@ -79,14 +88,21 @@ export default function ProfileForm({ submitting }) {
       </Typography>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <Input
-          label="Education Level"
+        <Controller
           name="educationLevel"
-          register={register}
-          placeholder="e.g. Bachelor, High School"
-          variant="filled"
-          error={errors.educationLevel?.message}
-          fullWidth
+          control={control}
+          defaultValue=""
+          render={({ field: { value, onChange } }) => (
+            <Dropdown
+              label="Education Level"
+              items={EDUCATION_LEVEL_ITEMS}
+              value={value}
+              onChange={onChange}
+              placeholder="Select your education level"
+              icon={GraduationCap}
+              error={errors.educationLevel?.message}
+            />
+          )}
         />
 
         <Input
@@ -173,7 +189,7 @@ export default function ProfileForm({ submitting }) {
                   return (
                     <div
                       key={category}
-                      className="rounded-xl border border-heading/10 bg-bg p-4 shadow-sm"
+                      className="rounded-xl border border-heading/10 bg-field p-4 shadow-sm"
                     >
                       {/* Category Header */}
                       <div className="mb-3 flex items-center gap-2">
@@ -208,7 +224,7 @@ export default function ProfileForm({ submitting }) {
                               className={`px-3 py-1.5 rounded-full text-xs border transition ${
                                 isSelected
                                   ? selectedClass
-                                  : "bg-bg text-heading/70 border-heading/15 hover:border-primary/50"
+                                  : "bg-field text-heading/70 border-heading/15 hover:border-primary/50"
                               }`}
                             >
                               {skill.name}

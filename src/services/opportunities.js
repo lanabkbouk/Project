@@ -38,7 +38,7 @@ const MOCK_OPPORTUNITIES = [
     maxVolunteers: 30,
     category: { id: 'c1', name: 'Health' },
     skills: [{ id: 's1', name: 'First Aid' }, { id: 's7', name: 'Communication' }],
-    organization: { id: 'org1', name: 'Blue Drop Foundation' },
+    organization: { id: 'org1', name: 'Blue Drop Foundation', imageUrl: null },
     image: null,
   },
   {
@@ -57,7 +57,7 @@ const MOCK_OPPORTUNITIES = [
     maxVolunteers: 15,
     category: { id: 'c2', name: 'Education' },
     skills: [{ id: 's4', name: 'Teaching' }, { id: 's5', name: 'Tutoring' }],
-    organization: { id: 'org2', name: 'Bright Minds NGO' },
+    organization: { id: 'org2', name: 'Bright Minds NGO', imageUrl: null },
     image: null,
   },
   {
@@ -76,7 +76,7 @@ const MOCK_OPPORTUNITIES = [
     maxVolunteers: 40,
     category: { id: 'c5', name: 'Environment' },
     skills: [{ id: 's12', name: 'Environmental Awareness' }],
-    organization: { id: 'org3', name: 'Green Coast Initiative' },
+    organization: { id: 'org3', name: 'Green Coast Initiative', imageUrl: null },
     image: null,
   },
   {
@@ -95,7 +95,45 @@ const MOCK_OPPORTUNITIES = [
     maxVolunteers: 50,
     category: { id: 'c3', name: 'Social' },
     skills: [{ id: 's8', name: 'Event Management' }],
-    organization: { id: 'org4', name: 'City Food Bank' },
+    organization: { id: 'org4', name: 'City Food Bank', imageUrl: null },
+    image: null,
+  },
+  {
+    id: 'o5',
+    title: 'Winter Clothes Drive',
+    description:
+      'Collected and distributed warm clothing to families ahead of the winter season.',
+    status: 'closed',
+    startDate: '2025-11-01',
+    endDate: '2025-12-20',
+    location: 'Rotterdam, Netherlands',
+    minHours: 2,
+    maxHours: 4,
+    totalHours: 200,
+    currentVolunteers: 25,
+    maxVolunteers: 25,
+    category: { id: 'c3', name: 'Social' },
+    skills: [{ id: 's8', name: 'Event Management' }],
+    organization: { id: 'org4', name: 'City Food Bank', imageUrl: null },
+    image: null,
+  },
+  {
+    id: 'o6',
+    title: 'Summer Reading Camp',
+    description:
+      'A two-week reading and literacy camp for children in underserved neighborhoods.',
+    status: 'closed',
+    startDate: '2025-07-01',
+    endDate: '2025-07-14',
+    location: 'The Hague, Netherlands',
+    minHours: 3,
+    maxHours: 5,
+    totalHours: 180,
+    currentVolunteers: 18,
+    maxVolunteers: 18,
+    category: { id: 'c2', name: 'Education' },
+    skills: [{ id: 's4', name: 'Teaching' }],
+    organization: { id: 'org2', name: 'Bright Minds NGO', imageUrl: null },
     image: null,
   },
 ]
@@ -135,6 +173,27 @@ function matchesFilters(opportunity, filters = {}) {
 }
 
 /**
+ * يجلب الفرص المكتملة بنجاح فقط (وصلت للعدد الكامل من المتطوعين
+ * وانتهت فعليًا) — تُستخدم بسكشن "Success Stories" بالصفحة الرئيسية.
+ *
+ * TODO: لما يجهز endpoint الباك، ممكن يصير فلتر status=closed مباشرة
+ * من السيرفر بدل الفلترة هون، بدون ما تتغيّر واجهة الدالة.
+ */
+export async function fetchCompletedOpportunities() {
+  if (MOCK_MODE) {
+    await wait()
+    return MOCK_OPPORTUNITIES.filter((opportunity) => opportunity.status === 'closed')
+  }
+
+  try {
+    const response = await apiClient.get('/opportunities', { params: { status: 'closed' } })
+    return Array.isArray(response.data) ? response.data : response.data?.data || []
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, 'Failed to load completed opportunities'))
+  }
+}
+
+/**
  * Fetches opportunities, optionally filtered.
  * @param {{search?:string, categoryId?:string, skillId?:string, location?:string}} filters
  */
@@ -149,6 +208,56 @@ export async function fetchOpportunities(filters = {}) {
     return Array.isArray(response.data) ? response.data : response.data?.data || []
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load opportunities'))
+  }
+}
+
+// يتحقق إذا كان عمر المتطوع ضمن نطاق [minAge, maxAge] تبع الفرصة —
+// معلّق التفعيل حاليًا: الفرصة ما فيها minAge/maxAge لسا (بانتظار
+// موافقة المشرفة على الفكرة أصلًا)، فهاي الدالة برجع true دايمًا هلق
+// ولا تأثير فعلي إلها. لما توافق المشرفة ونضيف الحقلين لبيانات الفرصة،
+// بتشتغل تلقائيًا بدون أي تعديل إضافي هون.
+function isWithinAgeRange(volunteerAge, opportunity) {
+  if (volunteerAge == null) return true
+  if (!opportunity.minAge || !opportunity.maxAge) return true
+  return volunteerAge >= opportunity.minAge && volunteerAge <= opportunity.maxAge
+}
+
+/**
+ * يجلب الفرص المصنّفة "مناسبة" للمتطوع الحالي حسب الخوارزمية — بناءً
+ * على معلومات بروفايله الثابتة (مهاراته ومدينته حاليًا) فقط، مو فلترة
+ * يدوية أو تصنيف بشري.
+ *
+ * قرار مؤكد: الخوارزمية تعتمد فقط على بيانات البروفايل الموجودة أصلًا
+ * (سنا أكدت هيك) — ما في تتبع سلوك أو تفاعل (زي عدد فتحات فرصة معينة
+ * أو الفئات الأكثر تصفحًا)، فما في داعي نضيف أي كود لإرسال أحداث
+ * تفاعل من الفرونت مستقبلًا.
+ *
+ * TODO: لما يجهز endpoint الباك الحقيقي (اقتراح الفرص عبر الخوارزمية)،
+ * نستبدل منطق الـ MOCK هون بس، بدون ما نلمس أي Component يستخدمها.
+ * شكل الـ Response النهائي (وهل فيه matching score) لسا بانتظار تأكيد الباك.
+ *
+ * @param {{skillIds?: string[], age?: number|null, city?: string}} volunteer
+ */
+export async function fetchSuggestedOpportunities({ skillIds = [], age = null, city = '' } = {}) {
+  if (MOCK_MODE) {
+    await wait()
+    return MOCK_OPPORTUNITIES.filter((opportunity) => {
+      const matchesAge = isWithinAgeRange(age, opportunity)
+      const matchesSkill =
+        skillIds.length === 0 || opportunity.skills.some((skill) => skillIds.includes(skill.id))
+      const matchesCity = !city || opportunity.location.toLowerCase().includes(city.toLowerCase())
+
+      // نطاق العمر شرط أساسي (لأسباب تتعلق بمناسبة الفرصة فعليًا)، أما
+      // تطابق المهارة أو المدينة فيكفي واحد منهم ليُعتبر "مناسب"
+      return matchesAge && (matchesSkill || matchesCity)
+    })
+  }
+
+  try {
+    const response = await apiClient.get('/volunteers/me/suggested-opportunities')
+    return Array.isArray(response.data) ? response.data : response.data?.data || []
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, 'Failed to load suggested opportunities'))
   }
 }
 
@@ -226,7 +335,7 @@ export async function createOpportunity({ imageFile, ...payload }) {
       id: `o${Date.now()}`,
       status: OPPORTUNITY_STATUS.OPEN,
       currentVolunteers: 0,
-      organization: { id: 'org-mock', name: 'My Organization' },
+      organization: { id: 'org-mock', name: 'My Organization', imageUrl: null },
       image: imageFile ? URL.createObjectURL(imageFile) : null,
     }
     MOCK_MY_OPPORTUNITIES.unshift(newOpportunity)

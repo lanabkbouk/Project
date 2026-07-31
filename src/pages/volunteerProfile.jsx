@@ -93,10 +93,14 @@ export default function VolunteerProfile() {
         return;
       }
 
+      // بيتفعّل بس هون: نجاح استدعاء الحفظ دليل كافي إنو Zod schema
+      // (جوا ProfileForm) قبلت كل الحقول الإجبارية، فما في داعي نعيد
+      // فحصها. هاد العلم هو يلي بيقرأه RequireCompleteProfile لاحقًا.
       updateUser({
         ...data,
         skillIds: data.skills,
         imageUrl: result.data?.imageUrl || imagePreview,
+        profileCompleted: true,
       });
     } catch (err) {
       setSubmitError(err.message || "Failed to save profile");
@@ -127,7 +131,7 @@ export default function VolunteerProfile() {
               )}
             </div>
 
-            {/* 🔥 تمرير المهارات للـ Preview */}
+            {/*  رير المهارات للـ Preview */}
             <ProfilePreview
               fullName={fullName}
               email={user?.email}

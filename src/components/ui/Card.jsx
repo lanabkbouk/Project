@@ -37,7 +37,7 @@ export default function Card({
   return (
     <Component
       className={[
-        'rounded-2xl border border-heading/10 bg-bg shadow-sm hover:shadow-md transition-all',
+        'rounded-2xl border border-heading/10 bg-field shadow-sm hover:shadow-md transition-all',
         'w-full overflow-hidden flex flex-col',
         className,
       ].join(' ')}

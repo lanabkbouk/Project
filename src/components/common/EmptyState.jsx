@@ -1,3 +1,13 @@
+// components/common/EmptyState.jsx
+//
+// حالة فارغة موحّدة تُستخدم بكل الصفحات (بدل ما كل صفحة تبني حالتها
+// الفارغة يدويًا لحالها). الشكل: أيقونة + عنوان + وصف + زر إجراء بارز
+// (اختياري) — نفس النمط المتعارف عليه عالميًا بمعظم المواقع والتطبيقات
+// (GitHub, Notion, Linear...) لتشجيع المستخدم يتخذ الخطوة التالية بدل
+// ما يوقف عند "ما في شي هون".
+
+import Button from "../ui/Button";
+
 export default function EmptyState({
   icon: Icon,
   title,
@@ -23,12 +33,9 @@ export default function EmptyState({
       )}
 
       {actionLabel && onAction && (
-        <button
-          onClick={onAction}
-          className="mt-4 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-        >
+        <Button variant="primary" size="medium" onClick={onAction} className="mt-1">
           {actionLabel}
-        </button>
+        </Button>
       )}
     </div>
   );

@@ -39,7 +39,7 @@ export default function ProfileHeader({
 
       {/* الحالة + الجنس */}
       <div className="md:ml-auto flex flex-col items-end gap-4">
-        <Badge label="Active" tone="primary" />
+        {/* <Badge label="Active" tone="primary" /> */}
         <GenderBadge gender={gender} />
       </div>
     </div>

@@ -4,6 +4,15 @@ import { calculateAge } from '../validators'
 
 const GENDER_OPTIONS = ['Female', 'Male']
 
+const EDUCATION_LEVEL_OPTIONS = [
+  'No Formal Education',
+  'High School',
+  'Diploma',
+  "Bachelor's Degree",
+  "Master's Degree",
+  'PhD',
+]
+
 const SYRIA_GOVERNORATES = [
   'Damascus',
   'Rif Dimashq',
@@ -22,7 +31,9 @@ const SYRIA_GOVERNORATES = [
 ]
 
 export const profileSchema = z.object({
-  educationLevel: z.string().optional(),
+  educationLevel: z.enum(EDUCATION_LEVEL_OPTIONS, {
+    errorMap: () => ({ message: 'Please select your education level' }),
+  }),
 
   dateOfBirth: z
     .string()
@@ -32,16 +43,20 @@ export const profileSchema = z.object({
       return age !== null && age >= 18
     }, 'You must be 18 years or older to register as a volunteer'),
 
-  gender: z
-    .enum([...GENDER_OPTIONS, ''], {
-      errorMap: () => ({ message: 'Please select your gender' }),
-    })
-    .optional(),  
+  gender: z.enum(GENDER_OPTIONS, {
+    errorMap: () => ({ message: 'Please select your gender' }),
+  }),
 
+  // كانت غير موجودة أصلًا بالـ schema رغم وجودها بالفورم — كان ممكن
+  // تُحفظ فارغة بدون أي خطأ. هلق إجبارية متل باقي البروفايل.
+  city: z.enum(SYRIA_GOVERNORATES, {
+    errorMap: () => ({ message: 'Please select your governorate' }),
+  }),
 
   // Array of skill IDs — at least one is required
   skills: z.array(z.string()).min(1, 'Please select at least one skill'),
 
+  // الوحيدان الاختياريان بالبروفايل بقرار صريح
   interests: z.string().optional(),
   about: z.string().optional(),
 })

@@ -31,13 +31,11 @@ export default function Navbar({ role = "guest" }) {
     navigate(ROUTES.HOME);
   };
 
-  const baseLinks = [
-    { name: "Home", href: ROUTES.HOME },
-    { name: "About Us", href: ROUTES.ABOUT },
-  ];
+  const baseLinks = [{ name: "Home", href: ROUTES.HOME }];
+  const aboutLink = { name: "About Us", href: ROUTES.ABOUT };
 
   const roleLinks = linksByRole[role] || [];
-  const allLinks = [...baseLinks, ...roleLinks];
+  const allLinks = [...baseLinks, ...roleLinks, aboutLink];
 
   const linkClass = ({ isActive }) =>
     `relative inline-flex py-2 transition duration-300 ${

@@ -49,6 +49,8 @@ export default function Register() {
     register,
     handleSubmit,
     setError,
+    setValue,
+    setFocus,
     formState: { errors },
   } = useForm({
     defaultValues: initialValues,
@@ -77,7 +79,11 @@ export default function Register() {
     }
 
     const result = await execute(payload)
-    if (!result?.success) return
+    if (!result?.success) {
+      setValue('password', '')
+      setFocus('password')
+      return
+    }
 
     if (!login(result.data)) {
       setSuccessMessage('')
@@ -85,6 +91,7 @@ export default function Register() {
         type: 'manual',
         message: 'Account created but session could not be started. Please sign in.',
       })
+      setValue('password', '')
       return
     }
 

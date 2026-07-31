@@ -12,14 +12,11 @@ import { PARTICIPATION_STATUS } from '../constants/participationStatus'
 
 const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_PARTICIPATIONS || 'true') === 'true'
 
-// مثال واحد على كل حالة من الحالات الست، لعرضها بالتصميم قبل الربط مع الباك اند
+// مثال واحد على كل حالة من الحالات الثلاث المؤكدة، لعرضها بالتصميم قبل الربط مع الباك اند
 const MOCK_PARTICIPATIONS = [
   { id: 'p1', opportunityId: 'o1', status: PARTICIPATION_STATUS.PENDING, hoursLogged: 0, joinedDate: '2026-07-25' },
   { id: 'p2', opportunityId: 'o2', status: PARTICIPATION_STATUS.ACCEPTED, hoursLogged: 0, joinedDate: '2026-07-20' },
-  { id: 'p3', opportunityId: 'o3', status: PARTICIPATION_STATUS.ONGOING, hoursLogged: 4, joinedDate: '2026-07-10' },
-  { id: 'p4', opportunityId: 'o4', status: PARTICIPATION_STATUS.COMPLETED, hoursLogged: 12, joinedDate: '2026-06-01' },
   { id: 'p5', opportunityId: 'o1', status: PARTICIPATION_STATUS.REJECTED, hoursLogged: 0, joinedDate: '2026-05-15' },
-  { id: 'p6', opportunityId: 'o2', status: PARTICIPATION_STATUS.WITHDRAWN, hoursLogged: 0, joinedDate: '2026-05-01' },
 ]
 
 // بيانات متطوع تجريبية لكل مشاركة، تُستخدم فقط بجانب المنظمة (قائمة المتقدمين)
@@ -27,10 +24,7 @@ const MOCK_PARTICIPATIONS = [
 const MOCK_APPLICANT_PROFILES = {
   p1: { name: 'Lina Haddad', photo: null, city: 'Damascus', skills: ['First Aid', 'Communication'], phone: '+963911111111' },
   p2: { name: 'Omar Khalil', photo: null, city: 'Aleppo', skills: ['Teaching'], phone: '+963922222222' },
-  p3: { name: 'Sara Youssef', photo: null, city: 'Homs', skills: ['Event Management'], phone: '+963933333333' },
-  p4: { name: 'Adam Nasser', photo: null, city: 'Latakia', skills: ['Environmental Awareness'], phone: '+963944444444' },
   p5: { name: 'Maya Saleh', photo: null, city: 'Damascus', skills: ['Photography'], phone: '+963955555555' },
-  p6: { name: 'Tariq Amin', photo: null, city: 'Homs', skills: ['Coaching', 'Team Leadership'], phone: '+963966666666' },
 }
 
 function wait(duration = 300) {
@@ -106,11 +100,5 @@ export async function updateParticipationStatus(participationId, status) {
   }
 }
 
-/**
- * يسحب المتطوع طلب مشاركته بنفسه (فقط إن كانت حالته pending أو accepted).
- * @param {string} participationId
- * @returns {Promise<{success: boolean, error?: string}>}
- */
-export async function withdrawParticipation(participationId) {
-  return updateParticipationStatus(participationId, PARTICIPATION_STATUS.WITHDRAWN)
-}
+// withdrawParticipation انشالت مؤقتًا مع حالة WITHDRAWN — لو تأكدت
+// لاحقًا من الباك، ترجع الدالة والحالة مع بعض بنفس المكانين تمامًا.

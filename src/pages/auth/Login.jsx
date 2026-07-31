@@ -25,6 +25,8 @@ export default function Login() {
     register,
     handleSubmit,
     setError,
+    setValue,
+    setFocus,
     formState: { errors },
   } = useForm({
     defaultValues: initialValues,
@@ -47,16 +49,25 @@ export default function Login() {
     setLoading(true)
     setAuthError('')
 
+    // يفرّغ الباسورد بس (الإيميل بيضل زي ما هو) ويرجّع الفوكس له، جاهز
+    // لإعادة المحاولة — نفس السلوك المتّبع بـ Google/GitHub لأي محاولة فاشلة
+    const clearPasswordAndFocus = () => {
+      setValue('password', '')
+      setFocus('password')
+    }
+
     try {
       const result = await loginUser(validationResult.data)
 
       if (!result?.success) {
         setAuthError(result?.error || 'Unable to sign in')
+        clearPasswordAndFocus()
         return
       }
 
       if (!login(result.data)) {
         setAuthError('Received invalid authentication response')
+        clearPasswordAndFocus()
         return
       }
 
@@ -64,6 +75,7 @@ export default function Login() {
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : 'Unexpected error'
       setAuthError(message)
+      clearPasswordAndFocus()
     } finally {
       setLoading(false)
     }

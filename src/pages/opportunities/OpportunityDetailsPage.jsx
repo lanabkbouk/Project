@@ -7,6 +7,7 @@ import Button from "../../components/ui/Button";
 import OpportunityProgressBar from "../../components/opportunity/OpportunityProgressBar";
 import CategorySidebar from "../../components/opportunity/CategorySidebar";
 import SimilarOpportunities from "../../components/opportunity/SimilarOpportunities";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 import useAsyncAction from "../../hooks/useAsyncAction";
 import { fetchOpportunityById, participateInOpportunity } from "../../services/opportunities";
 import { fetchCategories } from "../../services/categories";
@@ -74,7 +75,11 @@ export default function OpportunityDetailsPage() {
   }
 
   if (loading) {
-    return <p className="max-w-7xl mx-auto px-4 py-10 text-sm text-heading/50">Loading...</p>;
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-10">
+        <LoadingSpinner message="Loading opportunity..." />
+      </div>
+    );
   }
 
   if (loadError || !opportunity) {
@@ -86,6 +91,10 @@ export default function OpportunityDetailsPage() {
   }
 
   const isVolunteer = isAuthenticated && accountType === ACCOUNT_TYPES.VOLUNTEER;
+  // حساب دقيق لكل حالة ممكنة لزر المشاركة، بدل ما يكون منطق الزر مبعثر
+  // بين onClick و disabled و النص — كل شي هون بمكان واحد وواضح.
+  const isGuest = !isAuthenticated;
+  const isNonVolunteerAccount = isAuthenticated && !isVolunteer; // حساب منظمة مسجّل دخوله
   const spotsLeft = Math.max(opportunity.maxVolunteers - opportunity.currentVolunteers, 0);
   const categoryName = opportunity.category?.name;
   const categoryStyle = CATEGORY_COLORS[categoryName] || CATEGORY_COLORS.Social;
@@ -168,12 +177,20 @@ export default function OpportunityDetailsPage() {
           <Button
             variant="primary"
             size="large"
-            onClick={isVolunteer ? handleParticipate : undefined}
+            onClick={
+              isGuest
+                ? () => navigate(ROUTES.REGISTER) // زائر: نحوّله مباشرة لإنشاء حساب، بلا رسالة وسيطة
+                : isVolunteer
+                  ? handleParticipate
+                  : undefined
+            }
             isLoading={joining}
-            disabled={!isVolunteer || hasJoined || spotsLeft === 0}
+            // الزر يتعطل بس لحالة: انضم فعلاً / اكتملت الفرصة / حساب منظمة مسجّل دخوله
+            // الزائر ما بينعطل الزر عندو، بينقله للتسجيل بدل ما يمنعه
+            disabled={isNonVolunteerAccount || hasJoined || spotsLeft === 0}
             loadingText="Joining..."
           >
-            {!isVolunteer
+            {isGuest
               ? "Participate"
               : hasJoined
                 ? "You're in! ✓"
@@ -182,24 +199,11 @@ export default function OpportunityDetailsPage() {
                   : "Participate"}
           </Button>
 
-          {!isVolunteer ? (
-            isAuthenticated ? (
-              <p className="mt-2 text-sm text-heading/50">
-                Only volunteer accounts can join opportunities.
-              </p>
-            ) : (
-              <p className="mt-2 text-sm text-heading/50">
-                You're browsing as a guest.{" "}
-                <Link to={ROUTES.LOGIN} className="text-primary font-medium">
-                  Log in
-                </Link>{" "}
-                or{" "}
-                <Link to={ROUTES.REGISTER} className="text-primary font-medium">
-                  create a volunteer account
-                </Link>{" "}
-                to participate in this opportunity.
-              </p>
-            )
+          {/* رسالة توضيحية تبقى بس لحساب منظمة مسجّل دخوله (مو متطوع) */}
+          {isNonVolunteerAccount ? (
+            <p className="mt-2 text-sm text-heading/50">
+              Only volunteer accounts can join opportunities.
+            </p>
           ) : null}
 
           {joinError ? <p className="mt-2 text-sm text-danger">{joinError}</p> : null}

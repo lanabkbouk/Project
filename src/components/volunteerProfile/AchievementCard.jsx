@@ -23,7 +23,7 @@ export default function AchievementCard({ achievement }) {
     <div
       className={`
         relative rounded-2xl p-5 flex flex-col gap-3
-        bg-bg border shadow-sm transition-all duration-300
+        bg-field border shadow-sm transition-all duration-300
         ${isUnlocked ? "border-heading/10 hover:shadow-lg hover:-translate-y-1" : "border-heading/10 grayscale opacity-70"}
       `}
     >

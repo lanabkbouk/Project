@@ -11,7 +11,7 @@ export default function ApplicantCard({ applicant, onAccept, onReject, isUpdatin
   if (!volunteer) return null;
 
   return (
-    <div className="rounded-2xl bg-bg border border-heading/10 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+    <div className="rounded-2xl bg-field border border-heading/10 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
       {/* الصورة الرمزية */}
       <div className="h-14 w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0">
         {volunteer.name?.charAt(0) || "?"}

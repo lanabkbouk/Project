@@ -7,7 +7,7 @@ export default function MainLayout() {
   const { accountType } = useAuth()
 
   return (
-    <div className='flex min-h-screen flex-col bg-slate-50 text-slate-900'>
+    <div className='flex min-h-screen flex-col bg-field text-heading'>
       <Navbar role={accountType || 'guest'} />
 
       <main className='w-full flex-1'>

@@ -8,7 +8,7 @@ const TONE_CLASSES = {
   secondary: "bg-secondary/10 text-secondary border-secondary/30",
   warning: "bg-yellow-500/10 text-yellow-700 border-yellow-500/40",
   danger: "bg-danger/10 text-danger border-danger/40",
-  header: "bg-bg text-heading border-heading/10"
+  header: "bg-field text-heading border-heading/10"
 }
 
 /**

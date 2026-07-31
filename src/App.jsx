@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { LEGACY_REDIRECTS, ROUTES } from './constants/paths'
 import { ACCOUNT_TYPES } from './constants/auth/accountTypes'
 import ProtectedRoute from './app/routes/ProtectedRoute'
+import RequireCompleteProfile from './app/routes/RequireCompleteProfile'
 import MainLayout from './layouts/MainLayout'
 
 import Home from './pages/home'
@@ -26,29 +27,34 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<MainLayout />}>
-          {/* Public */}
-          <Route path={ROUTES.HOME} element={<Home />} />
-          <Route path={ROUTES.ABOUT} element={<About />} />
-          <Route path={ROUTES.PARTICIPATES} element={<Participates />} />
-          <Route path={ROUTES.OPPORTUNITIES} element={<OpportunitiesListPage />} />
-          <Route path={ROUTES.OPPORTUNITY_DETAILS} element={<OpportunityDetailsPage />} />
-          <Route path={ROUTES.ORGANIZATIONS} element={<ComingSoon title='Organizations' />} />
+          {/* حارس عام: يمنع أي متطوع بروفايله ناقص من الوصول لأي صفحة
+              غير صفحة البروفايل نفسها. يلف حول Public + Volunteer + Organization
+              مع بعض، لأن الشرط "أي صفحة" يشمل حتى الصفحات العامة. */}
+          <Route element={<RequireCompleteProfile />}>
+            {/* Public */}
+            <Route path={ROUTES.HOME} element={<Home />} />
+            <Route path={ROUTES.ABOUT} element={<About />} />
+            <Route path={ROUTES.PARTICIPATES} element={<Participates />} />
+            <Route path={ROUTES.OPPORTUNITIES} element={<OpportunitiesListPage />} />
+            <Route path={ROUTES.OPPORTUNITY_DETAILS} element={<OpportunityDetailsPage />} />
+            <Route path={ROUTES.ORGANIZATIONS} element={<ComingSoon title='Organizations' />} />
 
-          {/* Volunteer */}
-          <Route element={<ProtectedRoute allowedAccountTypes={[ACCOUNT_TYPES.VOLUNTEER]} />}>
-            <Route path={ROUTES.VOLUNTEER_PROFILE} element={<VolunteerProfile />} />
-            <Route path={ROUTES.EXPLORE} element={<OpportunitiesListPage />} />
-            <Route path={ROUTES.MY_VOLUNTEERING} element={<Participates />} />
-          </Route>
+            {/* Volunteer */}
+            <Route element={<ProtectedRoute allowedAccountTypes={[ACCOUNT_TYPES.VOLUNTEER]} />}>
+              <Route path={ROUTES.VOLUNTEER_PROFILE} element={<VolunteerProfile />} />
+              <Route path={ROUTES.EXPLORE} element={<OpportunitiesListPage />} />
+              <Route path={ROUTES.MY_VOLUNTEERING} element={<Participates />} />
+            </Route>
 
-          {/* Organization */}
-          <Route element={<ProtectedRoute allowedAccountTypes={[ACCOUNT_TYPES.ORGANIZATION]} />}>
-            <Route path={ROUTES.ORGANIZATION_PROFILE} element={<OrgProfile />} />
-            <Route path={ROUTES.DASHBOARD} element={<ComingSoon title='Dashboard' />} />
-            <Route path={ROUTES.MY_CAUSES} element={<MyCauses />} />
-            <Route path={ROUTES.CREATE_CAUSE} element={<CreateEditCause />} />
-            <Route path={`${ROUTES.MY_CAUSES}/:id/edit`} element={<CreateEditCause />} />
-            <Route path={`${ROUTES.APPLICANTS}/:id`} element={<ApplicantsList />} />
+            {/* Organization */}
+            <Route element={<ProtectedRoute allowedAccountTypes={[ACCOUNT_TYPES.ORGANIZATION]} />}>
+              <Route path={ROUTES.ORGANIZATION_PROFILE} element={<OrgProfile />} />
+              <Route path={ROUTES.DASHBOARD} element={<ComingSoon title='Dashboard' />} />
+              <Route path={ROUTES.MY_CAUSES} element={<MyCauses />} />
+              <Route path={ROUTES.CREATE_CAUSE} element={<CreateEditCause />} />
+              <Route path={`${ROUTES.MY_CAUSES}/:id/edit`} element={<CreateEditCause />} />
+              <Route path={`${ROUTES.APPLICANTS}/:id`} element={<ApplicantsList />} />
+            </Route>
           </Route>
         </Route>
 

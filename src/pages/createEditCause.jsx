@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 import Typography from "../components/ui/Typography";
 import CauseForm from "../components/organization/CauseForm";
+import LoadingSpinner from "../components/common/LoadingSpinner";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
 import { fetchCategories } from "../services/categories";
@@ -121,8 +122,8 @@ export default function CreateEditCause() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <p className="text-sm text-heading/50">Loading...</p>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <LoadingSpinner message="Loading cause details..." />
       </div>
     );
   }

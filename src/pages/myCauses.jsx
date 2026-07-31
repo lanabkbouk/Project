@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, FolderPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Typography from "../components/ui/Typography";
 import Button from "../components/ui/Button";
 import MyCauseCard from "../components/organization/MyCauseCard";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
+import LoadingSpinner from "../components/common/LoadingSpinner";
+import EmptyState from "../components/common/EmptyState";
 import { fetchMyOpportunities, deleteOpportunity } from "../services/opportunities";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
 import { ROUTES } from "../constants/paths";
@@ -76,27 +78,20 @@ export default function MyCauses() {
 
       {error && <p className="text-sm text-danger mb-4">{error}</p>}
 
-          {loading ? (
-            <p>Loading your causes...</p>
-          ) : opportunities.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-heading/20 bg-heading/5 p-12 text-center">
-          <Typography variant="h4" className="mb-2">
-            You haven't posted any causes yet
-          </Typography>
-          <Typography variant="body" className="mb-6 text-body">
-            {isVerified
+      {loading ? (
+        <LoadingSpinner message="Loading your causes..." />
+      ) : opportunities.length === 0 ? (
+        <EmptyState
+          icon={FolderPlus}
+          title="You haven't posted any causes yet"
+          description={
+            isVerified
               ? "Create your first volunteering opportunity to start receiving applicants."
-              : "Once your organization is verified, you'll be able to publish your first cause."}
-          </Typography>
-          <Button
-            onClick={() => navigate(ROUTES.CREATE_CAUSE)}
-            disabled={!isVerified}
-            className="inline-flex items-center gap-2"
-          >
-            <Plus size={18} />
-            Create Your First Cause
-          </Button>
-        </div>
+              : "Once your organization is verified, you'll be able to publish your first cause."
+          }
+          actionLabel={isVerified ? "Create Your First Cause" : undefined}
+          onAction={isVerified ? () => navigate(ROUTES.CREATE_CAUSE) : undefined}
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
           {opportunities.map((opportunity) => (

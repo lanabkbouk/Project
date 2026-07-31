@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { Compass } from "lucide-react";
 import Typography from "../components/ui/Typography";
-import Button from "../components/ui/Button";
 import ParticipationCard from "../components/opportunity/ParticipationCard";
-import { fetchMyParticipations, withdrawParticipation } from "../services/participations";
+import LoadingSpinner from "../components/common/LoadingSpinner";
+import EmptyState from "../components/common/EmptyState";
+import { fetchMyParticipations } from "../services/participations";
 import { ROUTES } from "../constants/paths";
 
 export default function Participates() {
+  const navigate = useNavigate();
   const [participations, setParticipations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -31,22 +34,6 @@ export default function Participates() {
     };
   }, []);
 
-  const handleWithdraw = async (participationId) => {
-    const result = await withdrawParticipation(participationId);
-    if (!result.success) {
-      setError(result.error || "Failed to withdraw your request");
-      return;
-    }
-
-    setParticipations((current) =>
-      current.map((participation) =>
-        participation.id === participationId
-          ? { ...participation, status: "withdrawn" }
-          : participation
-      )
-    );
-  };
-
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <Typography variant="sectionTitle" className="mb-2">
@@ -57,25 +44,21 @@ export default function Participates() {
       </Typography>
 
       {loading ? (
-        <p className="text-sm text-heading/50">Loading...</p>
+        <LoadingSpinner message="Loading your volunteering history..." />
       ) : error ? (
         <p className="text-sm text-danger">{error}</p>
       ) : participations.length === 0 ? (
-        <div className="rounded-3xl bg-heading/5 border border-heading/10 p-10 text-center flex flex-col items-center gap-4">
-          <Typography variant="h4">You haven't joined any opportunities yet</Typography>
-          <Typography variant="body" className="text-body max-w-md">
-            Browse open opportunities that match your skills and start making an impact today.
-          </Typography>
-          <Link to={ROUTES.EXPLORE}>
-            <Button variant="primary" size="large">
-              Explore Opportunities
-            </Button>
-          </Link>
-        </div>
+        <EmptyState
+          icon={Compass}
+          title="You haven't joined any opportunities yet"
+          description="Browse open opportunities that match your skills and start making an impact today."
+          actionLabel="Explore Opportunities"
+          onAction={() => navigate(ROUTES.EXPLORE)}
+        />
       ) : (
         <div className="flex flex-col gap-4">
           {participations.map((participation) => (
-            <ParticipationCard key={participation.id} participation={participation} onWithdraw={handleWithdraw} />
+            <ParticipationCard key={participation.id} participation={participation} />
           ))}
         </div>
       )}

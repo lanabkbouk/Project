@@ -37,7 +37,7 @@ export default function NavbarDropdown({
           className={`
             absolute ${alignStyles[align]} ${width}
             mt-2 z-50
-            bg-bg
+            bg-field
             border-2 border-heading/20
             rounded-xl
             shadow-2xl

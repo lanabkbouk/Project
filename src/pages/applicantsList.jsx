@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Users } from "lucide-react";
 import Typography from "../components/ui/Typography";
 import ApplicantCard from "../components/organization/ApplicantCard";
+import LoadingSpinner from "../components/common/LoadingSpinner";
+import EmptyState from "../components/common/EmptyState";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
 import { fetchOpportunityById } from "../services/opportunities";
@@ -86,22 +88,23 @@ export default function ApplicantsList() {
       <Typography variant="sectionTitle" className="mb-1">
         Applicants
       </Typography>
-      <Typography variant="body" className="mb-8 text-body">
-        {loading ? "Loading..." : opportunity?.title}
-        {!loading && pendingCount > 0 ? ` — ${pendingCount} awaiting your review` : ""}
-      </Typography>
+      {!loading ? (
+        <Typography variant="body" className="mb-8 text-body">
+          {opportunity?.title}
+          {pendingCount > 0 ? ` — ${pendingCount} awaiting your review` : ""}
+        </Typography>
+      ) : null}
 
       {error && <p className="text-sm text-danger mb-4">{error}</p>}
 
-      {!loading && applicants.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-heading/20 bg-heading/5 p-12 text-center">
-          <Typography variant="h4" className="mb-2">
-            No applicants yet
-          </Typography>
-          <Typography variant="body" className="text-body">
-            Once volunteers apply to this cause, they'll show up here.
-          </Typography>
-        </div>
+      {loading ? (
+        <LoadingSpinner message="Loading applicants..." />
+      ) : applicants.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="No applicants yet"
+          description="Once volunteers apply to this cause, they'll show up here."
+        />
       ) : (
         <div className="flex flex-col gap-4">
           {applicants.map((applicant) => (

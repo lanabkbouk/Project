@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { AUTH_STORAGE_KEY } from '../../constants/auth/storage'
+import { ROUTES } from '../../constants/paths'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
@@ -24,6 +25,25 @@ apiClient.interceptors.request.use((config) => {
 
   return config
 })
+
+// عند انتهاء صلاحية التوكن أو رفضه (401)، الجلسة القديمة صارت عديمة الفائدة:
+// نمسحها فورًا ونرجّع المستخدم لصفحة تسجيل الدخول، بدل ما يضل "مسجل دخول"
+// شكليًا وهو فعليًا مرفوض من كل استدعاء API لاحق.
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      localStorage.removeItem(AUTH_STORAGE_KEY)
+
+      // تجنّب حلقة تحويل لا نهائية لو الـ 401 صار أصلًا من صفحة تسجيل الدخول نفسها
+      if (window.location.pathname !== ROUTES.LOGIN) {
+        window.location.assign(ROUTES.LOGIN)
+      }
+    }
+
+    return Promise.reject(error)
+  },
+)
 
 export function getApiErrorMessage(error, fallbackMessage = 'Something went wrong') {
   if (axios.isAxiosError(error)) {
