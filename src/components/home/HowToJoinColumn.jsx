@@ -1,4 +1,3 @@
-
 // عمود واحد (متطوع أو منظمة) بسكشن "How to Join". فصلته عن السكشن
 // نفسه لأن العمودين متطابقان بالبنية تمامًا وبيختلفوا بس بالمحتوى —
 // بدل تكرار نفس الـ JSX مرتين، Component واحد بياخد البيانات كـ props.
@@ -6,6 +5,7 @@
 import { Link } from "react-router-dom";
 import Typography from "../ui/Typography";
 import Button from "../ui/Button";
+import { PANEL_SURFACE } from "../../utils/surfaceStyles";
 
 export default function HowToJoinColumn({
   title,
@@ -16,7 +16,7 @@ export default function HowToJoinColumn({
   buttonVariant = "primary",
 }) {
   return (
-    <div className="rounded-3xl border border-heading/10 bg-heading/5 p-8">
+    <div className={`${PANEL_SURFACE} p-8`}>
       <Typography variant="h3" className="mb-2">
         {title}
       </Typography>
@@ -38,11 +38,9 @@ export default function HowToJoinColumn({
         ))}
       </ul>
 
-      <Link to={ctaHref}>
-        <Button variant={buttonVariant} fullWidth>
-          {ctaLabel}
-        </Button>
-      </Link>
+      <Button as={Link} to={ctaHref} variant={buttonVariant} fullWidth>
+        {ctaLabel}
+      </Button>
     </div>
   );
 }

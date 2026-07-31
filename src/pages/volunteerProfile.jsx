@@ -4,11 +4,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../context/AuthContext";
 import { updateVolunteerProfile } from "../services/volunteer";
 import { fetchAvailableSkills } from "../services/skills";
+import { PANEL_SURFACE } from "../utils/surfaceStyles";
 
 import ProfileHeader from "../components/volunteerProfile/ProfileHeader";
 import ProfileForm from "../components/volunteerProfile/ProfileForm";
 import ProfilePreview from "../components/volunteerProfile/ProfilePreview";
 import AchievementsList from "../components/volunteerProfile/AchievementsList";
+import Typography from "../components/ui/Typography";
+import Modal from "../components/ui/Modal";
+import Button from "../components/ui/Button";
+import useUnsavedChangesGuard from "../hooks/useUnsavedChangesGuard";
 import { profileSchema } from "../utils/auth/VolunteerProfileValidation";
 
 const normalizeGenderFromUser = (gender) => {
@@ -30,6 +35,7 @@ export default function VolunteerProfile() {
   const [imageFile, setImageFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   // 🔥 جلب المهارات هنا أيضًا حتى نمرّرها للـ Preview
   useEffect(() => {
@@ -67,6 +73,12 @@ export default function VolunteerProfile() {
     mode: "onSubmit",
   });
 
+  // نحجز التنقّل بس لما فيه تعديلات فعلية غير محفوظة، وما نحجزه أثناء
+  // عملية الحفظ نفسها (submitting) حتى ما يعلق المستخدم بمنتصف الحفظ
+  const unsavedChangesBlocker = useUnsavedChangesGuard(
+    methods.formState.isDirty && !submitting
+  );
+
   const fullName = user?.displayName;
 
   const onImageChange = (e) => {
@@ -84,6 +96,7 @@ export default function VolunteerProfile() {
   const onSubmit = async (data) => {
     setSubmitting(true);
     setSubmitError("");
+    setSuccessMessage("");
 
     try {
       const result = await updateVolunteerProfile({ values: data, photoFile: imageFile });
@@ -92,6 +105,12 @@ export default function VolunteerProfile() {
         setSubmitError(result.error || "Failed to save profile");
         return;
       }
+
+      setSuccessMessage("Profile saved successfully.");
+
+      // نصفّر حالة "isDirty" بعد نجاح الحفظ — وإلا حارس التنقّل الجديد
+      // (useUnsavedChangesGuard) رح يضل يحذّر المستخدم حتى بعد ما حفظ فعليًا
+      methods.reset(data);
 
       // بيتفعّل بس هون: نجاح استدعاء الحفظ دليل كافي إنو Zod schema
       // (جوا ProfileForm) قبلت كل الحقول الإجبارية، فما في داعي نعيد
@@ -124,10 +143,22 @@ export default function VolunteerProfile() {
             onSubmit={methods.handleSubmit(onSubmit)}
             className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6"
           >
-            <div className="lg:col-span-2 rounded-3xl bg-heading/5 border border-heading/10 p-6 md:p-8">
-              <ProfileForm submitting={submitting} />
+            <div className={`lg:col-span-2 ${PANEL_SURFACE} p-6 md:p-8`}>
+              <ProfileForm
+                submitting={submitting}
+                availableSkills={availableSkills}
+                skillsLoading={skillsLoading}
+              />
               {submitError && (
-                <p className="mt-4 text-sm text-danger">{submitError}</p>
+                <p className="mt-4 rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
+                  {submitError}
+                </p>
+              )}
+
+              {successMessage && (
+                <p className="mt-4 rounded-lg border border-green-600 bg-green-50 px-3 py-2 text-sm text-green-700">
+                  {successMessage}
+                </p>
               )}
             </div>
 
@@ -139,12 +170,34 @@ export default function VolunteerProfile() {
             />
           </form>
 
-          <section className="mt-8 rounded-3xl bg-heading/5 border border-heading/10 p-6 md:p-8">
-            <h2 className="text-lg font-semi bold mb-4 text-heading">Achievements</h2>
+          <section className={`mt-8 ${PANEL_SURFACE} p-6 md:p-8`}>
+            <Typography variant="h4" gutterBottom>
+              Achievements
+            </Typography>
             <AchievementsList />
           </section>
         </div>
       </div>
+
+      {/* نافذة تأكيد المغادرة — تظهر بس لما فيه تعديلات غير محفوظة
+          والمتطوع حاول ينتقل لصفحة تانية (رابط أو زر رجوع المتصفح) */}
+      <Modal
+        open={unsavedChangesBlocker.state === "blocked"}
+        onClose={() => unsavedChangesBlocker.reset?.()}
+        title="Unsaved changes"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => unsavedChangesBlocker.reset?.()}>
+              Stay on this page
+            </Button>
+            <Button variant="danger" onClick={() => unsavedChangesBlocker.proceed?.()}>
+              Leave without saving
+            </Button>
+          </>
+        }
+      >
+        You have unsaved changes to your profile. If you leave now, these changes will be lost.
+      </Modal>
     </FormProvider>
   );
 }

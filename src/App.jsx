@@ -1,4 +1,10 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import {
+  Navigate,
+  Route,
+  createBrowserRouter,
+  createRoutesFromElements,
+  RouterProvider,
+} from 'react-router-dom'
 import { LEGACY_REDIRECTS, ROUTES } from './constants/paths'
 import { ACCOUNT_TYPES } from './constants/auth/accountTypes'
 import ProtectedRoute from './app/routes/ProtectedRoute'
@@ -17,60 +23,67 @@ import CreateEditCause from './pages/createEditCause'
 import ApplicantsList from './pages/applicantsList'
 import OpportunitiesListPage from './pages/opportunities/OpportunitiesListPage'
 import OpportunityDetailsPage from './pages/opportunities/OpportunityDetailsPage'
+import Dashboard from './pages/dashboard'
 
 function ComingSoon({ title }) {
   return <div>{title} Page (Coming Soon)</div>
 }
 
-function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<MainLayout />}>
-          {/* حارس عام: يمنع أي متطوع بروفايله ناقص من الوصول لأي صفحة
-              غير صفحة البروفايل نفسها. يلف حول Public + Volunteer + Organization
-              مع بعض، لأن الشرط "أي صفحة" يشمل حتى الصفحات العامة. */}
-          <Route element={<RequireCompleteProfile />}>
-            {/* Public */}
-            <Route path={ROUTES.HOME} element={<Home />} />
-            <Route path={ROUTES.ABOUT} element={<About />} />
-            <Route path={ROUTES.PARTICIPATES} element={<Participates />} />
-            <Route path={ROUTES.OPPORTUNITIES} element={<OpportunitiesListPage />} />
-            <Route path={ROUTES.OPPORTUNITY_DETAILS} element={<OpportunityDetailsPage />} />
-            <Route path={ROUTES.ORGANIZATIONS} element={<ComingSoon title='Organizations' />} />
+// نفس شجرة الراوتس القديمة بالضبط، بس عبر createRoutesFromElements حتى
+// تصير جزء من Data Router — هاد التحويل ضروري لدعم useBlocker (حجز
+// التنقّل الحقيقي لحماية تعديلات غير محفوظة)، وهو الإعداد الحديث
+// الموصى فيه أصلًا من react-router نفسها.
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <>
+      <Route element={<MainLayout />}>
+        {/* حارس عام: يمنع أي متطوع بروفايله ناقص من الوصول لأي صفحة
+            غير صفحة البروفايل نفسها. يلف حول Public + Volunteer + Organization
+            مع بعض، لأن الشرط "أي صفحة" يشمل حتى الصفحات العامة. */}
+        <Route element={<RequireCompleteProfile />}>
+          {/* Public */}
+          <Route path={ROUTES.HOME} element={<Home />} />
+          <Route path={ROUTES.ABOUT} element={<About />} />
+          <Route path={ROUTES.PARTICIPATES} element={<Participates />} />
+          <Route path={ROUTES.OPPORTUNITIES} element={<OpportunitiesListPage />} />
+          <Route path={ROUTES.OPPORTUNITY_DETAILS} element={<OpportunityDetailsPage />} />
+          <Route path={ROUTES.ORGANIZATIONS} element={<ComingSoon title='Organizations' />} />
 
-            {/* Volunteer */}
-            <Route element={<ProtectedRoute allowedAccountTypes={[ACCOUNT_TYPES.VOLUNTEER]} />}>
-              <Route path={ROUTES.VOLUNTEER_PROFILE} element={<VolunteerProfile />} />
-              <Route path={ROUTES.EXPLORE} element={<OpportunitiesListPage />} />
-              <Route path={ROUTES.MY_VOLUNTEERING} element={<Participates />} />
-            </Route>
+          {/* Volunteer */}
+          <Route element={<ProtectedRoute allowedAccountTypes={[ACCOUNT_TYPES.VOLUNTEER]} />}>
+            <Route path={ROUTES.VOLUNTEER_PROFILE} element={<VolunteerProfile />} />
+            <Route path={ROUTES.EXPLORE} element={<OpportunitiesListPage />} />
+            <Route path={ROUTES.MY_VOLUNTEERING} element={<Participates />} />
+          </Route>
 
-            {/* Organization */}
-            <Route element={<ProtectedRoute allowedAccountTypes={[ACCOUNT_TYPES.ORGANIZATION]} />}>
-              <Route path={ROUTES.ORGANIZATION_PROFILE} element={<OrgProfile />} />
-              <Route path={ROUTES.DASHBOARD} element={<ComingSoon title='Dashboard' />} />
-              <Route path={ROUTES.MY_CAUSES} element={<MyCauses />} />
-              <Route path={ROUTES.CREATE_CAUSE} element={<CreateEditCause />} />
-              <Route path={`${ROUTES.MY_CAUSES}/:id/edit`} element={<CreateEditCause />} />
-              <Route path={`${ROUTES.APPLICANTS}/:id`} element={<ApplicantsList />} />
-            </Route>
+          {/* Organization */}
+          <Route element={<ProtectedRoute allowedAccountTypes={[ACCOUNT_TYPES.ORGANIZATION]} />}>
+            <Route path={ROUTES.ORGANIZATION_PROFILE} element={<OrgProfile />} />
+            <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
+            <Route path={ROUTES.MY_CAUSES} element={<MyCauses />} />
+            <Route path={ROUTES.CREATE_CAUSE} element={<CreateEditCause />} />
+            <Route path={`${ROUTES.MY_CAUSES}/:id/edit`} element={<CreateEditCause />} />
+            <Route path={`${ROUTES.APPLICANTS}/:id`} element={<ApplicantsList />} />
           </Route>
         </Route>
+      </Route>
 
-        {/* Auth */}
-        <Route path={ROUTES.LOGIN} element={<Login />} />
-        <Route path={ROUTES.REGISTER} element={<Register />} />
+      {/* Auth */}
+      <Route path={ROUTES.LOGIN} element={<Login />} />
+      <Route path={ROUTES.REGISTER} element={<Register />} />
 
-        {/* Legacy redirects */}
-        {LEGACY_REDIRECTS.map(({ from, to }) => (
-          <Route key={from} path={from} element={<Navigate to={to} replace />} />
-        ))}
+      {/* Legacy redirects */}
+      {LEGACY_REDIRECTS.map(({ from, to }) => (
+        <Route key={from} path={from} element={<Navigate to={to} replace />} />
+      ))}
 
-        <Route path='*' element={<div>Page not found</div>} />
-      </Routes>
-    </BrowserRouter>
-  )
+      <Route path='*' element={<div>Page not found</div>} />
+    </>,
+  ),
+)
+
+function App() {
+  return <RouterProvider router={router} />
 }
 
 export default App

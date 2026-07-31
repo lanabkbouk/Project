@@ -27,7 +27,7 @@ export default function ImageUploader({
   return (
     <div className="relative inline-block">
       <div
-        className={`${SIZE_CLASSES[size]} ${SHAPE_CLASSES[shape]} overflow-hidden border border-border/40 flex items-center justify-center`}
+        className={`${SIZE_CLASSES[size]} ${SHAPE_CLASSES[shape]} overflow-hidden border border-heading/10 flex items-center justify-center`}
       >
         {previewUrl ? (
           <img
@@ -44,14 +44,14 @@ export default function ImageUploader({
 
       {!disabled && (
         <label
-          className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-white border border-border/40 flex items-center justify-center cursor-pointer hover:bg-primary/10 transition-colors shadow-sm"
+          className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-field border border-heading/10 flex items-center justify-center cursor-pointer hover:bg-primary/10 transition-colors shadow-sm focus-within:ring-2 focus-within:ring-primary/40"
         >
           <span className="sr-only">Change the image</span>
           <Camera size={16} className="text-primary" />
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            className="hidden"
+            className="sr-only"
             onChange={onFileChange}
           />
         </label>

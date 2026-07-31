@@ -11,7 +11,6 @@ export default function OrganizationForm({ register, errors, onFieldChange }) {
         registerOptions={{ onChange: onFieldChange }}
         placeholder='Your Organization'
         error={errors?.orgName?.message}
-        labelClassName="text-white"
         required
       />
 
@@ -23,7 +22,6 @@ export default function OrganizationForm({ register, errors, onFieldChange }) {
         registerOptions={{ onChange: onFieldChange }}
         placeholder='Full Name'
         error={errors?.contactPerson?.message}
-        labelClassName="text-white"
         required
       />
       <Input
@@ -35,7 +33,6 @@ export default function OrganizationForm({ register, errors, onFieldChange }) {
         registerOptions={{ onChange: onFieldChange }}
         required
         error={errors?.verificationImage?.message}
-        labelClassName="text-white"
       />
 
     </>

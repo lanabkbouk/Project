@@ -1,4 +1,4 @@
-import { MapPin, Clock, Users } from "lucide-react";
+import { MapPin, Clock, Users, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Card from "../ui/Card";
 import Chip from "../ui/Chip";
@@ -6,7 +6,7 @@ import Button from "../ui/Button";
 import { CATEGORY_COLORS, CATEGORY_ICONS } from "../../utils/categoryStyles";
 import { ROUTES } from "../../constants/paths";
 
-export default function OpportunityCard({ opportunity }) {
+export default function OpportunityCard({ opportunity, recommended = false }) {
   const navigate = useNavigate();
   const categoryName = opportunity.category?.name;
   const categoryStyle = CATEGORY_COLORS[categoryName] || CATEGORY_COLORS.Social;
@@ -22,14 +22,21 @@ export default function OpportunityCard({ opportunity }) {
     </div>
   );
 
+  // شارة صلبة (مو شفافة متل Chip العادية) لضمان وضوحها فوق أي صورة خلفية
+  const recommendedBadge = recommended ? (
+    <span className="inline-flex items-center gap-1 rounded-full bg-primary text-white text-xs font-semibold px-3 py-1 shadow-sm">
+      <Sparkles size={12} aria-hidden="true" /> Recommended
+    </span>
+  ) : null;
+
   return (
     <Card
       imageSrc={opportunity.image}
       imageAlt={opportunity.title}
       imageFallback={imageFallback}
+      badge={recommendedBadge}
       title={opportunity.title}
       description={opportunity.description}
-      hideStats
       onAction={() => navigate(`${ROUTES.OPPORTUNITIES}/${opportunity.id}`)}
     >
       <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-body">

@@ -12,7 +12,6 @@ export default function VolunteerForm({ register, errors, onFieldChange }) {
         placeholder='John'
         error={errors?.firstName?.message}
         autoComplete='given-name'
-        labelClassName="text-white"
         required
       />
 
@@ -25,7 +24,6 @@ export default function VolunteerForm({ register, errors, onFieldChange }) {
         placeholder='Doe'
         error={errors?.lastName?.message}
         autoComplete='family-name'
-        labelClassName="text-white"
         required
       />
 

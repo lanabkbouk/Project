@@ -1,5 +1,6 @@
 import { Search } from "lucide-react";
 import Input from "../ui/Input";
+import { PANEL_SURFACE } from "../../utils/surfaceStyles";
 
 export default function CategorySidebar({
   categories,
@@ -21,7 +22,7 @@ export default function CategorySidebar({
         />
       ) : null}
 
-      <div className="rounded-3xl bg-heading/5 border border-heading/10 p-5">
+      <div className={`${PANEL_SURFACE} p-5`}>
         <h3 className="text-sm font-semibold uppercase tracking-wide text-heading/60 mb-3">
           Categories
         </h3>
@@ -31,7 +32,7 @@ export default function CategorySidebar({
             <button
               type="button"
               onClick={() => onSelectCategory("")}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-colors ${
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
                 activeCategoryId === ""
                   ? "bg-primary/10 text-primary font-semibold"
                   : "text-heading/70 hover:bg-primary/5"
@@ -46,7 +47,7 @@ export default function CategorySidebar({
               <button
                 type="button"
                 onClick={() => onSelectCategory(category.id)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-colors ${
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   activeCategoryId === category.id
                     ? "bg-primary/10 text-primary font-semibold"
                     : "text-heading/70 hover:bg-primary/5"

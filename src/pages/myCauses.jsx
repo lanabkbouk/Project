@@ -5,7 +5,7 @@ import Typography from "../components/ui/Typography";
 import Button from "../components/ui/Button";
 import MyCauseCard from "../components/organization/MyCauseCard";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
-import LoadingSpinner from "../components/common/LoadingSpinner";
+import CardSkeleton from "../components/ui/CardSkeleton";
 import EmptyState from "../components/common/EmptyState";
 import { fetchMyOpportunities, deleteOpportunity } from "../services/opportunities";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
@@ -61,35 +61,49 @@ export default function MyCauses() {
           </Typography>
         </div>
 
-        <div className="flex flex-col items-end gap-1">
-          <Button
-            onClick={() => navigate(ROUTES.CREATE_CAUSE)}
-            disabled={!isVerified}
-            className="flex items-center gap-2"
-          >
-            <Plus size={18} />
-            New Cause
-          </Button>
-          {!isVerified && (
-            <p className="text-xs text-heading/50">Available once your organization is verified</p>
-          )}
-        </div>
+        {!loading && opportunities.length > 0 && (
+          <div className="flex flex-col items-end gap-1">
+            <Button
+              onClick={() => navigate(ROUTES.CREATE_CAUSE)}
+              disabled={!isVerified}
+              className="flex items-center gap-2"
+            >
+              <Plus size={18} />
+              New Cause
+            </Button>
+            {!isVerified && (
+              <p className="text-xs text-heading/50">Available once your organization is verified</p>
+            )}
+          </div>
+        )}
       </div>
 
-      {error && <p className="text-sm text-danger mb-4">{error}</p>}
+      {error && (
+        <p className="mb-4 rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
+          {error}
+        </p>
+      )}
 
       {loading ? (
-        <LoadingSpinner message="Loading your causes..." />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <CardSkeleton key={index} />
+          ))}
+        </div>
       ) : opportunities.length === 0 ? (
         <EmptyState
           icon={FolderPlus}
-          title="You haven't posted any causes yet"
+          title={
+            isVerified
+              ? "Your organization hasn't published any causes yet."
+              : "You haven't posted any causes yet"
+          }
           description={
             isVerified
               ? "Create your first volunteering opportunity to start receiving applicants."
               : "Once your organization is verified, you'll be able to publish your first cause."
           }
-          actionLabel={isVerified ? "Create Your First Cause" : undefined}
+          actionLabel={isVerified ? "Create Your Organization's First Cause" : undefined}
           onAction={isVerified ? () => navigate(ROUTES.CREATE_CAUSE) : undefined}
         />
       ) : (

@@ -69,3 +69,72 @@ textarea:-webkit-autofill:focus {
 .nav-underline:hover::after {
   width: 100%;
 }
+
+/* حركة دخول ناعمة لبطاقة صفحات المصادقة (Login/Register) */
+@keyframes shell-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-shell-in {
+  animation: shell-in 0.45s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shell-in {
+    animation: none;
+  }
+
+  .animate-pulse {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  .animate-unlock-glow {
+    animation: none;
+  }
+
+  .animate-button-ripple {
+    animation: none;
+    display: none;
+  }
+}
+
+/* حلقة توهّج تنبض مرة وحدة حول بطاقة إنجاز فُتحت لأول مرة */
+@keyframes unlock-glow {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 45%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 14px color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+}
+
+.animate-unlock-glow {
+  animation: unlock-glow 1.1s ease-out 1;
+}
+
+/* موجة الضغط بالأزرار (Button Ripple) — تتوسّع من نقطة الضغطة وتخف تدريجيًا */
+@keyframes button-ripple {
+  from {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+.animate-button-ripple {
+  animation: button-ripple 0.6s ease-out;
+}

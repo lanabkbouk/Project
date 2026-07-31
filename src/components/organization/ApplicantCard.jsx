@@ -3,6 +3,7 @@ import Chip from "../ui/Chip";
 import Button from "../ui/Button";
 import ParticipationStatusBadge from "../opportunity/ParticipationStatusBadge";
 import { PARTICIPATION_STATUS } from "../../constants/participationStatus";
+import { CARD_BASE } from "../../utils/surfaceStyles";
 
 export default function ApplicantCard({ applicant, onAccept, onReject, isUpdating, isVerified = true }) {
   const { volunteer, status, participatedAt } = applicant;
@@ -11,7 +12,7 @@ export default function ApplicantCard({ applicant, onAccept, onReject, isUpdatin
   if (!volunteer) return null;
 
   return (
-    <div className="rounded-2xl bg-field border border-heading/10 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+    <div className={`${CARD_BASE} flex flex-col sm:flex-row sm:items-center gap-4`}>
       {/* الصورة الرمزية */}
       <div className="h-14 w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0">
         {volunteer.name?.charAt(0) || "?"}

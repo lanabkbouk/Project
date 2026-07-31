@@ -1,0 +1,472 @@
+diff --git a/.env b/.env
+index fe5345c..0a2a212 100644
+--- a/.env
++++ b/.env
+@@ -1,9 +1,5 @@
+ VITE_API_BASE_URL=http://127.0.0.1:8000/api
+-VITE_USE_MOCK_AUTH=true
+-VITE_USE_MOCK_CATALOG=true
+-VITE_USE_MOCK_OPPORTUNITIES=true
+-VITE_USE_MOCK_PARTICIPATIONS=true
+-VITE_USE_MOCK_ORGANIZATION_PROFILE=true
+-VITE_USE_MOCK_VOLUNTEER_PROFILE=true
+-VITE_USE_MOCK_STATS=true
+-VITE_USE_MOCK_ACHIEVEMENTS=true
+\ No newline at end of file
++
++# وضع تشغيل الخدمات: mock (بيانات تجريبية محليًا) أو real (ربط فعلي بـ Laravel)
++# مفتاح واحد فقط لكل المشروع بدل متغير منفصل لكل خدمة
++VITE_API_MODE=mock
+diff --git a/src/services/achievements.js b/src/services/achievements.js
+index 57f4d22..06ace9b 100644
+--- a/src/services/achievements.js
++++ b/src/services/achievements.js
+@@ -30,13 +30,15 @@
+ // whatever the API returns — nothing about which achievements exist, or
+ // whether they're unlocked, is hardcoded on the client.
+ //
+-// TODO: once the Laravel backend is ready, set VITE_USE_MOCK_ACHIEVEMENTS=false
++// TODO: once the Laravel backend is ready, set VITE_API_MODE=real
+ // GET /api/volunteers/{volunteerId}/achievements
+ // Expected response: [{ id, name, description, unlocked, earnedDate }, ...]
+ 
+ import { apiClient, getApiErrorMessage } from './api/client'
++import { isMockMode } from './api/mockMode'
++import { wait } from './api/delay'
+ 
+-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_ACHIEVEMENTS || 'true') === 'true'
++const MOCK_MODE = isMockMode()
+ 
+ const MOCK_ACHIEVEMENTS = [
+   {
+@@ -62,10 +64,6 @@ const MOCK_ACHIEVEMENTS = [
+   },
+ ]
+ 
+-function wait(duration = 300) {
+-  return new Promise((resolve) => setTimeout(resolve, duration))
+-}
+-
+ /**
+  * Fetches the FULL achievement catalog for a volunteer, each entry flagged
+  * with whether it's unlocked yet (so locked ones can still be displayed).
+@@ -84,7 +82,7 @@ export async function fetchVolunteerAchievements(volunteerId) {
+       : '/volunteers/me/achievements'
+ 
+     const response = await apiClient.get(endpoint)
+-    return Array.isArray(response.data) ? response.data : response.data?.data || []
++    return response.data || []
+   } catch (error) {
+     throw new Error(getApiErrorMessage(error, 'Failed to load achievements'))
+   }
+diff --git a/src/services/api/client.js b/src/services/api/client.js
+index 2fb01dd..97ed5de 100644
+--- a/src/services/api/client.js
++++ b/src/services/api/client.js
+@@ -26,11 +26,29 @@ apiClient.interceptors.request.use((config) => {
+   return config
+ })
+ 
++// Laravel API Resources تلف كل استجابة (عنصر واحد أو قائمة) بمفتاح "data"،
++// وأحيانًا تضيف "meta"/"links" مع الـ Pagination. كنا نفكّ هالتغليف يدويًا
++// وبأشكال مختلفة داخل كل ملف خدمة على حدة:
++//   Array.isArray(response.data) ? response.data : response.data?.data || []
++// نفكّه هون مرة وحدة بس، فيصير كود كل خدمة يتعامل مع response.data مباشرة
++// وكأنه البيانات النهائية فعلاً، بغض النظر إذا كانت قائمة أو كائن واحد.
++function unwrapLaravelEnvelope(response) {
++  const body = response.data
++
++  if (body && typeof body === 'object' && !Array.isArray(body) && 'data' in body) {
++    response.meta = body.meta
++    response.links = body.links
++    response.data = body.data
++  }
++
++  return response
++}
++
+ // عند انتهاء صلاحية التوكن أو رفضه (401)، الجلسة القديمة صارت عديمة الفائدة:
+ // نمسحها فورًا ونرجّع المستخدم لصفحة تسجيل الدخول، بدل ما يضل "مسجل دخول"
+ // شكليًا وهو فعليًا مرفوض من كل استدعاء API لاحق.
+ apiClient.interceptors.response.use(
+-  (response) => response,
++  (response) => unwrapLaravelEnvelope(response),
+   (error) => {
+     if (axios.isAxiosError(error) && error.response?.status === 401) {
+       localStorage.removeItem(AUTH_STORAGE_KEY)
+diff --git a/src/services/api/delay.js b/src/services/api/delay.js
+new file mode 100644
+index 0000000..e2e7661
+--- /dev/null
++++ b/src/services/api/delay.js
+@@ -0,0 +1,7 @@
++// تأخير اصطناعي موحّد لمحاكاة زمن استجابة الشبكة في وضع Mock فقط.
++// كان مكررًا كدالة محلية داخل 9 ملفات خدمات مختلفة بنفس المنطق تمامًا؛
++// أي تعديل مستقبلي (مثلاً جعل التأخير عشوائيًا ليحاكي الشبكة بواقعية أكبر)
++// يصير هون مرة وحدة بدل تعديل 9 ملفات.
++export function wait(duration = 300) {
++  return new Promise((resolve) => setTimeout(resolve, duration))
++}
+diff --git a/src/services/api/mockMode.js b/src/services/api/mockMode.js
+index 73ea3ff..bb06e72 100644
+--- a/src/services/api/mockMode.js
++++ b/src/services/api/mockMode.js
+@@ -1,5 +1,14 @@
+-// نقطة واحدة لتحديد ما إذا كانت الخدمات تعمل بوضع المحاكاة أو مع API حقيقي
+-// استُخدمت من قبل عدة ملفات (auth.js, organizations.js...) لتفادي التكرار
++// نقطة واحدة لتحديد وضع تشغيل كل خدمات المشروع: محاكاة (mock) أو ربط
++// حقيقي بالباك اند (real). كل ملفات services/*.js تستورد isMockMode()
++// من هنا فقط — بدل ما كان عندنا 8 متغيرات بيئة منفصلة
++// (VITE_USE_MOCK_AUTH, VITE_USE_MOCK_CATALOG, VITE_USE_MOCK_OPPORTUNITIES...)
++// كل وحدة فيها احتمال تنسى تبدّليها لما يجهز endpoint معيّن بالباك اند.
++//
++// وضع الانتقال التدريجي: لو احتجتي مستقبلًا تفعّلي endpoint واحد بس
++// وتخلّي الباقي Mock (لحالات اختبار جزئي)، أضيفي استثناء صريح هون بدل
++// الرجوع لمتغيرات بيئة متفرقة — مثال:
++//   const MOCK_OVERRIDES = { auth: false }
++//   export function isMockMode(domain) { return MOCK_OVERRIDES[domain] ?? (import.meta.env.VITE_API_MODE || 'mock') !== 'real' }
+ export function isMockMode() {
+-  return (import.meta.env.VITE_USE_MOCK_AUTH || 'true') === 'true'
+-}
+\ No newline at end of file
++  return (import.meta.env.VITE_API_MODE || 'mock') !== 'real'
++}
+diff --git a/src/services/auth.js b/src/services/auth.js
+index 85cff0a..1693f51 100644
+--- a/src/services/auth.js
++++ b/src/services/auth.js
+@@ -1,13 +1,11 @@
+ import { ACCOUNT_TYPES } from '../constants/auth/accountTypes'
+ import { MOCK_USERS_STORAGE_KEY } from '../constants/auth/storage'
+ import { apiClient, getApiErrorMessage } from './api/client'
++import { isMockMode } from './api/mockMode'
++import { wait } from './api/delay'
+ import { normalizeUser } from '../utils/auth/normalizeUser'
+ 
+-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_AUTH || 'true') === 'true'
+-
+-function wait(duration = 300) {
+-  return new Promise((resolve) => setTimeout(resolve, duration))
+-}
++const MOCK_MODE = isMockMode()
+ 
+ function loadMockUsers() {
+   try {
+@@ -53,8 +51,9 @@ function resolveAccountType(data) {
+ }
+ 
+ // بناء بيانات المصادقة (user/token/accountType) من استجابة الـ API أو الـ Mock
+-// ملاحظة مهمة: responseData هنا هو بالفعل response.data.data القادم من Laravel
+-// أي أنه على شكل { user, token } مباشرة، وليس فيه مستوى "data" إضافي
++// ملاحظة: apiClient يفكّ تغليف Laravel تلقائيًا (راجع unwrapLaravelEnvelope
++// في api/client.js)، فـ responseData هون هو { user, token } مباشرة، بدون
++// أي حاجة لقراءة response.data.data يدويًا هنا
+ function buildAuthPayload(responseData, fallbackEmail = '') {
+   const apiUser = responseData?.user
+   const apiToken = responseData?.token
+@@ -121,7 +120,7 @@ export async function registerUser(payload) {
+   try {
+     const formData = buildRegisterFormData(payload)
+     const response = await apiClient.post('/register', formData)
+-    return { success: true, data: buildAuthPayload(response.data.data, payload.email.trim().toLowerCase()) }
++    return { success: true, data: buildAuthPayload(response.data, payload.email.trim().toLowerCase()) }
+   } catch (error) {
+     return { success: false, error: getApiErrorMessage(error, 'Unable to register account') }
+   }
+@@ -149,7 +148,7 @@ export async function loginUser(payload) {
+     const response = await apiClient.post('/login', payload)
+     return {
+       success: true,
+-      data: buildAuthPayload(response.data.data, payload.email.trim().toLowerCase()),
++      data: buildAuthPayload(response.data, payload.email.trim().toLowerCase()),
+     }
+   } catch (error) {
+     return { success: false, error: getApiErrorMessage(error, 'Unable to sign in') }
+diff --git a/src/services/categories.js b/src/services/categories.js
+index 34e3c64..4e1d910 100644
+--- a/src/services/categories.js
++++ b/src/services/categories.js
+@@ -12,12 +12,14 @@
+ // a Laravel `withCount('opportunities')` relation would return, used only
+ // to render the counts next to each category in the sidebar.
+ //
+-// TODO: once Laravel is ready, set VITE_USE_MOCK_CATALOG=false
++// TODO: once Laravel is ready, set VITE_API_MODE=real
+ // GET /api/categories -> [{ id, name, description, opportunitiesCount }, ...]
+ 
+ import { apiClient, getApiErrorMessage } from './api/client'
++import { isMockMode } from './api/mockMode'
++import { wait } from './api/delay'
+ 
+-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_CATALOG || 'true') === 'true'
++const MOCK_MODE = isMockMode()
+ 
+ const MOCK_CATEGORIES = [
+   { id: 'c1', name: 'Health', description: 'Health awareness, care, and support programs', opportunitiesCount: 6 },
+@@ -28,10 +30,6 @@ const MOCK_CATEGORIES = [
+   { id: 'c6', name: 'Technical', description: 'IT, design, and technical support projects', opportunitiesCount: 4 },
+ ]
+ 
+-function wait(duration = 250) {
+-  return new Promise((resolve) => setTimeout(resolve, duration))
+-}
+-
+ /**
+  * Fetches all categories (shared across opportunities, skills, and achievements).
+  * @returns {Promise<Array<{id:string, name:string, description:string, opportunitiesCount:number}>>}
+@@ -44,7 +42,7 @@ export async function fetchCategories() {
+ 
+   try {
+     const response = await apiClient.get('/categories')
+-    return Array.isArray(response.data) ? response.data : response.data?.data || []
++    return response.data || []
+   } catch (error) {
+     throw new Error(getApiErrorMessage(error, 'Failed to load categories'))
+   }
+diff --git a/src/services/opportunities.js b/src/services/opportunities.js
+index b08f8c4..e20a69c 100644
+--- a/src/services/opportunities.js
++++ b/src/services/opportunities.js
+@@ -6,15 +6,17 @@
+ // + category (via "categorized"), skills (via "requires"),
+ // + organization (via "publishes").
+ //
+-// TODO: once Laravel is ready, set VITE_USE_MOCK_OPPORTUNITIES=false
++// TODO: once Laravel is ready, set VITE_API_MODE=real
+ // GET  /api/opportunities            -> list (supports ?search=&categoryId=&skillId=&location=)
+ // GET  /api/opportunities/{id}       -> single opportunity
+ // POST /api/opportunities/{id}/participate -> join an opportunity
+ 
+ import { apiClient, getApiErrorMessage } from './api/client'
++import { isMockMode } from './api/mockMode'
++import { wait } from './api/delay'
+ import { OPPORTUNITY_STATUS } from '../constants/opportunityStatus'
+ 
+-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_OPPORTUNITIES || 'true') === 'true'
++const MOCK_MODE = isMockMode()
+ 
+ // فرص "حسابي" (يخص حساب المنظمة المسجّلة دخولها بالـ Mock) — تبدأ فاضية
+ // عمدًا، لأن أي حساب منظمة جديد فعليًا لم ينشر أي فرصة بعد. منفصلة تمامًا
+@@ -138,10 +140,6 @@ const MOCK_OPPORTUNITIES = [
+   },
+ ]
+ 
+-function wait(duration = 300) {
+-  return new Promise((resolve) => setTimeout(resolve, duration))
+-}
+-
+ // يبني FormData لطلب إنشاء/تعديل فرصة، مع إرفاق الصورة إن وُجدت
+ function buildOpportunityFormData(payload, imageFile) {
+   const formData = new FormData()
+@@ -187,7 +185,7 @@ export async function fetchCompletedOpportunities() {
+ 
+   try {
+     const response = await apiClient.get('/opportunities', { params: { status: 'closed' } })
+-    return Array.isArray(response.data) ? response.data : response.data?.data || []
++    return response.data || []
+   } catch (error) {
+     throw new Error(getApiErrorMessage(error, 'Failed to load completed opportunities'))
+   }
+@@ -205,7 +203,7 @@ export async function fetchOpportunities(filters = {}) {
+ 
+   try {
+     const response = await apiClient.get('/opportunities', { params: filters })
+-    return Array.isArray(response.data) ? response.data : response.data?.data || []
++    return response.data || []
+   } catch (error) {
+     throw new Error(getApiErrorMessage(error, 'Failed to load opportunities'))
+   }
+@@ -255,7 +253,7 @@ export async function fetchSuggestedOpportunities({ skillIds = [], age = null, c
+ 
+   try {
+     const response = await apiClient.get('/volunteers/me/suggested-opportunities')
+-    return Array.isArray(response.data) ? response.data : response.data?.data || []
++    return response.data || []
+   } catch (error) {
+     throw new Error(getApiErrorMessage(error, 'Failed to load suggested opportunities'))
+   }
+@@ -301,7 +299,7 @@ export async function fetchMyOpportunities() {
+ 
+   try {
+     const response = await apiClient.get('/organizations/me/opportunities')
+-    return Array.isArray(response.data) ? response.data : response.data?.data || []
++    return response.data || []
+   } catch (error) {
+     throw new Error(getApiErrorMessage(error, 'Failed to load your causes'))
+   }
+diff --git a/src/services/organization.js b/src/services/organization.js
+index 6df1111..c3da6ce 100644
+--- a/src/services/organization.js
++++ b/src/services/organization.js
+@@ -2,7 +2,7 @@
+ //
+ // جلب وتحديث بروفايل المنظمة الحالية (المسجّلة دخول). بنفس نمط
+ //
+-// TODO: لما يجهز الباك اند، خلي VITE_USE_MOCK_ORGANIZATION_PROFILE=false
++// TODO: لما يجهز الباك اند، خلي VITE_API_MODE=real
+ // GET  /api/organizations/me   → بروفايل المنظمة الحالية (فيها status)
+ // POST /api/organizations/me   (multipart, _method=PUT عند التحديث)
+ //
+@@ -12,15 +12,13 @@
+ // المنظمة بعد ما توافق عليها السوبر أدمن.
+ 
+ import { apiClient, getApiErrorMessage } from './api/client'
++import { isMockMode } from './api/mockMode'
++import { wait } from './api/delay'
+ import { ORGANIZATION_STATUS } from '../constants/organizationStatus'
+ import { AUTH_STORAGE_KEY } from '../constants/auth/storage'
+ import { loadMockUsers, updateMockUser } from './mock/mockUserStore'
+ 
+-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_ORGANIZATION_PROFILE || 'true') === 'true'
+-
+-function wait(duration = 300) {
+-  return new Promise((resolve) => setTimeout(resolve, duration))
+-}
++const MOCK_MODE = isMockMode()
+ 
+ // إيميل المستخدم المسجّل دخوله حاليًا (من نفس الجلسة يلي AuthContext خزّنها)
+ // بنستخدمه لنلاقي سجل هالمنظمة بالضبط جوا mockUsers، بدل ما نرجّع بيانات ثابتة
+diff --git a/src/services/participations.js b/src/services/participations.js
+index c70993e..9a364c7 100644
+--- a/src/services/participations.js
++++ b/src/services/participations.js
+@@ -2,15 +2,17 @@
+ // Returns the opportunities the currently logged-in volunteer has joined,
+ // each enriched with participation-specific fields (status, hours logged).
+ //
+-// TODO: once Laravel is ready, set VITE_USE_MOCK_PARTICIPATIONS=false
++// TODO: once Laravel is ready, set VITE_API_MODE=real
+ // GET /api/volunteers/me/participations
+ // Expected response: [{ opportunityId, status, hoursLogged, joinedDate, opportunity }, ...]
+ 
+ import { apiClient, getApiErrorMessage } from './api/client'
++import { isMockMode } from './api/mockMode'
++import { wait } from './api/delay'
+ import { fetchOpportunities } from './opportunities'
+ import { PARTICIPATION_STATUS } from '../constants/participationStatus'
+ 
+-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_PARTICIPATIONS || 'true') === 'true'
++const MOCK_MODE = isMockMode()
+ 
+ // مثال واحد على كل حالة من الحالات الثلاث المؤكدة، لعرضها بالتصميم قبل الربط مع الباك اند
+ const MOCK_PARTICIPATIONS = [
+@@ -27,10 +29,6 @@ const MOCK_APPLICANT_PROFILES = {
+   p5: { name: 'Maya Saleh', photo: null, city: 'Damascus', skills: ['Photography'], phone: '+963955555555' },
+ }
+ 
+-function wait(duration = 300) {
+-  return new Promise((resolve) => setTimeout(resolve, duration))
+-}
+-
+ /**
+  * Fetches the current volunteer's participations (joined opportunities).
+  * @returns {Promise<Array<{opportunityId:string, status:string, hoursLogged:number, joinedDate:string, opportunity:object}>>}
+@@ -47,7 +45,7 @@ export async function fetchMyParticipations() {
+ 
+   try {
+     const response = await apiClient.get('/volunteers/me/participations')
+-    return Array.isArray(response.data) ? response.data : response.data?.data || []
++    return response.data || []
+   } catch (error) {
+     throw new Error(getApiErrorMessage(error, 'Failed to load your volunteering history'))
+   }
+@@ -72,7 +70,7 @@ export async function fetchApplicantsForOpportunity(opportunityId) {
+ 
+   try {
+     const response = await apiClient.get(`/opportunities/${opportunityId}/participants`)
+-    return Array.isArray(response.data) ? response.data : response.data?.data || []
++    return response.data || []
+   } catch (error) {
+     throw new Error(getApiErrorMessage(error, 'Failed to load applicants'))
+   }
+diff --git a/src/services/skills.js b/src/services/skills.js
+index 6eff853..33bc31e 100644
+--- a/src/services/skills.js
++++ b/src/services/skills.js
+@@ -5,13 +5,15 @@
+ // This lets the Volunteer Profile group skills by category and lets
+ // Opportunities match required skills.
+ //
+-// TODO: once Laravel is ready, set VITE_USE_MOCK_CATALOG=false
++// TODO: once Laravel is ready, set VITE_API_MODE=real
+ // GET /api/skills -> [{ id, name, categoryId }, ...]
+ 
+ import { apiClient, getApiErrorMessage } from "./api/client";
++import { isMockMode } from "./api/mockMode";
++import { wait } from "./api/delay";
+ import { fetchCategories } from "./categories"; // ← مهم جداً
+ 
+-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_CATALOG || "true") === "true";
++const MOCK_MODE = isMockMode();
+ 
+ const MOCK_SKILLS = [
+   // Health (c1)
+@@ -43,10 +45,6 @@ const MOCK_SKILLS = [
+   { id: "s16", name: "Photography", categoryId: "c6" },
+ ];
+ 
+-function wait(duration = 250) {
+-  return new Promise((resolve) => setTimeout(resolve, duration));
+-}
+-
+ /**
+  * Fetches all available skills and attaches category info dynamically.
+  */
+@@ -61,9 +59,7 @@ export async function fetchAvailableSkills() {
+   } else {
+     try {
+       const response = await apiClient.get("/skills");
+-      skills = Array.isArray(response.data)
+-        ? response.data
+-        : response.data?.data || [];
++      skills = response.data || [];
+     } catch (error) {
+       throw new Error(getApiErrorMessage(error, "Failed to load skills"));
+     }
+diff --git a/src/services/stats.js b/src/services/stats.js
+index b78cff8..bd44267 100644
+--- a/src/services/stats.js
++++ b/src/services/stats.js
+@@ -8,8 +8,10 @@
+ // هالإحصائية من الصفحة نهائيًا بدل ما نخترعها.
+ 
+ import { apiClient, getApiErrorMessage } from './api/client'
++import { isMockMode } from './api/mockMode'
++import { wait } from './api/delay'
+ 
+-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_STATS || 'true') === 'true'
++const MOCK_MODE = isMockMode()
+ 
+ const MOCK_STATS = {
+   volunteersCount: 1240,
+@@ -17,10 +19,6 @@ const MOCK_STATS = {
+   opportunitiesCount: 312,
+ }
+ 
+-function wait(duration = 300) {
+-  return new Promise((resolve) => setTimeout(resolve, duration))
+-}
+-
+ export async function fetchPlatformStats() {
+   if (MOCK_MODE) {
+     await wait()
+diff --git a/src/services/volunteer.js b/src/services/volunteer.js
+index f5fe4d3..853abd3 100644
+--- a/src/services/volunteer.js
++++ b/src/services/volunteer.js
+@@ -8,12 +8,10 @@
+ // Laravel requires POST + _method: PUT for file uploads in updates.
+ 
+ import { apiClient, getApiErrorMessage } from './api/client'
++import { isMockMode } from './api/mockMode'
++import { wait } from './api/delay'
+ 
+-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_VOLUNTEER_PROFILE || 'true') === 'true'
+-
+-function wait(duration = 300) {
+-  return new Promise((resolve) => setTimeout(resolve, duration))
+-}
++const MOCK_MODE = isMockMode()
+ 
+ // يبني FormData بأسماء وقيَم حقول Laravel الصحيحة انطلاقًا من بيانات الفورم الخام (camelCase)
+ // هذا هو المكان الوحيد الذي يعرف شكل الباك اند، بدل تكرار هذا التحويل داخل صفحة الـ Profile

@@ -16,12 +16,16 @@ import { OPPORTUNITY_STATUS } from '../constants/opportunityStatus'
 
 const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_OPPORTUNITIES || 'true') === 'true'
 
-// فرص "حسابي" (يخص حساب المنظمة المسجّلة دخولها بالـ Mock) — تبدأ فاضية
-// عمدًا، لأن أي حساب منظمة جديد فعليًا لم ينشر أي فرصة بعد. منفصلة تمامًا
-// عن MOCK_OPPORTUNITIES أدناه (يلي هي بيانات تصفح عامة تجريبية للمتطوعين).
-let MOCK_MY_OPPORTUNITIES = []
+// مُعرّف حساب المنظمة الوهمي الوحيد المتاح حاليًا للتجربة — يُستخدم فقط
+// لفلترة "My Causes" من نفس المصدر الموحّد أدناه (بدل جلبها من مصفوفة منفصلة)
+const MOCK_MY_ORGANIZATION_ID = 'org-mock'
 
-const MOCK_OPPORTUNITIES = [
+// مصدر بيانات وهمي واحد لكل الفرص — يحاكي جدول "opportunity" الحقيقي بالباك.
+// أي فرصة تُنشئها منظمة (createOpportunity) تُضاف هنا مباشرة، فتظهر فورًا
+// بصفحة تصفح الفرص العامة للمتطوعين، تمامًا كما ستتصرف مع Laravel لاحقًا.
+// "My Causes" (fetchMyOpportunities) و"Opportunities" العامة (fetchOpportunities)
+// كلاهما يقرأ من نفس المصفوفة، ويختلفان فقط بالفلترة المطبّقة.
+let MOCK_OPPORTUNITIES = [
   {
     id: 'o1',
     title: 'Clean Water for All',
@@ -140,6 +144,12 @@ const MOCK_OPPORTUNITIES = [
 
 function wait(duration = 300) {
   return new Promise((resolve) => setTimeout(resolve, duration))
+}
+
+// تتحقق إذا وصل عدد المتطوعين الحاليين للحد الأقصى — تُستخدم لتفعيل
+// الإغلاق التلقائي فور انضمام آخر متطوع، بمعزل عن أي إغلاق يدوي من المنظمة
+function isOpportunityFull(currentVolunteers, maxVolunteers) {
+  return maxVolunteers != null && currentVolunteers >= maxVolunteers
 }
 
 // يبني FormData لطلب إنشاء/تعديل فرصة، مع إرفاق الصورة إن وُجدت
@@ -268,10 +278,9 @@ export async function fetchSuggestedOpportunities({ skillIds = [], age = null, c
 export async function fetchOpportunityById(id) {
   if (MOCK_MODE) {
     await wait()
-    const allOpportunities = [...MOCK_OPPORTUNITIES, ...MOCK_MY_OPPORTUNITIES]
-    const opportunity = allOpportunities.find((item) => item.id === id) || null
+    const opportunity = MOCK_OPPORTUNITIES.find((item) => item.id === id) || null
     const similar = opportunity
-      ? allOpportunities.filter(
+      ? MOCK_OPPORTUNITIES.filter(
           (item) => item.id !== id && item.category?.id === opportunity.category?.id,
         ).slice(0, 3)
       : []
@@ -296,7 +305,9 @@ export async function fetchOpportunityById(id) {
 export async function fetchMyOpportunities() {
   if (MOCK_MODE) {
     await wait()
-    return MOCK_MY_OPPORTUNITIES
+    return MOCK_OPPORTUNITIES.filter(
+      (opportunity) => opportunity.organization?.id === MOCK_MY_ORGANIZATION_ID,
+    )
   }
 
   try {
@@ -313,7 +324,7 @@ export async function fetchMyOpportunities() {
 export async function deleteOpportunity(id) {
   if (MOCK_MODE) {
     await wait()
-    MOCK_MY_OPPORTUNITIES = MOCK_MY_OPPORTUNITIES.filter((item) => item.id !== id)
+    MOCK_OPPORTUNITIES = MOCK_OPPORTUNITIES.filter((item) => item.id !== id)
     return { success: true }
   }
 
@@ -335,10 +346,12 @@ export async function createOpportunity({ imageFile, ...payload }) {
       id: `o${Date.now()}`,
       status: OPPORTUNITY_STATUS.OPEN,
       currentVolunteers: 0,
-      organization: { id: 'org-mock', name: 'My Organization', imageUrl: null },
+      organization: { id: MOCK_MY_ORGANIZATION_ID, name: 'My Organization', imageUrl: null },
       image: imageFile ? URL.createObjectURL(imageFile) : null,
     }
-    MOCK_MY_OPPORTUNITIES.unshift(newOpportunity)
+    // تُضاف مباشرة لنفس المصدر الموحّد، فتظهر فورًا بصفحة التصفح العامة
+    // للمتطوعين تمامًا كما ستظهر بـ "My Causes" — بلا أي فرق بينهما
+    MOCK_OPPORTUNITIES.unshift(newOpportunity)
     return { success: true, data: newOpportunity }
   }
 
@@ -357,15 +370,15 @@ export async function createOpportunity({ imageFile, ...payload }) {
 export async function updateOpportunity(id, { imageFile, ...payload }) {
   if (MOCK_MODE) {
     await wait()
-    const index = MOCK_MY_OPPORTUNITIES.findIndex((item) => item.id === id)
+    const index = MOCK_OPPORTUNITIES.findIndex((item) => item.id === id)
     if (index !== -1) {
-      MOCK_MY_OPPORTUNITIES[index] = {
-        ...MOCK_MY_OPPORTUNITIES[index],
+      MOCK_OPPORTUNITIES[index] = {
+        ...MOCK_OPPORTUNITIES[index],
         ...payload,
-        image: imageFile ? URL.createObjectURL(imageFile) : MOCK_MY_OPPORTUNITIES[index].image,
+        image: imageFile ? URL.createObjectURL(imageFile) : MOCK_OPPORTUNITIES[index].image,
       }
     }
-    return { success: true, data: MOCK_MY_OPPORTUNITIES[index] }
+    return { success: true, data: MOCK_OPPORTUNITIES[index] }
   }
 
   try {
@@ -385,6 +398,17 @@ export async function updateOpportunity(id, { imageFile, ...payload }) {
 export async function participateInOpportunity(id) {
   if (MOCK_MODE) {
     await wait()
+
+    const opportunity = MOCK_OPPORTUNITIES.find((item) => item.id === id)
+    if (!opportunity) return { success: false, error: 'Opportunity not found' }
+
+    opportunity.currentVolunteers = (opportunity.currentVolunteers || 0) + 1
+
+    // إغلاق تلقائي فور اكتمال العدد — لا علاقة له بالإغلاق اليدوي أدناه
+    if (isOpportunityFull(opportunity.currentVolunteers, opportunity.maxVolunteers)) {
+      opportunity.status = OPPORTUNITY_STATUS.CLOSED
+    }
+
     return { success: true }
   }
 
@@ -393,5 +417,29 @@ export async function participateInOpportunity(id) {
     return { success: true }
   } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Failed to join opportunity') }
+  }
+}
+
+/**
+ * تبديل حالة الفرصة يدويًا (إغلاق/إعادة فتح) من طرف المنظمة —
+ * منفصل تمامًا عن الإغلاق التلقائي أعلاه: يعمل بغض النظر عن نسبة الامتلاء.
+ * مثال استخدام: إغلاق فرصة مبكرًا رغم عدم اكتمال العدد، أو إعادة فتحها
+ * لاحقًا لو انسحب بعض المتطوعين.
+ */
+export async function setOpportunityStatus(id, status) {
+  if (MOCK_MODE) {
+    await wait()
+    const index = MOCK_OPPORTUNITIES.findIndex((item) => item.id === id)
+    if (index === -1) return { success: false, error: 'Opportunity not found' }
+
+    MOCK_OPPORTUNITIES[index] = { ...MOCK_OPPORTUNITIES[index], status }
+    return { success: true, data: MOCK_OPPORTUNITIES[index] }
+  }
+
+  try {
+    const response = await apiClient.patch(`/opportunities/${id}/status`, { status })
+    return { success: true, data: response.data }
+  } catch (error) {
+    return { success: false, error: getApiErrorMessage(error, 'Failed to update cause status') }
   }
 }

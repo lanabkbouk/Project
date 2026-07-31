@@ -13,6 +13,7 @@ export default function Dropdown({
   placeholder = "",
   icon: Icon = null,
   error = "",
+  required = false,
   as = "div",
   className = "",
 }) {
@@ -48,7 +49,12 @@ export default function Dropdown({
 
   return (
     <div className="flex flex-col gap-1 w-full">
-      {label && <label className={FIELD_LABEL}>{label}</label>}
+      {label && (
+        <label className={FIELD_LABEL}>
+          {label}
+          {required && <span className="text-primary ml-1">*</span>}
+        </label>
+      )}
 
       <Root ref={rootRef} className={`relative w-full ${className}`}>
         {/* Trigger — نفس لون وحدود وحجم بقية الحقول (Input/Textarea) */}

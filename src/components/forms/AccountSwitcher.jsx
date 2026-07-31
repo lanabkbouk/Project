@@ -6,11 +6,11 @@ export default function AccountSwitch({ accountType }) {
   const isVolunteer = accountType === ACCOUNT_TYPES.VOLUNTEER;
 
   return (
-    <div className="flex bg-black rounded-lg p-1 mb-6 border border-white/10">
+    <div className="flex bg-heading/5 rounded-lg p-1 mb-6 border border-heading/10">
       <Link
         to={`${ROUTES.REGISTER}?${AUTH_QUERY_KEYS.TYPE}=${ACCOUNT_TYPES.VOLUNTEER}`}
         className={`flex-1 text-center py-2 rounded-md text-sm font-medium transition ${
-          isVolunteer ? "bg-primary text-white" : "text-gray-400 hover:text-white"
+          isVolunteer ? "bg-primary text-white shadow-sm" : "text-body hover:text-heading"
         }`}
       >
         Volunteer
@@ -19,7 +19,7 @@ export default function AccountSwitch({ accountType }) {
       <Link
         to={`${ROUTES.REGISTER}?${AUTH_QUERY_KEYS.TYPE}=${ACCOUNT_TYPES.ORGANIZATION}`}
         className={`flex-1 text-center py-2 rounded-md text-sm font-medium transition ${
-          !isVolunteer ? "bg-primary text-white" : "text-gray-400 hover:text-white"
+          !isVolunteer ? "bg-primary text-white shadow-sm" : "text-body hover:text-heading"
         }`}
       >
         Organization

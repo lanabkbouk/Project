@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
 import { ImageOff } from "lucide-react";
 import { ROUTES } from "../../constants/paths";
+import { PANEL_SURFACE } from "../../utils/surfaceStyles";
 
 export default function SimilarOpportunities({ opportunities }) {
   if (!opportunities || opportunities.length === 0) return null;
 
   return (
-    <div className="rounded-3xl bg-heading/5 border border-heading/10 p-5">
+    <div className={`${PANEL_SURFACE} p-5`}>
       <h3 className="text-sm font-semibold uppercase tracking-wide text-heading/60 mb-3">
         Similar Opportunities
       </h3>
@@ -16,7 +17,7 @@ export default function SimilarOpportunities({ opportunities }) {
           <li key={item.id}>
             <Link
               to={`${ROUTES.OPPORTUNITIES}/${item.id}`}
-              className="flex items-center gap-3 group"
+              className="flex items-center gap-3 group rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <div className="w-14 h-14 shrink-0 rounded-xl bg-heading/10 overflow-hidden flex items-center justify-center">
                 {item.image ? (

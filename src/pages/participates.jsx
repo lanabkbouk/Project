@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Compass } from "lucide-react";
 import Typography from "../components/ui/Typography";
 import ParticipationCard from "../components/opportunity/ParticipationCard";
-import LoadingSpinner from "../components/common/LoadingSpinner";
+import Skeleton from "../components/ui/Skeleton";
 import EmptyState from "../components/common/EmptyState";
 import { fetchMyParticipations } from "../services/participations";
+import { CARD_SURFACE } from "../utils/surfaceStyles";
 import { ROUTES } from "../constants/paths";
 
 export default function Participates() {
@@ -44,9 +45,25 @@ export default function Participates() {
       </Typography>
 
       {loading ? (
-        <LoadingSpinner message="Loading your volunteering history..." />
+        <div className="flex flex-col gap-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className={`${CARD_SURFACE} p-5 flex flex-col gap-3`}>
+              <div className="flex items-center justify-between gap-3">
+                <Skeleton className="h-5 w-1/2" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+              <div className="flex gap-4">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : error ? (
-        <p className="text-sm text-danger">{error}</p>
+        <p className="rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
+          {error}
+        </p>
       ) : participations.length === 0 ? (
         <EmptyState
           icon={Compass}

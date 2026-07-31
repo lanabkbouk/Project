@@ -2,12 +2,13 @@ import { Link } from "react-router-dom";
 import { Clock, MapPin } from "lucide-react";
 import ParticipationStatusBadge from "./ParticipationStatusBadge";
 import { ROUTES } from "../../constants/paths";
+import { CARD_BASE } from "../../utils/surfaceStyles";
 
 export default function ParticipationCard({ participation }) {
   const { opportunity, status, hoursLogged, joinedDate } = participation;
 
   return (
-    <div className="rounded-2xl bg-field border border-heading/10 p-5 hover:shadow-lg transition-shadow">
+    <div className={CARD_BASE}>
       <div className="flex items-start justify-between gap-3 mb-2">
         <Link to={`${ROUTES.OPPORTUNITIES}/${opportunity.id}`} className="font-semibold text-heading hover:underline">
           {opportunity.title}

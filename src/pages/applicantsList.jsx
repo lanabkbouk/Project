@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Users } from "lucide-react";
 import Typography from "../components/ui/Typography";
 import ApplicantCard from "../components/organization/ApplicantCard";
-import LoadingSpinner from "../components/common/LoadingSpinner";
+import Skeleton from "../components/ui/Skeleton";
 import EmptyState from "../components/common/EmptyState";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
@@ -13,6 +13,7 @@ import {
   updateParticipationStatus,
 } from "../services/participations";
 import { PARTICIPATION_STATUS } from "../constants/participationStatus";
+import { CARD_SURFACE } from "../utils/surfaceStyles";
 import { ROUTES } from "../constants/paths";
 
 export default function ApplicantsList() {
@@ -95,10 +96,25 @@ export default function ApplicantsList() {
         </Typography>
       ) : null}
 
-      {error && <p className="text-sm text-danger mb-4">{error}</p>}
+      {error && (
+        <p className="mb-4 rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
+          {error}
+        </p>
+      )}
 
       {loading ? (
-        <LoadingSpinner message="Loading applicants..." />
+        <div className="flex flex-col gap-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className={`${CARD_SURFACE} p-5 flex flex-col sm:flex-row sm:items-center gap-4`}>
+              <Skeleton className="h-12 w-12 rounded-full shrink-0" />
+              <div className="flex-1 flex flex-col gap-2">
+                <Skeleton className="h-5 w-1/3" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+              <Skeleton className="h-9 w-24 rounded-xl" />
+            </div>
+          ))}
+        </div>
       ) : applicants.length === 0 ? (
         <EmptyState
           icon={Users}

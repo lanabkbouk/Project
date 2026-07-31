@@ -1,6 +1,8 @@
 import { useFormContext } from "react-hook-form";
+import { PANEL_SURFACE } from "../../utils/surfaceStyles";
 import InfoRow from "../ui/InfoRow";
 import Chip from "../ui/Chip";
+import Typography from "../ui/Typography";
 import { calculateAge } from "../../utils/validators";
 
 import {
@@ -32,8 +34,8 @@ export default function ProfilePreview({ fullName, email, availableSkills }) {
   const interestsChips = splitCsvToChips(values.interests);
 
   return (
-    <div className="rounded-3xl bg-heading/5 border border-heading/10 p-6 md:p-8">
-      <h2 className="text-lg font-semibold mb-4 text-heading">Preview</h2>
+    <div className={`${PANEL_SURFACE} p-6 md:p-8`}>
+      <Typography variant="h4" gutterBottom>Preview</Typography>
 
       <div className="space-y-4">
         <InfoRow label="Full Name" value={fullName} />
@@ -47,7 +49,7 @@ export default function ProfilePreview({ fullName, email, availableSkills }) {
 
         {/* Skills */}
         <div className="pt-2 border-t border-heading/10">
-          <h3 className="font-semibold mb-2 text-heading">Skills</h3>
+          <Typography variant="h5" className="mb-2">Skills</Typography>
 
           <div className="flex flex-wrap gap-2">
             {selectedSkills.length ? (
@@ -76,7 +78,7 @@ export default function ProfilePreview({ fullName, email, availableSkills }) {
 
         {/* Interests */}
         <div className="pt-2 border-t border-heading/10">
-          <h3 className="font-semibold mb-2 text-heading">Interests</h3>
+          <Typography variant="h5" className="mb-2">Interests</Typography>
           <div className="flex flex-wrap gap-2">
             {(interestsChips.length ? interestsChips : ["—"]).map((s) => (
               <Chip key={s}>{s}</Chip>
@@ -86,7 +88,7 @@ export default function ProfilePreview({ fullName, email, availableSkills }) {
 
         {/* About */}
         <div className="pt-2 border-t border-heading/10">
-          <h3 className="font-semibold mb-2 text-heading">About</h3>
+          <Typography variant="h5" className="mb-2">About</Typography>
           <p className="text-sm text-heading/80 leading-relaxed">
             {values.about || "Write something about yourself to appear here."}
           </p>

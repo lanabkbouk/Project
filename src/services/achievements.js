@@ -50,7 +50,7 @@ const MOCK_ACHIEVEMENTS = [
     id: 'a2',
     name: '10 Volunteer Hours',
     description: 'Reached 10 cumulative volunteering hours.',
-    unlocked: false,
+    unlocked: true,
     earnedDate: null,
   },
   {

@@ -35,7 +35,6 @@ export default function SuccessStoryCard({ opportunity }) {
       imageFallback={imageFallback}
       title={opportunity.title}
       description={opportunity.organization?.name}
-      hideStats
     >
       <Chip color="green" className="mb-4 inline-flex items-center gap-1 w-fit">
         <CheckCircle2 size={12} /> Completed

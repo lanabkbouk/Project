@@ -4,7 +4,7 @@ import Typography from "../../components/ui/Typography";
 import OpportunityCard from "../../components/opportunity/OpportunityCard";
 import CategorySidebar from "../../components/opportunity/CategorySidebar";
 import OpportunityTabs, { OPPORTUNITY_TABS } from "../../components/opportunity/OpportunityTabs";
-import LoadingSpinner from "../../components/common/LoadingSpinner";
+import CardSkeleton from "../../components/ui/CardSkeleton";
 import EmptyState from "../../components/common/EmptyState";
 import { fetchCategories } from "../../services/categories";
 import { fetchOpportunities, fetchSuggestedOpportunities } from "../../services/opportunities";
@@ -47,10 +47,11 @@ export default function OpportunitiesListPage() {
 
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
-    setError("");
 
     async function loadOpportunities() {
+      setLoading(true);
+      setError("");
+
       try {
         const data = isSuggestedTab
           ? await fetchSuggestedOpportunities({
@@ -123,7 +124,11 @@ export default function OpportunitiesListPage() {
           ) : null}
 
           {loading ? (
-            <LoadingSpinner message="Loading opportunities..." />
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <CardSkeleton key={index} />
+              ))}
+            </div>
           ) : error ? (
             <p className="text-sm text-danger">{error}</p>
           ) : opportunities.length === 0 ? (

@@ -1,4 +1,5 @@
-import { Mail, Phone } from "lucide-react";
+import { useState } from "react";
+import { Mail, Phone, Check } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import FacebookIcon from "../components/social/FacebookIcon";
 import InstagramIcon from "../components/social/InstagramIcon";
@@ -57,6 +58,29 @@ const quickLinks = [
 ];
 
 export default function Footer() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState("idle"); // idle | loading | success | error
+
+  // ⚠️ لا يوجد Endpoint حقيقي للنشرة البريدية بالباك اند بعد (ما شفناه
+  // بـ routes/api.php). هاي محاكاة محلية بس عشان النموذج يعطي إحساس
+  // حقيقي (Loading + Success State) بدل ما يكون بلا أي أثر إطلاقًا —
+  // استبدلها بطلب API فعلي أول ما يجهز الـ Endpoint بالباك اند.
+  async function handleSubscribe(event) {
+    event.preventDefault();
+    if (status === "loading") return;
+
+    setStatus("loading");
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    if (!email.includes("@")) {
+      setStatus("error");
+      return;
+    }
+
+    setStatus("success");
+    setEmail("");
+  }
+
   return (
     <footer className="mt-auto bg-black text-white">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-12 lg:px-8">
@@ -65,7 +89,7 @@ export default function Footer() {
             to={ROUTES.HOME}
             className="inline-flex items-center space-x-3 rtl:space-x-reverse transition hover:opacity-90"
           >
-            <LogoIcon className="h-6 w-6" />
+            <LogoIcon className="h-6 w-6 text-white" />
             <span className="self-center whitespace-nowrap text-2xl font-semibold text-white">
               Volunteer Platform
             </span>
@@ -126,26 +150,41 @@ export default function Footer() {
             Get updates about new opportunities and community news.
           </p>
 
-          <form
-            className="flex flex-col gap-3 sm:flex-row sm:items-start"
-            onSubmit={(e) => e.preventDefault()}
-          >
-            <Input
-              placeholder="Email address"
-              type="email"
-              variant="default"
-              fullWidth
-              className="h-11 rounded-xl bg-black/30 text-sm placeholder:text-white/40"
-              required
-            />
-            <Button
-              size="medium"
-              className="h-11 w-full rounded-xl px-5 text-sm font-medium sm:w-auto"
-              type="submit"
+          {status === "success" ? (
+            <p className="flex items-center gap-2 rounded-xl border border-green-600/40 bg-green-500/10 px-4 py-3 text-sm text-green-400">
+              <Check size={16} aria-hidden="true" /> You're subscribed! Check your inbox for a confirmation.
+            </p>
+          ) : (
+            <form
+              className="flex flex-col gap-3 sm:flex-row sm:items-start"
+              onSubmit={handleSubscribe}
+              noValidate
             >
-              Subscribe
-            </Button>
-          </form>
+              <Input
+                placeholder="Email address"
+                type="email"
+                variant="default"
+                fullWidth
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="h-11 rounded-xl bg-black/30 text-sm placeholder:text-white/40"
+                required
+              />
+              <Button
+                size="medium"
+                isLoading={status === "loading"}
+                loadingText="Subscribing..."
+                className="h-11 w-full rounded-xl px-5 text-sm font-medium sm:w-auto"
+                type="submit"
+              >
+                Subscribe
+              </Button>
+            </form>
+          )}
+
+          {status === "error" && (
+            <p className="mt-2 text-xs text-red-400">Please enter a valid email address.</p>
+          )}
 
           <p className="mt-3 text-xs text-white/50">
             By subscribing, you agree to our Privacy Policy.

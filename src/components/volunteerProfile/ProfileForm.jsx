@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { MapPin, User2, GraduationCap } from "lucide-react";
 
@@ -7,8 +6,7 @@ import Dropdown from "../ui/Dropdown";
 import Textarea from "../ui/Textarea";
 import Button from "../ui/Button";
 import Typography from "../ui/Typography";
-
-import { fetchAvailableSkills } from "../../services/skills";
+import Skeleton from "../ui/Skeleton";
 
 import {
   CATEGORY_ICONS,
@@ -47,35 +45,12 @@ const GOVERNORATE_ITEMS = [
   "Quneitra",
 ].map((name) => ({ name, value: name.startsWith("Rif Dimashq") ? "Rif Dimashq" : name }));
 
-export default function ProfileForm({ submitting }) {
+export default function ProfileForm({ submitting, availableSkills = [], skillsLoading = false }) {
   const {
     register,
     control,
     formState: { errors },
   } = useFormContext();
-
-  const [availableSkills, setAvailableSkills] = useState([]);
-  const [skillsLoading, setSkillsLoading] = useState(true);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadSkills() {
-      try {
-        const skills = await fetchAvailableSkills();
-        if (isMounted) setAvailableSkills(skills);
-      } catch (err) {
-        console.error("Failed to load skills:", err);
-      } finally {
-        if (isMounted) setSkillsLoading(false);
-      }
-    }
-
-    loadSkills();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   return (
     <div className="space-y-7">
@@ -164,9 +139,18 @@ export default function ProfileForm({ submitting }) {
       </Typography>
 
       {skillsLoading ? (
-        <Typography variant="bodySm" color="muted">
-          Loading skills...
-        </Typography>
+        <div className="space-y-4">
+          {Array.from({ length: 2 }).map((_, groupIndex) => (
+            <div key={groupIndex} className="rounded-xl border border-heading/10 bg-field p-4">
+              <Skeleton className="h-5 w-28 mb-3" />
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: 4 }).map((_, chipIndex) => (
+                  <Skeleton key={chipIndex} className="h-7 w-20 rounded-full" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <Controller
           name="skills"

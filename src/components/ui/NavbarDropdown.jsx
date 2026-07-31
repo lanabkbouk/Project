@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { NavLink } from "react-router-dom";
 import useClickOutside from "../../hooks/useClickOutside";
 
@@ -19,14 +19,44 @@ export default function NavbarDropdown({
 
   // إغلاق القائمة تلقائيًا عند الضغط في أي مكان خارجها
   const rootRef = useClickOutside(isOpen, () => setIsOpen(false));
+  const triggerRef = useRef(null);
+
+  // إغلاق بـ Escape من لوحة المفاتيح، مع إرجاع الفوكس لزر التشغيل
+  // (نفس سلوك أي قائمة منسدلة قياسية بمعايير WCAG)
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, setIsOpen]);
+
+  function handleTriggerKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setIsOpen(!isOpen);
+    }
+  }
 
   return (
     <div ref={rootRef} className={`relative ${className}`}>
       
-      {/* Trigger */}
+      {/* Trigger — قابل للوصول بالكيبورد بالكامل (Tab, Enter, Space) */}
       <div
+        ref={triggerRef}
+        role="button"
+        tabIndex={0}
+        aria-haspopup="true"
+        aria-expanded={isOpen}
         onClick={() => setIsOpen(!isOpen)}
-        className="cursor-pointer select-none"
+        onKeyDown={handleTriggerKeyDown}
+        className="cursor-pointer select-none rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
       >
         {trigger}
       </div>
@@ -34,6 +64,7 @@ export default function NavbarDropdown({
       {/* Menu */}
       {isOpen && (
         <div
+          role="menu"
           className={`
             absolute ${alignStyles[align]} ${width}
             mt-2 z-50
@@ -57,7 +88,7 @@ export default function NavbarDropdown({
               const isLogout = item.name === "Logout";
 
               const baseClasses =
-                "w-full flex items-center gap-3 px-4 py-2 text-sm transition rounded-lg";
+                "w-full flex items-center gap-3 px-4 py-2 text-sm transition rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset";
 
               const textClasses = isLogout
                 ? "text-danger hover:bg-danger/10"
@@ -77,6 +108,7 @@ export default function NavbarDropdown({
               return item.href ? (
                 <NavLink
                   key={item.name}
+                  role="menuitem"
                   to={item.href}
                   onClick={item.onClick}
                   className={`${baseClasses} ${textClasses} ${
@@ -88,6 +120,7 @@ export default function NavbarDropdown({
               ) : (
                 <button
                   key={item.name}
+                  role="menuitem"
                   onClick={item.onClick}
                   className={`${baseClasses} ${textClasses} ${
                     isLogout ? "border-t border-heading/10 mt-1 pt-2" : ""

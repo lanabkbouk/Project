@@ -1,4 +1,5 @@
-import { ChevronDown } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronDown, Eye, EyeOff } from 'lucide-react'
 
 export default function Input({
   label,
@@ -13,13 +14,19 @@ export default function Input({
   fullWidth = false,
   disabled = false,
   className = '',
-  labelClassName = 'text-heading', // لون الـ label الافتراضي فقط؛ يمكن تجاوزه حسب خلفية الصفحة (مثال: text-white بصفحات Login/Register)
+  labelClassName = 'text-heading',
   error = '',
   success = false,
+  required = false,
   options = [],
   icon: Icon = null,
   ...props
 }) {
+  // بيتفعّل بس إذا الحقل من نوع password، وبيتحكم بإظهار/إخفاء النص المكتوب
+  const [showPassword, setShowPassword] = useState(false)
+  const isPasswordField = type === 'password'
+  const resolvedType = isPasswordField && showPassword ? 'text' : type
+
   const sizeStyles = {
     small: 'px-3 py-2 text-sm',
     medium: 'px-4 py-3 text-base',
@@ -43,6 +50,7 @@ export default function Input({
     disabled ? 'opacity-50 cursor-not-allowed' : 'focus:ring-2 focus:ring-primary/30',
     as === 'select' ? 'appearance-none cursor-pointer pr-10' : '',
     Icon ? 'pl-10' : '',
+    isPasswordField ? 'pr-11' : '',
     className,
   ]
     .filter(Boolean)
@@ -52,6 +60,7 @@ export default function Input({
     id: name,
     name,
     disabled,
+    required,
     'aria-invalid': Boolean(error),
     'aria-describedby': error ? `${name}-error` : undefined,
     className: classes,
@@ -66,6 +75,7 @@ export default function Input({
       {label && (
         <label htmlFor={name} className={`mb-1 text-sm font-medium ${labelClassName}`}>
           {label}
+          {required && <span className="text-primary ml-1">*</span>}
         </label>
       )}
 
@@ -95,7 +105,20 @@ export default function Input({
         )}
 
         {as === 'input' && (
-          <input type={type} placeholder={placeholder} {...sharedProps} />
+          <input type={resolvedType} placeholder={placeholder} {...sharedProps} />
+        )}
+
+        {as === 'input' && isPasswordField && (
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-heading/40 hover:text-heading transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 rounded"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            aria-pressed={showPassword}
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
         )}
       </div>
 

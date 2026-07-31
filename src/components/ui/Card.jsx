@@ -1,12 +1,7 @@
 import { ImageOff } from 'lucide-react'
 import Button from './Button'
 import Typography from './Typography'
-import { useCountUp } from '../../hooks/useCountUp'
-
-function formatCurrency(value) {
-  if (!Number.isFinite(value)) return '$0'
-  return `$${Math.round(value).toLocaleString('en-US')}`
-}
+import { CARD_SURFACE, CARD_ELEVATION } from '../../utils/surfaceStyles'
 
 export default function Card({
   as: Component = 'div',
@@ -17,34 +12,27 @@ export default function Card({
   imageSrc,
   imageAlt,
   imageFallback,
-  goalAmount = 200000,
-  raisedAmount = 8000,
-  donationsCount = 6,
+  badge,
   actionLabel = 'View Details',
   onAction,
-  hideStats = false,
   contentClassName = '',
   buttonClassName = '',
   mediaClassName = '',
   ...props
 }) {
-  const safeGoalAmount = Number.isFinite(goalAmount) ? Math.max(0, goalAmount) : 0
-  const safeRaisedAmount = Number.isFinite(raisedAmount) ? Math.max(0, raisedAmount) : 0
-  const safeDonationsCount = Number.isFinite(donationsCount)
-    ? Math.max(0, Math.floor(donationsCount))
-    : 0
-
   return (
     <Component
       className={[
-        'rounded-2xl border border-heading/10 bg-field shadow-sm hover:shadow-md transition-all',
+        CARD_SURFACE,
+        CARD_ELEVATION,
         'w-full overflow-hidden flex flex-col',
         className,
       ].join(' ')}
       {...props}
     >
       {/* الصورة */}
-      <div className={['w-full overflow-hidden rounded-t-2xl', mediaClassName].join(' ')}>
+      <div className={['relative w-full overflow-hidden rounded-t-2xl', mediaClassName].join(' ')}>
+        {badge && <div className="absolute top-3 left-3 z-10">{badge}</div>}
         {imageSrc ? (
           <img
             src={imageSrc}
@@ -75,36 +63,6 @@ export default function Card({
           >
             {description}
           </Typography>
-        )}
-
-        {!hideStats && (
-          <div className="mb-8 flex items-start justify-between">
-            <div className="flex flex-col gap-1">
-              <Typography
-                variant="body"
-                color="heading"
-                className="text-[16px] font-bold leading-none"
-              >
-                Goal: {formatCurrency(safeGoalAmount)}
-              </Typography>
-              <Typography variant="bodySm" className="text-[13px] text-body font-medium">
-                Raised: {formatCurrency(safeRaisedAmount)}
-              </Typography>
-            </div>
-
-            <div className="flex flex-col items-end gap-1">
-              <Typography
-                variant="body"
-                color="heading"
-                className="text-[16px] font-bold leading-none"
-              >
-                {safeDonationsCount}
-              </Typography>
-              <Typography variant="bodySm" className="text-[13px] text-body font-medium">
-                donations
-              </Typography>
-            </div>
-          </div>
         )}
 
         {/* الزر */}

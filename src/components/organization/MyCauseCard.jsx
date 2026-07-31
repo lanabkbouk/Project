@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { MapPin, Calendar, Users, Pencil, Trash2 } from "lucide-react";
+import { MapPin, Calendar, Users, Pencil, Trash2, Lock, Unlock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Card from "../ui/Card";
 import Chip from "../ui/Chip";
 import Button from "../ui/Button";
 import OpportunityStatusBadge from "../opportunity/OpportunityStatusBadge";
+import { OPPORTUNITY_STATUS } from "../../constants/opportunityStatus";
 import { CATEGORY_COLORS, CATEGORY_ICONS } from "../../utils/categoryStyles";
 import { ROUTES } from "../../constants/paths";
 
@@ -17,7 +18,7 @@ function formatVolunteerProgress(current, max) {
   return { safeCurrent, safeMax, percentage };
 }
 
-export default function MyCauseCard({ opportunity, onDelete, isVerified = true }) {
+export default function MyCauseCard({ opportunity, onDelete, onToggleStatus, isVerified = true }) {
   const navigate = useNavigate();
   const categoryName = opportunity.category?.name;
   const categoryStyle = CATEGORY_COLORS[categoryName] || CATEGORY_COLORS.Social;
@@ -26,8 +27,11 @@ export default function MyCauseCard({ opportunity, onDelete, isVerified = true }
     opportunity.currentVolunteers,
     opportunity.maxVolunteers,
   );
+  const isClosed = opportunity.status === OPPORTUNITY_STATUS.CLOSED;
 
   const [deleting, setDeleting] = useState(false);
+  const [togglingStatus, setTogglingStatus] = useState(false);
+  const busy = deleting || togglingStatus;
 
   const handleDelete = async () => {
     const confirmed = window.confirm(
@@ -40,6 +44,22 @@ export default function MyCauseCard({ opportunity, onDelete, isVerified = true }
     // لا داعي لإعادة setDeleting(false) في حال النجاح: الكارد بينحذف من القائمة فورًا
     // بس نرجعها لو صار خطأ ورجع الكارد يظهر من جديد
     setDeleting(false);
+  };
+
+  // تبديل يدوي بين مفتوحة/مغلقة — منفصل تمامًا عن الإغلاق التلقائي عند
+  // اكتمال العدد (ذاك يحصل من طرف الخدمة نفسها عند انضمام متطوع)
+  const handleToggleStatus = async () => {
+    const nextStatus = isClosed ? OPPORTUNITY_STATUS.OPEN : OPPORTUNITY_STATUS.CLOSED;
+    const confirmed = window.confirm(
+      isClosed
+        ? `Reopen "${opportunity.title}" for new volunteers?`
+        : `Close "${opportunity.title}" to new volunteers?`,
+    );
+    if (!confirmed) return;
+
+    setTogglingStatus(true);
+    await onToggleStatus?.(opportunity.id, nextStatus);
+    setTogglingStatus(false);
   };
 
   const imageFallback = (
@@ -93,7 +113,7 @@ export default function MyCauseCard({ opportunity, onDelete, isVerified = true }
         <Button
           variant="secondary"
           fullWidth
-          disabled={deleting}
+          disabled={busy}
           onClick={() => navigate(`${ROUTES.APPLICANTS}/${opportunity.id}`)}
         >
           View Applicants
@@ -101,7 +121,7 @@ export default function MyCauseCard({ opportunity, onDelete, isVerified = true }
         <Button
           variant="ghost"
           size="medium"
-          disabled={deleting || !isVerified}
+          disabled={busy || !isVerified}
           onClick={() => navigate(`${ROUTES.MY_CAUSES}/${opportunity.id}/edit`)}
           aria-label="Edit this cause"
           title={!isVerified ? "Available once your organization is verified" : undefined}
@@ -111,7 +131,23 @@ export default function MyCauseCard({ opportunity, onDelete, isVerified = true }
         <Button
           variant="ghost"
           size="medium"
-          disabled={deleting || !isVerified}
+          disabled={busy || !isVerified}
+          onClick={handleToggleStatus}
+          aria-label={isClosed ? "Reopen this cause" : "Close this cause"}
+          title={
+            !isVerified
+              ? "Available once your organization is verified"
+              : isClosed
+                ? "Reopen for new volunteers"
+                : "Close to new volunteers"
+          }
+        >
+          {isClosed ? <Unlock size={18} /> : <Lock size={18} />}
+        </Button>
+        <Button
+          variant="ghost"
+          size="medium"
+          disabled={busy || !isVerified}
           onClick={handleDelete}
           className="text-danger hover:bg-danger/10 border-danger/20"
           aria-label="Delete this cause"

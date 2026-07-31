@@ -4,6 +4,8 @@
 // بيانات ثابتة تسويقية (مو من الباك اند)، بنفس ثيم بقية أقسام الصفحة.
 
 import { motion } from "framer-motion";
+import Typography from "../ui/Typography";
+import { PANEL_SURFACE } from "../../utils/surfaceStyles";
 
 const GOALS = [
   "Expand volunteer opportunities across diverse sectors.",
@@ -21,19 +23,25 @@ export default function VisionGoals() {
       viewport={{ once: true }}
       className="mb-20"
     >
-      <h2 className="text-3xl font-bold mb-8 text-center text-heading">Our Vision & Goals</h2>
+      <Typography variant="h2" align="center" gutterBottom className="!mb-8">
+        Our Vision & Goals
+      </Typography>
 
       <div className="grid md:grid-cols-2 gap-10">
-        <div className="rounded-2xl bg-heading/5 border border-heading/10 p-8">
-          <h3 className="text-2xl font-bold text-primary mb-4">Our Vision</h3>
-          <p className="text-body leading-relaxed">
+        <div className={`${PANEL_SURFACE} p-8`}>
+          <Typography variant="h4" color="primary" gutterBottom>
+            Our Vision
+          </Typography>
+          <Typography variant="body" className="leading-relaxed">
             To create a world where volunteering is accessible, impactful, and deeply
             connected to the needs of every community.
-          </p>
+          </Typography>
         </div>
 
-        <div className="rounded-2xl bg-heading/5 border border-heading/10 p-8">
-          <h3 className="text-2xl font-bold text-primary mb-4">Our Goals</h3>
+        <div className={`${PANEL_SURFACE} p-8`}>
+          <Typography variant="h4" color="primary" gutterBottom>
+            Our Goals
+          </Typography>
           <ul className="space-y-3 text-body">
             {GOALS.map((goal) => (
               <li key={goal} className="flex items-start gap-3">

@@ -64,54 +64,52 @@ export default function CauseForm({
         required
       />
 
-      <div className="flex flex-col gap-1">
-        <label className="mb-1 text-sm font-medium text-heading">Description</label>
-        <Textarea
-          {...register("description")}
-          placeholder="Describe what volunteers will do, and why it matters..."
-          error={errors.description?.message}
-          className="min-h-[140px]"
-        />
-      </div>
+      <Textarea
+        label="Description"
+        name="description"
+        register={register}
+        placeholder="Describe what volunteers will do, and why it matters..."
+        error={errors.description?.message}
+        className="min-h-[140px]"
+        required
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div className="flex flex-col gap-1">
-          <label className="mb-1 text-sm font-medium text-heading">Category</label>
-          <Controller
-            name="categoryId"
-            control={control}
-            defaultValue=""
-            render={({ field: { value, onChange } }) => (
-              <Dropdown
-                items={categoryItems}
-                value={value}
-                onChange={onChange}
-                placeholder="Select a category"
-                icon={Tag}
-                error={errors.categoryId?.message}
-              />
-            )}
-          />
-        </div>
+        <Controller
+          name="categoryId"
+          control={control}
+          defaultValue=""
+          render={({ field: { value, onChange } }) => (
+            <Dropdown
+              label="Category"
+              items={categoryItems}
+              value={value}
+              onChange={onChange}
+              placeholder="Select a category"
+              icon={Tag}
+              error={errors.categoryId?.message}
+              required
+            />
+          )}
+        />
 
-        <div className="flex flex-col gap-1">
-          <label className="mb-1 text-sm font-medium text-heading">Governorate</label>
-          <Controller
-            name="city"
-            control={control}
-            defaultValue=""
-            render={({ field: { value, onChange } }) => (
-              <Dropdown
-                items={GOVERNORATE_ITEMS}
-                value={value}
-                onChange={onChange}
-                placeholder="Select a governorate"
-                icon={MapPin}
-                error={errors.city?.message}
-              />
-            )}
-          />
-        </div>
+        <Controller
+          name="city"
+          control={control}
+          defaultValue=""
+          render={({ field: { value, onChange } }) => (
+            <Dropdown
+              label="Governorate"
+              items={GOVERNORATE_ITEMS}
+              value={value}
+              onChange={onChange}
+              placeholder="Select a governorate"
+              icon={MapPin}
+              error={errors.city?.message}
+              required
+            />
+          )}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -163,8 +161,15 @@ export default function CauseForm({
         />
       </div>
 
-      <Button type="submit" disabled={submitting || submitDisabled} className="self-start mt-2 px-6 py-2">
-        {submitting ? "Saving..." : submitLabel}
+      <Button
+        type="submit"
+        size="large"
+        isLoading={submitting}
+        loadingText="Saving..."
+        disabled={submitDisabled}
+        className="self-start mt-2"
+      >
+        {submitLabel}
       </Button>
     </div>
   );

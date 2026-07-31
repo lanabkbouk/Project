@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 import Typography from "../components/ui/Typography";
 import CauseForm from "../components/organization/CauseForm";
-import LoadingSpinner from "../components/common/LoadingSpinner";
+import Skeleton from "../components/ui/Skeleton";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
 import { fetchCategories } from "../services/categories";
@@ -39,6 +39,7 @@ export default function CreateEditCause() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const {
     previewUrl: imagePreview,
@@ -97,6 +98,7 @@ export default function CreateEditCause() {
   const onSubmit = async (values) => {
     setSubmitting(true);
     setSubmitError("");
+    setSuccessMessage("");
 
     const selectedCategory = categories.find((category) => category.id === values.categoryId);
     const payload = {
@@ -110,20 +112,32 @@ export default function CreateEditCause() {
       ? await updateOpportunity(id, payload)
       : await createOpportunity(payload);
 
-    setSubmitting(false);
-
     if (!result.success) {
+      setSubmitting(false);
       setSubmitError(result.error || "Something went wrong");
       return;
     }
 
-    navigate(ROUTES.MY_CAUSES);
+    // نعرض تأكيد نجاح واضح للمستخدم قبل ما ننتقل، بدل انتقال صامت فوري
+    // ما بيعطي أي إحساس إنه الحفظ صار فعلًا
+    setSuccessMessage(isEditMode ? "Changes saved successfully." : "Cause published successfully.");
+    setTimeout(() => navigate(ROUTES.MY_CAUSES), 900);
   };
 
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <LoadingSpinner message="Loading cause details..." />
+        <Skeleton className="h-9 w-64 mb-2" />
+        <Skeleton className="h-4 w-80 mb-8" />
+        <div className="flex flex-col gap-6">
+          <Skeleton className="h-12 w-full rounded-xl" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <Skeleton className="h-12 w-full rounded-xl" />
+            <Skeleton className="h-12 w-full rounded-xl" />
+          </div>
+          <Skeleton className="h-32 w-full rounded-xl" />
+          <Skeleton className="h-12 w-40 rounded-xl" />
+        </div>
       </div>
     );
   }
@@ -141,7 +155,17 @@ export default function CreateEditCause() {
           : "Publish a new volunteering opportunity for people to join."}
       </Typography>
 
-      {submitError && <p className="text-sm text-danger mb-4">{submitError}</p>}
+      {submitError && (
+        <p className="mb-4 rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
+          {submitError}
+        </p>
+      )}
+
+      {successMessage && (
+        <p className="mb-4 rounded-lg border border-green-600 bg-green-50 px-3 py-2 text-sm text-green-700">
+          {successMessage}
+        </p>
+      )}
 
       <FormProvider {...methods}>
         <form onSubmit={methods.handleSubmit(onSubmit)}>

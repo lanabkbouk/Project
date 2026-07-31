@@ -18,10 +18,12 @@ import LogoIcon from "../../components/ui/LogoIcon";
 import Button from "../../components/ui/Button";
 import NavbarDropdown from "../../components/ui/NavbarDropdown";
 import { useAuth } from "../../context/AuthContext";
+import useUnseenAchievements from "../../hooks/useUnseenAchievements";
 
 export default function Navbar({ role = "guest" }) {
   const navigate = useNavigate();
   const { user, accountType, isAuthenticated, logout } = useAuth();
+  const hasUnseenAchievement = useUnseenAchievements();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -49,7 +51,7 @@ export default function Navbar({ role = "guest" }) {
 
           {/* Logo */}
           <NavLink to={ROUTES.HOME} className="flex items-center gap-3">
-            <LogoIcon className="h-6 w-6" />
+            <LogoIcon className="h-6 w-6 text-white" />
             <span className="text-2xl font-semibold text-white">
               Volunteer Platform
             </span>
@@ -59,7 +61,7 @@ export default function Navbar({ role = "guest" }) {
           <div className="flex items-center gap-3 md:order-2">
 
             {!isAuthenticated ? (
-              <div className="flex items-center gap-3">
+              <div className="hidden md:flex items-center gap-3">
 
                 {/* Create Account */}
                 <Button
@@ -80,7 +82,7 @@ export default function Navbar({ role = "guest" }) {
                   variant="ghost"
                   size="medium"
                   className="
-                    hidden lg:flex items-center gap-2
+                    flex items-center gap-2
                     rounded-2xl
                     bg-black
                     text-white
@@ -92,7 +94,6 @@ export default function Navbar({ role = "guest" }) {
                   <LogIn className="h-4 w-4" />
                   <span>Sign In</span>
                 </Button>
-
 
               </div>
             ) : (
@@ -106,18 +107,37 @@ export default function Navbar({ role = "guest" }) {
                                     text-white hover:bg-white/15 hover:border-white/25 
                                     transition">
                       {user?.avatarUrl ? (
-                        <img
-                          src={user.avatarUrl}
-                          alt={user.displayName}
-                          className="h-7 w-7 rounded-full object-cover border-2 border-primary/70"
-                        />
+                        <span className="relative inline-flex">
+                          <img
+                            src={user.avatarUrl}
+                            alt={user.displayName}
+                            className="h-7 w-7 rounded-full object-cover border-2 border-primary/70"
+                          />
+                          {hasUnseenAchievement && (
+                            <span
+                              className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-danger border-2 border-black"
+                              aria-hidden="true"
+                            />
+                          )}
+                        </span>
                       ) : (
-                        <div className="h-7 w-7 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
-                          <UserIcon className="h-4 w-4 text-primary" />
-                        </div>
+                        <span className="relative inline-flex">
+                          <div className="h-7 w-7 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
+                            <UserIcon className="h-4 w-4 text-primary" />
+                          </div>
+                          {hasUnseenAchievement && (
+                            <span
+                              className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-danger border-2 border-black"
+                              aria-hidden="true"
+                            />
+                          )}
+                        </span>
                       )}
                       <span className="text-sm sm:text-base">
                         {user?.displayName}
+                        {hasUnseenAchievement && (
+                          <span className="sr-only"> — You have a new achievement</span>
+                        )}
                       </span>
                       <ChevronDown
                         className={`w-4 h-4 text-white/60 transition-transform ${
@@ -149,6 +169,8 @@ export default function Navbar({ role = "guest" }) {
               onClick={() => setIsOpen(!isOpen)}
               variant="ghost"
               size="small"
+              aria-label={isOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isOpen}
               className="p-2 rounded-xl bg-heading/10 text-white 
                          hover:bg-heading/20 md:hidden"
             >
@@ -194,6 +216,38 @@ export default function Navbar({ role = "guest" }) {
               </li>
             ))}
           </ul>
+
+          {/* تسجيل الدخول/إنشاء حساب — غير موجودين إطلاقًا بأعلى الناف بار
+              تحت md، فلازم يكونوا هون حتى يقدر الزائر يوصلهم من الموبايل */}
+          {!isAuthenticated && (
+            <div className="flex flex-col gap-3 border-t border-white/10 pt-4 mt-2">
+              <Button
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate(ROUTES.REGISTER);
+                }}
+                variant="primary"
+                fullWidth
+                className="flex items-center justify-center gap-2"
+              >
+                <UserPlus className="h-4 w-4" />
+                <span>Create Account</span>
+              </Button>
+
+              <Button
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate(ROUTES.LOGIN);
+                }}
+                variant="ghost"
+                fullWidth
+                className="flex items-center justify-center gap-2 !bg-black !text-white !border-primary"
+              >
+                <LogIn className="h-4 w-4" />
+                <span>Sign In</span>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </nav>

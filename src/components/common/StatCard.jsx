@@ -1,15 +1,16 @@
 import { useCountUp } from '../../hooks/useCountUp'
+import { CARD_SURFACE, CARD_ELEVATION } from '../../utils/surfaceStyles'
 
-export default function StatCard({ number, label }) {
+export default function StatCard({ number, label, suffix = '+' }) {
   const { displayValue, elementRef } = useCountUp(number)
 
   return (
     <div
       ref={elementRef}
-      className="bg-field rounded-xl p-8 text-center border border-heading/10 shadow-sm hover:shadow-md transition-all"
+      className={`${CARD_SURFACE} ${CARD_ELEVATION} p-8 text-center`}
     >
       <div className="text-4xl font-bold text-primary mb-3">
-        {displayValue}+
+        {displayValue}{suffix}
       </div>
 
       <p className="text-heading/70 text-sm font-medium leading-relaxed">

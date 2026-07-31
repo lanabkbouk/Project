@@ -5,7 +5,7 @@
 
 import Typography from "../ui/Typography";
 import SuccessStoryCard from "../opportunity/SuccessStoryCard";
-import LoadingSpinner from "../common/LoadingSpinner";
+import CardSkeleton from "../ui/CardSkeleton";
 
 export default function HomeSuccessStories({ opportunities, loading }) {
   return (
@@ -20,7 +20,11 @@ export default function HomeSuccessStories({ opportunities, loading }) {
       </div>
 
       {loading ? (
-        <LoadingSpinner message="Loading success stories..." />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <CardSkeleton key={index} />
+          ))}
+        </div>
       ) : opportunities.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
           {opportunities.map((opportunity) => (

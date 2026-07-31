@@ -1,5 +1,6 @@
-
 import { motion } from "framer-motion";
+import Typography from "../ui/Typography";
+import { PANEL_SURFACE } from "../../utils/surfaceStyles";
 
 const VALUES = [
   { title: "Community", desc: "Building stronger communities through collective action" },
@@ -16,16 +17,20 @@ export default function ValuesGrid() {
       viewport={{ once: true }}
       className="mb-20"
     >
-      <h2 className="text-3xl font-bold mb-8 text-center text-heading">Our Values</h2>
+      <Typography variant="h2" align="center" gutterBottom className="!mb-8">
+        Our Values
+      </Typography>
 
       <div className="grid md:grid-cols-3 gap-6">
         {VALUES.map((value) => (
           <div
             key={value.title}
-            className="bg-heading/5 rounded-xl p-6 border border-heading/10 hover:border-primary transition-colors"
+            className={`${PANEL_SURFACE} p-6 hover:border-primary transition-colors`}
           >
-            <h3 className="text-xl font-bold text-primary mb-3">{value.title}</h3>
-            <p className="text-body">{value.desc}</p>
+            <Typography variant="h5" color="primary" gutterBottom>
+              {value.title}
+            </Typography>
+            <Typography variant="body">{value.desc}</Typography>
           </div>
         ))}
       </div>

@@ -1,4 +1,3 @@
-
 // أكورديون أسئلة شائعة: سؤال واحد مفتوح بأي وقت. Component عرض بحت،
 // البيانات (items) جاية من الصفحة الأب — قابل لإعادة الاستخدام بأي
 // صفحة تانية تحتاج قسم أسئلة شائعة (مثلًا About) بدون أي تعديل هون.
@@ -23,7 +22,7 @@ export default function FaqAccordion({ items }) {
               type="button"
               onClick={() => setOpenIndex(isOpen ? null : index)}
               aria-expanded={isOpen}
-              className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left"
+              className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset"
             >
               <span className="font-medium text-heading">{item.question}</span>
               <ChevronDown

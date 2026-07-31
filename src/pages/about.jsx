@@ -12,7 +12,6 @@ import StatsGrid from "../components/about/StatsGrid";
 import ValuesGrid from "../components/about/ValuesGrid";
 import VisionGoals from "../components/about/VisionGoals";
 import GeometricDivider from "../components/common/GeometricDivider";
-import LoadingSpinner from "../components/common/LoadingSpinner";
 
 export default function About() {
   const [stats, setStats] = useState(null);
@@ -23,7 +22,11 @@ export default function About() {
 
     fetchPlatformStats().then((result) => {
       if (!isMounted) return;
-      if (result.success) setStats(result.data);
+      if (result.success) {
+        setStats(result.data);
+      } else {
+        console.warn('[About] Failed to load platform stats:', result.error);
+      }
       setIsLoading(false);
     });
 
@@ -52,11 +55,7 @@ export default function About() {
 
         <GeometricDivider />
 
-        {isLoading ? (
-          <LoadingSpinner message="Loading stats..." />
-        ) : (
-          <StatsGrid stats={statsArray} />
-        )}
+        <StatsGrid stats={statsArray} loading={isLoading} />
 
         <GeometricDivider />
 

@@ -1,12 +1,29 @@
-
 // شبكة الإحصائيات (متطوعين/منظمات/فرص...). البيانات تجي كـ prop "stats"
 // من الصفحة الأب. البطاقة نفسها (StatCard) صارت بـ components/common
 // لأنها تُستخدم هون وبصفحة Home كمان.
 
 import { motion } from "framer-motion";
 import StatCard from "../common/StatCard";
+import Skeleton from "../ui/Skeleton";
+import { CARD_SURFACE } from "../../utils/surfaceStyles";
 
-export default function StatsGrid({ stats }) {
+export default function StatsGrid({ stats = [], loading = false }) {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-24">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            className={`${CARD_SURFACE} p-8 flex flex-col items-center gap-3`}
+          >
+            <Skeleton className="h-9 w-16" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -15,7 +32,7 @@ export default function StatsGrid({ stats }) {
       viewport={{ once: true }}
       className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-24"
     >
-      {stats.map((stat) => (
+      {(stats || []).map((stat) => (
         <StatCard key={stat.label} number={stat.number} label={stat.label} />
       ))}
     </motion.div>

@@ -1,0 +1,47 @@
+
+// إشعار عابر (Toast) عام يظهر أعلى الشاشة، قابل لإعادة الاستخدام لأي حدث
+// لحظي (توثيق منظمة، نجاح عملية، خطأ عام...) وليس فقط لحالة التوثيق.
+// يُغلق تلقائيًا بعد `duration`، أو يدويًا بزر الإغلاق.
+
+import { useEffect } from 'react'
+import { CheckCircle2, XCircle, Info, X } from 'lucide-react'
+
+const VARIANT_STYLES = {
+  success: { icon: CheckCircle2, className: 'bg-green-50 border-green-200 text-green-800' },
+  error: { icon: XCircle, className: 'bg-red-50 border-red-200 text-red-800' },
+  info: { icon: Info, className: 'bg-field border-heading/15 text-heading' },
+}
+
+export default function Toast({ message, variant = 'info', duration = 6000, onClose }) {
+  // إغلاق تلقائي بعد مدة معيّنة، طالما في رسالة معروضة فعليًا
+  useEffect(() => {
+    if (!message) return undefined
+    const timer = setTimeout(onClose, duration)
+    return () => clearTimeout(timer)
+  }, [message, duration, onClose])
+
+  if (!message) return null
+
+  const { icon: Icon, className } = VARIANT_STYLES[variant] ?? VARIANT_STYLES.info
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed top-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0"
+    >
+      <div className={`flex items-start gap-3 rounded-2xl border p-4 shadow-lg ${className}`}>
+        <Icon size={20} className="mt-0.5 shrink-0" />
+        <p className="flex-1 text-sm font-medium">{message}</p>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="إغلاق الإشعار"
+          className="shrink-0 opacity-60 transition-opacity hover:opacity-100"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    </div>
+  )
+}

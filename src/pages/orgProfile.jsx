@@ -6,12 +6,13 @@ import { useAuth } from "../context/AuthContext";
 import { fetchOrganizationProfile, updateOrganizationProfile } from "../services/organization";
 import { organizationProfileSchema } from "../utils/auth/OrganizationProfileValidation";
 import { ORGANIZATION_STATUS } from "../constants/organizationStatus";
+import { PANEL_SURFACE } from "../utils/surfaceStyles";
 
-import OrgProfileHeader from "../components/orgProfile/ProfileHeader";
-import OrgProfileForm from "../components/orgProfile/ProfileForm";
-import OrgProfilePreview from "../components/orgProfile/ProfilePreview";
-import VerificationStatusBanner from "../components/orgProfile/VerificationStatusBanner";
-import LoadingSpinner from "../components/common/LoadingSpinner";
+import OrgProfileHeader from "../components/OrgProfile/ProfileHeader";
+import OrgProfileForm from "../components/OrgProfile/ProfileForm";
+import OrgProfilePreview from "../components/OrgProfile/ProfilePreview";
+import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
+import Skeleton from "../components/ui/Skeleton";
 
 export default function OrgProfile() {
   const { user, updateUser } = useAuth();
@@ -24,6 +25,7 @@ export default function OrgProfile() {
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const methods = useForm({
     resolver: zodResolver(organizationProfileSchema),
@@ -64,6 +66,7 @@ export default function OrgProfile() {
   const onSubmit = async (data) => {
     setSubmitting(true);
     setSubmitError("");
+    setSuccessMessage("");
 
     try {
       const formData = new FormData();
@@ -82,6 +85,12 @@ export default function OrgProfile() {
       }
 
       updateUser({ ...user, ...data });
+      // نحدّث حالة المنظمة المحلية فعليًا بعد نجاح الحفظ — وإلا رأس
+      // الصفحة (الاسم، الشارة) يضل عارض البيانات القديمة للأبد بنفس
+      // الجلسة، رغم إنه الحفظ نجح فعليًا بالتخزين
+      setOrganization((current) => ({ ...current, ...data }));
+      methods.reset(data);
+      setSuccessMessage("Changes saved successfully.");
     } catch (err) {
       setSubmitError(err.message || "Failed to save changes");
     } finally {
@@ -92,7 +101,40 @@ export default function OrgProfile() {
   const canUseServices = organization?.status === ORGANIZATION_STATUS.VERIFIED;
 
   if (isLoading) {
-    return <LoadingSpinner message="Loading organization profile..." fullScreen />;
+    return (
+      <div className="mx-auto w-full flex-1 max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="container mx-auto px-4 md:px-16 py-10 md:py-14">
+          {/* هيكل تقريبي لرأس البروفايل: صورة دائرية + اسم + شارة حالة */}
+          <div className={`flex flex-col md:flex-row md:items-center gap-8 ${PANEL_SURFACE} px-8 py-10`}>
+            <div className="flex items-center gap-6">
+              <Skeleton className="h-24 w-24 rounded-xl" />
+              <div className="flex flex-col gap-3">
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-5 w-24 rounded-full" />
+              </div>
+            </div>
+          </div>
+
+          {/* هيكل تقريبي للنموذج + بطاقة المعاينة */}
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className={`lg:col-span-2 ${PANEL_SURFACE} p-6 md:p-8 flex flex-col gap-5`}>
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-28 w-full rounded-xl" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+            </div>
+            <div className={`${PANEL_SURFACE} p-6 md:p-8 flex flex-col items-center gap-4`}>
+              <Skeleton className="h-20 w-20 rounded-full" />
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-2/3" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -118,15 +160,23 @@ export default function OrgProfile() {
               className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6"
             >
             {/* LEFT: FORM */}
-            <div className="lg:col-span-2 rounded-3xl bg-heading/5 border border-heading/10 p-6 md:p-8">
+            <div className={`lg:col-span-2 ${PANEL_SURFACE} p-6 md:p-8`}>
               <OrgProfileForm submitting={submitting} />
               {submitError && (
-                <p className="mt-4 text-sm text-danger">{submitError}</p>
+                <p className="mt-4 rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
+                  {submitError}
+                </p>
+              )}
+
+              {successMessage && (
+                <p className="mt-4 rounded-lg border border-green-600 bg-green-50 px-3 py-2 text-sm text-green-700">
+                  {successMessage}
+                </p>
               )}
             </div>
 
             {/* RIGHT: PREVIEW */}
-            <OrgProfilePreview organization={organization} />
+            <OrgProfilePreview email={organization?.email} />
           </form>
 
           {!canUseServices && (

@@ -7,7 +7,8 @@ import Button from "../../components/ui/Button";
 import OpportunityProgressBar from "../../components/opportunity/OpportunityProgressBar";
 import CategorySidebar from "../../components/opportunity/CategorySidebar";
 import SimilarOpportunities from "../../components/opportunity/SimilarOpportunities";
-import LoadingSpinner from "../../components/common/LoadingSpinner";
+import Skeleton from "../../components/ui/Skeleton";
+import { PANEL_SURFACE } from "../../utils/surfaceStyles";
 import useAsyncAction from "../../hooks/useAsyncAction";
 import { fetchOpportunityById, participateInOpportunity } from "../../services/opportunities";
 import { fetchCategories } from "../../services/categories";
@@ -43,9 +44,10 @@ export default function OpportunityDetailsPage() {
 
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
 
     async function load() {
+      setLoading(true);
+
       try {
         const [{ opportunity: data, similar: similarData }, categoryList] = await Promise.all([
           fetchOpportunityById(id),
@@ -76,17 +78,42 @@ export default function OpportunityDetailsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-10">
-        <LoadingSpinner message="Loading opportunity..." />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="flex flex-col lg:flex-row gap-10">
+          <div className="flex-1 min-w-0">
+            <Skeleton className="h-9 w-2/3 mb-4" />
+            <Skeleton className="w-full aspect-video rounded-3xl mb-6" />
+            <Skeleton className="h-2 w-full rounded-full mb-6" />
+            <div className="flex flex-wrap gap-4 mb-6">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <Skeleton className="h-24 w-full rounded-2xl mb-8" />
+            <Skeleton className="h-6 w-48 mb-3" />
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-5/6" />
+          </div>
+
+          <div className="w-full lg:w-72 shrink-0 flex flex-col gap-6">
+            <div className={`${PANEL_SURFACE} p-5 flex flex-col gap-3`}>
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-8 w-full rounded-lg" />
+              <Skeleton className="h-8 w-full rounded-lg" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (loadError || !opportunity) {
     return (
-      <p className="max-w-7xl mx-auto px-4 py-10 text-sm text-danger">
-        {loadError || "This opportunity could not be found."}
-      </p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <p className="rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
+          {loadError || "This opportunity could not be found."}
+        </p>
+      </div>
     );
   }
 
@@ -103,7 +130,7 @@ export default function OpportunityDetailsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <nav className="text-sm text-heading/50 mb-4" aria-label="Breadcrumb">
-        <Link to={ROUTES.OPPORTUNITIES} className="hover:text-primary">
+        <Link to={ROUTES.OPPORTUNITIES} className="hover:text-primary rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
           Opportunities
         </Link>
         <span className="mx-2">/</span>
@@ -162,7 +189,7 @@ export default function OpportunityDetailsPage() {
             </div>
           ) : null}
 
-          <div className="rounded-3xl bg-heading/5 border border-heading/10 p-6 mb-8">
+          <div className={`${PANEL_SURFACE} p-6 mb-8`}>
             <p className="text-sm text-heading/50 mb-1">Organized by</p>
             <p className="font-semibold text-heading">{opportunity.organization.name}</p>
           </div>
@@ -206,7 +233,11 @@ export default function OpportunityDetailsPage() {
             </p>
           ) : null}
 
-          {joinError ? <p className="mt-2 text-sm text-danger">{joinError}</p> : null}
+          {joinError ? (
+            <p className="mt-2 rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
+              {joinError}
+            </p>
+          ) : null}
         </div>
 
         <div className="w-full lg:w-72 shrink-0 flex flex-col gap-6">

@@ -1,7 +1,7 @@
 import ImageUploader from "../common/ImageUploader";
 import GenderBadge from "../common/GenderBadge";
-import Badge from "../common/Badge";
 import Typography from "../ui/Typography";
+import { PANEL_SURFACE } from "../../utils/surfaceStyles";
 
 export default function ProfileHeader({
   fullName,
@@ -10,9 +10,7 @@ export default function ProfileHeader({
   onImageChange,
 }) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center gap-8 
-                    bg-heading/5 border border-heading/10 
-                    px-8 py-10 rounded-xl shadow-sm">
+    <div className={`flex flex-col md:flex-row md:items-center gap-8 ${PANEL_SURFACE} px-8 py-10`}>
 
       {/* الصورة + الاسم */}
       <div className="flex items-center gap-6">
@@ -37,9 +35,8 @@ export default function ProfileHeader({
         </div>
       </div>
 
-      {/* الحالة + الجنس */}
+      {/* الجنس */}
       <div className="md:ml-auto flex flex-col items-end gap-4">
-        {/* <Badge label="Active" tone="primary" /> */}
         <GenderBadge gender={gender} />
       </div>
     </div>
