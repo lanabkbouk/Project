@@ -1,34 +1,27 @@
-import { useEffect, useState } from "react";
-import { fetchOrganizationProfile } from "../services/organization";
+import { useOrganizationProfileQuery } from "./queries/useOrganizationProfileQuery";
 import { ORGANIZATION_STATUS, getOrganizationStatusMeta } from "../constants/organizationStatus";
 
 /**
  * يجلب حالة توثيق المنظمة الحالية، ليستخدمه أي صفحة (My Causes، إنشاء/تعديل
- * فرصة، قائمة المتقدمين) لتعطيل الأزرار الفعلية فقط (نشر/قبول/رفض/حذف/تعديل)
- * دون حجب عرض الصفحة نفسها — المنظمة تشوف كل شيء، وتُمنع فقط من التصرف
- * الفعلي لحد ما تُوثَّق.
+ * فرصة، قائمة المتقدمين، الداشبورد) لتعطيل الأزرار الفعلية فقط
+ * (نشر/قبول/رفض/حذف/تعديل) دون حجب عرض الصفحة نفسها — المنظمة تشوف كل
+ * شيء، وتُمنع فقط من التصرف الفعلي لحد ما تُوثَّق.
+ *
+ * ملاحظة مهمة: هاد الـ hook ما بيعمل طلب شبكة خاص فيه — هو غلاف رفيع
+ * (thin wrapper) فوق useOrganizationProfileQuery، اللي بيعتمد على cache
+ * React Query المشترك (queryKeys.organization.profile). هيك كل الصفحات
+ * يلي بتستخدمه بتشارك نفس نسخة البيانات، وأي تحديث (مثلاً حفظ البروفايل
+ * بصفحة orgProfile) بينعكس تلقائيًا على البقية بدون طلب شبكة إضافي.
  */
 export function useOrganizationVerification() {
-  const [status, setStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isPending } = useOrganizationProfileQuery();
 
-  useEffect(() => {
-    let isMounted = true;
-
-    fetchOrganizationProfile().then((result) => {
-      if (!isMounted) return;
-      if (result.success) setStatus(result.data.status);
-      setLoading(false);
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  // الخدمة بترجع { success, data } دايمًا (ما بترمي استثناء عند الفشل)
+  const status = data?.success ? data.data?.status : null;
 
   return {
     status,
-    loading,
+    loading: isPending,
     isVerified: status === ORGANIZATION_STATUS.VERIFIED,
     meta: getOrganizationStatusMeta(status),
   };
