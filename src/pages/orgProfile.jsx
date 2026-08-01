@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "../context/AuthContext";
-import { fetchOrganizationProfile, updateOrganizationProfile } from "../services/organization";
+import { useOrganizationProfileQuery } from "../hooks/queries/useOrganizationProfileQuery";
+import { useUpdateOrganizationProfileMutation } from "../hooks/queries/useUpdateOrganizationProfileMutation";
+import { queryKeys } from "../app/queryKeys";
 import { organizationProfileSchema } from "../utils/auth/OrganizationProfileValidation";
 import { ORGANIZATION_STATUS } from "../constants/organizationStatus";
 import { PANEL_SURFACE } from "../utils/surfaceStyles";
@@ -16,14 +19,24 @@ import Skeleton from "../components/ui/Skeleton";
 
 export default function OrgProfile() {
   const { user, updateUser } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [organization, setOrganization] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const organizationQuery = useOrganizationProfileQuery();
+  const isLoading = organizationQuery.isPending;
+  // الخدمة بترجع { success, data } دايمًا (ما بترمي استثناء)، فمنطق
+  // التحقق يضل هون بدل الاعتماد على query.isError
+  const organization = organizationQuery.data?.success ? organizationQuery.data.data : null;
 
-  const [imagePreview, setImagePreview] = useState("");
+  const updateProfileMutation = useUpdateOrganizationProfileMutation();
+
+  const [localImagePreview, setLocalImagePreview] = useState(null);
   const [imageFile, setImageFile] = useState(null);
 
-  const [submitting, setSubmitting] = useState(false);
+  // معاينة الصورة "مشتقة" مباشرة من الحالة، مو Effect منفصل بيزامنها:
+  // لو المستخدم اختار صورة جديدة محليًا (localImagePreview) منعرضها،
+  // وإلا منرجع لصورة المنظمة القادمة من الكاش
+  const imagePreview = localImagePreview ?? organization?.imageUrl ?? "";
+
   const [submitError, setSubmitError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -33,23 +46,19 @@ export default function OrgProfile() {
     mode: "onSubmit",
   });
 
+  // منزامن الفورم والمعاينة مع بيانات المنظمة أول ما توصل (أو تتحدّث)
+  // من الكاش — useEffect هون شرعي لأنه بيربط نظامين مختلفين (React Query
+  // وreact-hook-form) مع بعض، مو جلب بيانات بحد ذاته
   useEffect(() => {
-    fetchOrganizationProfile().then((result) => {
-      if (result.success) {
-        setOrganization(result.data);
-        setImagePreview(result.data.imageUrl || "");
+    if (!organization) return;
 
-        methods.reset({
-          name: result.data.name || "",
-          description: result.data.description || "",
-          city: result.data.city || "",
-          website: result.data.website || "",
-        });
-      }
-
-      setIsLoading(false);
+    methods.reset({
+      name: organization.name || "",
+      description: organization.description || "",
+      city: organization.city || "",
+      website: organization.website || "",
     });
-  }, []);
+  }, [organization, methods]);
 
   const onImageChange = (e) => {
     const file = e.target.files?.[0];
@@ -58,13 +67,12 @@ export default function OrgProfile() {
     const reader = new FileReader();
     reader.onload = () => {
       setImageFile(file);
-      setImagePreview(reader.result);
+      setLocalImagePreview(reader.result);
     };
     reader.readAsDataURL(file);
   };
 
   const onSubmit = async (data) => {
-    setSubmitting(true);
     setSubmitError("");
     setSuccessMessage("");
 
@@ -77,7 +85,7 @@ export default function OrgProfile() {
       formData.append("city", data.city);
       formData.append("website", data.website || "");
 
-      const result = await updateOrganizationProfile(formData);
+      const result = await updateProfileMutation.mutateAsync(formData);
 
       if (!result.success) {
         setSubmitError(result.error || "Failed to save changes");
@@ -85,16 +93,19 @@ export default function OrgProfile() {
       }
 
       updateUser({ ...user, ...data });
-      // نحدّث حالة المنظمة المحلية فعليًا بعد نجاح الحفظ — وإلا رأس
+
+      // ندمج قيم الفورم المحفوظة مباشرة بكاش React Query — وإلا رأس
       // الصفحة (الاسم، الشارة) يضل عارض البيانات القديمة للأبد بنفس
       // الجلسة، رغم إنه الحفظ نجح فعليًا بالتخزين
-      setOrganization((current) => ({ ...current, ...data }));
+      queryClient.setQueryData(queryKeys.organization.profile, (current) => ({
+        success: true,
+        data: { ...(current?.data ?? {}), ...data },
+      }));
+
       methods.reset(data);
       setSuccessMessage("Changes saved successfully.");
     } catch (err) {
       setSubmitError(err.message || "Failed to save changes");
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -161,7 +172,7 @@ export default function OrgProfile() {
             >
             {/* LEFT: FORM */}
             <div className={`lg:col-span-2 ${PANEL_SURFACE} p-6 md:p-8`}>
-              <OrgProfileForm submitting={submitting} />
+              <OrgProfileForm submitting={updateProfileMutation.isPending} />
               {submitError && (
                 <p className="mt-4 rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
                   {submitError}

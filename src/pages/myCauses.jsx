@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Plus, FolderPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Typography from "../components/ui/Typography";
@@ -7,44 +7,28 @@ import MyCauseCard from "../components/organization/MyCauseCard";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
 import CardSkeleton from "../components/ui/CardSkeleton";
 import EmptyState from "../components/common/EmptyState";
-import { fetchMyOpportunities, deleteOpportunity } from "../services/opportunities";
+import { useMyOpportunitiesQuery } from "../hooks/queries/useMyOpportunitiesQuery";
+import { useDeleteOpportunityMutation } from "../hooks/queries/useDeleteOpportunityMutation";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
 import { ROUTES } from "../constants/paths";
 
 export default function MyCauses() {
   const navigate = useNavigate();
   const { status, isVerified } = useOrganizationVerification();
-  const [opportunities, setOpportunities] = useState([]);
-  const [loading, setLoading] = useState(true);
+
+  const opportunitiesQuery = useMyOpportunitiesQuery();
+  const deleteMutation = useDeleteOpportunityMutation();
+
+  const opportunities = opportunitiesQuery.data ?? [];
+  const loading = opportunitiesQuery.isPending;
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function load() {
-      try {
-        const data = await fetchMyOpportunities();
-        if (isMounted) setOpportunities(data);
-      } catch (err) {
-        if (isMounted) setError(err.message || "Failed to load your causes");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   const handleDelete = async (id) => {
-    const result = await deleteOpportunity(id);
+    setError("");
+    const result = await deleteMutation.mutateAsync(id);
     if (!result.success) {
       setError(result.error || "Failed to delete this cause");
-      return;
     }
-    setOpportunities((current) => current.filter((opportunity) => opportunity.id !== id));
   };
 
   return (

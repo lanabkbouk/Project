@@ -1,4 +1,3 @@
-
 // إحصائيات صفحة "About" (عدد المتطوعين/المنظمات/الفرص). نفس نمط باقي
 
 // الاستجابة المتوقعة: { volunteersCount, organizationsCount, opportunitiesCount }
@@ -8,17 +7,15 @@
 // هالإحصائية من الصفحة نهائيًا بدل ما نخترعها.
 
 import { apiClient, getApiErrorMessage } from './api/client'
+import { isMockMode } from './api/mockMode'
+import { wait } from './api/delay'
 
-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_STATS || 'true') === 'true'
+const MOCK_MODE = isMockMode()
 
 const MOCK_STATS = {
   volunteersCount: 1240,
   organizationsCount: 86,
   opportunitiesCount: 312,
-}
-
-function wait(duration = 300) {
-  return new Promise((resolve) => setTimeout(resolve, duration))
 }
 
 export async function fetchPlatformStats() {

@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from 'react-router-dom'
 import Input from '../../components/ui/Input'
 import Button from '../../components/ui/Button'
@@ -7,7 +8,8 @@ import { ROUTES, AUTH_QUERY_KEYS } from '../../constants/paths'
 import { ACCOUNT_TYPES } from '../../constants/auth/accountTypes'
 import AuthShell from '../../components/auth/AuthShell'
 import { useAuth } from '../../context/AuthContext'
-import { mapZodErrors, parseLoginForm } from '../../utils/auth/validation'
+import useAsyncAction from '../../hooks/useAsyncAction'
+import { loginSchema } from '../../utils/auth/validation'
 import { loginUser } from '../../services/auth'
 
 const initialValues = {
@@ -18,8 +20,10 @@ const initialValues = {
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [loading, setLoading] = useState(false)
-  const [error, setAuthError] = useState('')
+  // نفس هوك إدارة الـ loading/error المستخدم بصفحة Register — بدل ما كانت
+  // Login تدير هالحالة يدويًا بـ useState منفصلة، صار السلوك موحّدًا بين
+  // الصفحتين (نفس التعامل مع النجاح/الفشل/الاستثناءات غير المتوقعة)
+  const { loading, error, execute, clearError } = useAsyncAction(loginUser)
 
   const {
     register,
@@ -29,56 +33,38 @@ export default function Login() {
     setFocus,
     formState: { errors },
   } = useForm({
+    resolver: zodResolver(loginSchema),
     defaultValues: initialValues,
   })
 
-  const clearError = useCallback(() => {
-    setAuthError('')
-  }, [])
+  const handleFieldChange = useCallback(() => {
+    clearError()
+  }, [clearError])
+
+  // يفرّغ الباسورد بس (الإيميل بيضل زي ما هو) ويرجّع الفوكس له، جاهز
+  // لإعادة المحاولة — نفس السلوك المتّبع بـ Google/GitHub لأي محاولة فاشلة
+  const clearPasswordAndFocus = () => {
+    setValue('password', '')
+    setFocus('password')
+  }
 
   const onSubmit = async (values) => {
-    const validationResult = parseLoginForm(values)
-    if (!validationResult.success) {
-      const fieldErrors = mapZodErrors(validationResult.error)
-      Object.entries(fieldErrors).forEach(([name, message]) => {
-        setError(name, { type: 'manual', message })
-      })
+    const result = await execute(values)
+    if (!result?.success) {
+      clearPasswordAndFocus()
       return
     }
 
-    setLoading(true)
-    setAuthError('')
-
-    // يفرّغ الباسورد بس (الإيميل بيضل زي ما هو) ويرجّع الفوكس له، جاهز
-    // لإعادة المحاولة — نفس السلوك المتّبع بـ Google/GitHub لأي محاولة فاشلة
-    const clearPasswordAndFocus = () => {
-      setValue('password', '')
-      setFocus('password')
-    }
-
-    try {
-      const result = await loginUser(validationResult.data)
-
-      if (!result?.success) {
-        setAuthError(result?.error || 'Unable to sign in')
-        clearPasswordAndFocus()
-        return
-      }
-
-      if (!login(result.data)) {
-        setAuthError('Received invalid authentication response')
-        clearPasswordAndFocus()
-        return
-      }
-
-      navigate(ROUTES.HOME)
-    } catch (submitError) {
-      const message = submitError instanceof Error ? submitError.message : 'Unexpected error'
-      setAuthError(message)
+    if (!login(result.data)) {
+      setError('root', {
+        type: 'manual',
+        message: 'Received invalid authentication response. Please try again.',
+      })
       clearPasswordAndFocus()
-    } finally {
-      setLoading(false)
+      return
     }
+
+    navigate(ROUTES.HOME)
   }
 
   return (
@@ -103,10 +89,11 @@ export default function Login() {
           type='email'
           name='email'
           register={register}
-          registerOptions={{ onChange: clearError }}
+          registerOptions={{ onChange: handleFieldChange }}
           placeholder='you@example.com'
           error={errors.email?.message}
           autoComplete='email'
+          labelClassName="text-white"
           required
         />
 
@@ -115,15 +102,18 @@ export default function Login() {
           type='password'
           name='password'
           register={register}
-          registerOptions={{ onChange: clearError }}
+          registerOptions={{ onChange: handleFieldChange }}
           placeholder='********'
           error={errors.password?.message}
           autoComplete='current-password'
+          labelClassName="text-white"
           required
         />
 
-        {error ? (
-          <p className='rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger'>{error}</p>
+        {error || errors.root?.message ? (
+          <p className='rounded-lg border border-danger bg-red-500/10 px-3 py-2 text-sm text-red-200'>
+            {error || errors.root?.message}
+          </p>
         ) : null}
 
         <Button type='submit' disabled={loading} fullWidth>

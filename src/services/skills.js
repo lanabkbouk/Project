@@ -1,17 +1,18 @@
-// services/skills.js
-//
+
 // Matches the "skill" table in the ERD: skill_id, name.
 // Each skill carries a "categoryId" from the shared category table.
 // This lets the Volunteer Profile group skills by category and lets
 // Opportunities match required skills.
 //
-// TODO: once Laravel is ready, set VITE_USE_MOCK_CATALOG=false
+// TODO: once Laravel is ready, set VITE_API_MODE=real
 // GET /api/skills -> [{ id, name, categoryId }, ...]
 
 import { apiClient, getApiErrorMessage } from "./api/client";
+import { isMockMode } from "./api/mockMode";
+import { wait } from "./api/delay";
 import { fetchCategories } from "./categories"; // ← مهم جداً
 
-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_CATALOG || "true") === "true";
+const MOCK_MODE = isMockMode();
 
 const MOCK_SKILLS = [
   // Health (c1)
@@ -43,10 +44,6 @@ const MOCK_SKILLS = [
   { id: "s16", name: "Photography", categoryId: "c6" },
 ];
 
-function wait(duration = 250) {
-  return new Promise((resolve) => setTimeout(resolve, duration));
-}
-
 /**
  * Fetches all available skills and attaches category info dynamically.
  */
@@ -61,9 +58,7 @@ export async function fetchAvailableSkills() {
   } else {
     try {
       const response = await apiClient.get("/skills");
-      skills = Array.isArray(response.data)
-        ? response.data
-        : response.data?.data || [];
+      skills = response.data || [];
     } catch (error) {
       throw new Error(getApiErrorMessage(error, "Failed to load skills"));
     }

@@ -1,10 +1,9 @@
 // pages/about.jsx
 //
-// صفحة "About": تجلب إحصائيات المنصة من services/stats.js (لا أرقام
-// ثابتة هون)، وتمرّرها للمكوّنات. حالات التحميل/الخطأ معالجة بشكل بسيط.
+// صفحة "About": تجلب إحصائيات المنصة عبر usePlatformStatsQuery (React
+// Query)، وتمرّرها للمكوّنات. حالات التحميل/الخطأ معالجة بشكل بسيط.
 
-import { useEffect, useState } from "react";
-import { fetchPlatformStats } from "../services/stats";
+import { usePlatformStatsQuery } from "../hooks/queries/usePlatformStatsQuery";
 import { SYRIAN_GOVERNORATES_COUNT } from "../services/syrianGovernorates";
 import MissionSection from "../components/about/MissionSection";
 import SectionHeader from "../components/about/SectionHeader";
@@ -14,26 +13,9 @@ import VisionGoals from "../components/about/VisionGoals";
 import GeometricDivider from "../components/common/GeometricDivider";
 
 export default function About() {
-  const [stats, setStats] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    fetchPlatformStats().then((result) => {
-      if (!isMounted) return;
-      if (result.success) {
-        setStats(result.data);
-      } else {
-        console.warn('[About] Failed to load platform stats:', result.error);
-      }
-      setIsLoading(false);
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const statsQuery = usePlatformStatsQuery();
+  const isLoading = statsQuery.isPending;
+  const stats = statsQuery.data?.success ? statsQuery.data.data : null;
 
   const statsArray = stats
     ? [

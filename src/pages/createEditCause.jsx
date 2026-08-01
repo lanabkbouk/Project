@@ -7,13 +7,10 @@ import CauseForm from "../components/organization/CauseForm";
 import Skeleton from "../components/ui/Skeleton";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
-import { fetchCategories } from "../services/categories";
+import { useCategoriesQuery } from "../hooks/queries/useCategoriesQuery";
+import { useOpportunityDetailsQuery } from "../hooks/queries/useOpportunityDetailsQuery";
+import { useSaveOpportunityMutation } from "../hooks/queries/useSaveOpportunityMutation";
 import { useImageUpload } from "../hooks/useImageUpload";
-import {
-  fetchOpportunityById,
-  createOpportunity,
-  updateOpportunity,
-} from "../services/opportunities";
 import { opportunitySchema } from "../utils/opportunityValidation";
 import { ROUTES } from "../constants/paths";
 
@@ -35,9 +32,16 @@ export default function CreateEditCause() {
   const navigate = useNavigate();
   const { status, isVerified } = useOrganizationVerification();
 
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  // نفس هوك التصنيفات المستخدم بصفحتي الفرص — كاش مشترك، ما بينجلب مرتين
+  const categoriesQuery = useCategoriesQuery();
+  // بوضع "تعديل" بس: id موجود فبيتفعّل الجلب تلقائيًا (enabled: Boolean(id)
+  // داخل الهوك نفسه) — بوضع "إنشاء" الهوك معطّل تلقائيًا بدون أي شرط هون
+  const opportunityQuery = useOpportunityDetailsQuery(id);
+  const saveMutation = useSaveOpportunityMutation({ isEditMode, id });
+
+  const categories = categoriesQuery.data ?? [];
+  const opportunity = opportunityQuery.data?.opportunity ?? null;
+
   const [submitError, setSubmitError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -54,49 +58,33 @@ export default function CreateEditCause() {
     defaultValues: DEFAULT_VALUES,
   });
 
+  // نزامن الفورم ومعاينة الصورة مع بيانات الفرصة أول ما توصل — بوضع
+  // "تعديل" بس. useEffect هون شرعي لأنه بيربط بيانات React Query مع
+  // نظامين خارجيين (react-hook-form وuseImageUpload)، مو جلب بيانات بحد ذاته
   useEffect(() => {
-    let isMounted = true;
+    if (!isEditMode || !opportunity) return;
 
-    async function load() {
-      try {
-        const categoryList = await fetchCategories();
-        if (!isMounted) return;
-        setCategories(categoryList);
+    methods.reset({
+      title: opportunity.title,
+      description: opportunity.description,
+      categoryId: opportunity.category?.id || "",
+      city: opportunity.location,
+      startDate: opportunity.startDate,
+      endDate: opportunity.endDate,
+      minHours: opportunity.minHours,
+      maxHours: opportunity.maxHours,
+      maxVolunteers: opportunity.maxVolunteers,
+    });
 
-        if (isEditMode) {
-          const { opportunity } = await fetchOpportunityById(id);
-          if (!opportunity || !isMounted) return;
-
-          methods.reset({
-            title: opportunity.title,
-            description: opportunity.description,
-            categoryId: opportunity.category?.id || "",
-            city: opportunity.location,
-            startDate: opportunity.startDate,
-            endDate: opportunity.endDate,
-            minHours: opportunity.minHours,
-            maxHours: opportunity.maxHours,
-            maxVolunteers: opportunity.maxVolunteers,
-          });
-
-          if (opportunity.image) setPreviewUrl(opportunity.image);
-        }
-      } catch (err) {
-        if (isMounted) setSubmitError(err.message || "Failed to load form data");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      isMounted = false;
-    };
+    if (opportunity.image) setPreviewUrl(opportunity.image);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [opportunity, isEditMode]);
+
+  const loading = isEditMode
+    ? categoriesQuery.isPending || opportunityQuery.isPending
+    : categoriesQuery.isPending;
 
   const onSubmit = async (values) => {
-    setSubmitting(true);
     setSubmitError("");
     setSuccessMessage("");
 
@@ -108,12 +96,9 @@ export default function CreateEditCause() {
       imageFile,
     };
 
-    const result = isEditMode
-      ? await updateOpportunity(id, payload)
-      : await createOpportunity(payload);
+    const result = await saveMutation.mutateAsync(payload);
 
     if (!result.success) {
-      setSubmitting(false);
       setSubmitError(result.error || "Something went wrong");
       return;
     }
@@ -171,7 +156,7 @@ export default function CreateEditCause() {
         <form onSubmit={methods.handleSubmit(onSubmit)}>
           <CauseForm
             categories={categories}
-            submitting={submitting}
+            submitting={saveMutation.isPending}
             submitDisabled={!isVerified}
             submitLabel={isEditMode ? "Save Changes" : "Publish Cause"}
             imagePreview={imagePreview}

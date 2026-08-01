@@ -1,8 +1,7 @@
-// services/organization.js
-//
+
 // جلب وتحديث بروفايل المنظمة الحالية (المسجّلة دخول). بنفس نمط
 //
-// TODO: لما يجهز الباك اند، خلي VITE_USE_MOCK_ORGANIZATION_PROFILE=false
+// TODO: لما يجهز الباك اند، خلي VITE_API_MODE=real
 // GET  /api/organizations/me   → بروفايل المنظمة الحالية (فيها status)
 // POST /api/organizations/me   (multipart, _method=PUT عند التحديث)
 //
@@ -12,15 +11,13 @@
 // المنظمة بعد ما توافق عليها السوبر أدمن.
 
 import { apiClient, getApiErrorMessage } from './api/client'
+import { isMockMode } from './api/mockMode'
+import { wait } from './api/delay'
 import { ORGANIZATION_STATUS } from '../constants/organizationStatus'
 import { AUTH_STORAGE_KEY } from '../constants/auth/storage'
 import { loadMockUsers, updateMockUser } from './mock/mockUserStore'
 
-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_ORGANIZATION_PROFILE || 'true') === 'true'
-
-function wait(duration = 300) {
-  return new Promise((resolve) => setTimeout(resolve, duration))
-}
+const MOCK_MODE = isMockMode()
 
 // إيميل المستخدم المسجّل دخوله حاليًا (من نفس الجلسة يلي AuthContext خزّنها)
 // بنستخدمه لنلاقي سجل هالمنظمة بالضبط جوا mockUsers، بدل ما نرجّع بيانات ثابتة

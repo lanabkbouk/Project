@@ -4,7 +4,6 @@
 // وتمريرها للكومبوننتات بمجلد components/home/. كل سكشن Component
 // منفصل ومسؤول عن عرضه هو بس — هالملف ما فيه أي JSX تصميمي مباشر.
 
-import { useEffect, useState } from "react";
 import GeometricDivider from "../components/common/GeometricDivider";
 import HomeHero from "../components/home/HomeHero";
 import HomeStatsSection from "../components/home/HomeStatsSection";
@@ -12,34 +11,18 @@ import HomePartners from "../components/home/HomePartners";
 import HomeSuccessStories from "../components/home/HomeSuccessStories";
 import HomeHowToJoin from "../components/home/HomeHowToJoin";
 import HomeFaqSection from "../components/home/HomeFaqSection";
-import { fetchPlatformStats } from "../services/stats";
-import { fetchCompletedOpportunities } from "../services/opportunities";
+import { usePlatformStatsQuery } from "../hooks/queries/usePlatformStatsQuery";
+import { useCompletedOpportunitiesQuery } from "../hooks/queries/useCompletedOpportunitiesQuery";
 
 export default function Home() {
-  const [stats, setStats] = useState(null);
-  const [completedOpportunities, setCompletedOpportunities] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // نفس هوك الإحصائيات المستخدم بصفحة About — كاش مشترك، فلو المستخدم
+  // زار الصفحتين بنفس الجلسة، ما بتنجلب الإحصائيات إلا مرة وحدة بس
+  const statsQuery = usePlatformStatsQuery();
+  const completedQuery = useCompletedOpportunitiesQuery();
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadHomeData() {
-      const [statsResult, completedData] = await Promise.all([
-        fetchPlatformStats(),
-        fetchCompletedOpportunities().catch(() => []),
-      ]);
-
-      if (!isMounted) return;
-      if (statsResult.success) setStats(statsResult.data);
-      setCompletedOpportunities(completedData);
-      setLoading(false);
-    }
-
-    loadHomeData();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const stats = statsQuery.data?.success ? statsQuery.data.data : null;
+  const completedOpportunities = completedQuery.data ?? [];
+  const loading = statsQuery.isPending || completedQuery.isPending;
 
   return (
     <div className="bg-bg text-heading">

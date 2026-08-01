@@ -1,42 +1,28 @@
-// services/achievements.js
+// الإنجازات المقفلة / غير المقفلة
+// يعرض ملف تعريف المتطوعين كتالوج الإنجاز الكامل (وليس فقط
+// تلك التي تكسب بالفعل) حتى يتمكنوا من رؤية ما لا يزال أمامهم - مقفل
+// يتم تقديم الإنجازات في الرمادي مع اسمها الحقيقي / وصفها ،
+// تظهر تلك المقفلة بالألوان الكاملة مع تاريخ كسبها.
+// هذا يعني أن واجهة برمجة التطبيقات يجب أن تعيد كل تعريف للإنجاز ، ولكل منها: ////
+// - غير مقفل: boolean
+// - المكتسبةالتاريخ: سلسلة | null (لاغية أثناء قفل)
 //
-// Per the ERD, the "achievement" table itself has exactly these columns:
-//   achiev_id, name, description, date
-// It belongs to one "volunteer" (the "earns" relation, volunteer 1 → N achievement).
-//
-// NOTE: achievements are NOT tied to a category (unlike opportunities and
-// skills). These are general milestones — first opportunity, hours worked,
-// group participation — that apply the same regardless of which category
-// (Health, Education, Social...) the volunteer worked in.
-//
-// LOCKED / UNLOCKED ACHIEVEMENTS
-// The volunteer profile shows the full achievement catalog (not just the
-// ones already earned) so they can see what's still ahead of them — locked
-// achievements are rendered in grayscale with their real name/description,
-// unlocked ones show in full color with the date they were earned.
-// This means the API must return EVERY achievement definition, each with:
-//   - unlocked: boolean
-//   - earnedDate: string | null  (null while locked)
-//
-// IMPORTANT — who grants an achievement:
-// Awarding is entirely a backend business rule, not something an admin sets
-// manually and not something decided in the frontend. The rules are:
-//   - first completed opportunity
-//   - 10 cumulative volunteering hours
-//   - 3 completed group opportunities
-// Laravel should evaluate these automatically (e.g. a model event/observer
-// triggered when a participation is marked complete) and flip `unlocked` to
-// true + set `earnedDate` once a rule is met. This file only displays
-// whatever the API returns — nothing about which achievements exist, or
-// whether they're unlocked, is hardcoded on the client.
-//
-// TODO: once the Laravel backend is ready, set VITE_USE_MOCK_ACHIEVEMENTS=false
-// GET /api/volunteers/{volunteerId}/achievements
-// Expected response: [{ id, name, description, unlocked, earnedDate }, ...]
-
+// هام - من يمنح إنجازا:
+// منح هو تماما قاعدة الأعمال الخلفية، وليس شيئا مجموعة المشرف
+// يدويا وليس شيئا تقرر في الواجهة الأمامية. القواعد هي:
+// - أول فرصة مكتملة
+// - 10 ساعات تطوعية تراكمية
+// - 3 فرص جماعية مكتملة
+// يجب على Laravel تقييم هذه تلقائيًا (على سبيل المثال حدث / مراقب نموذجي
+// التي يتم تشغيلها عند اكتمال المشاركة) وقلب "غير مقفلة" إلى
+// صحيح + مجموعة "كرند دايت" بمجرد استيفاء قاعدة. يعرض هذا الملف فقط
+// مهما كانت عودة API - لا شيء عن أي إنجازات موجودة ، أو
+// سواء كانت مقفلة ، فهي مشفرة على العميل.
 import { apiClient, getApiErrorMessage } from './api/client'
+import { isMockMode } from './api/mockMode'
+import { wait } from './api/delay'
 
-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_ACHIEVEMENTS || 'true') === 'true'
+const MOCK_MODE = isMockMode()
 
 const MOCK_ACHIEVEMENTS = [
   {
@@ -62,10 +48,6 @@ const MOCK_ACHIEVEMENTS = [
   },
 ]
 
-function wait(duration = 300) {
-  return new Promise((resolve) => setTimeout(resolve, duration))
-}
-
 /**
  * Fetches the FULL achievement catalog for a volunteer, each entry flagged
  * with whether it's unlocked yet (so locked ones can still be displayed).
@@ -84,7 +66,7 @@ export async function fetchVolunteerAchievements(volunteerId) {
       : '/volunteers/me/achievements'
 
     const response = await apiClient.get(endpoint)
-    return Array.isArray(response.data) ? response.data : response.data?.data || []
+    return response.data || []
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load achievements'))
   }

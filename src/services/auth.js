@@ -1,13 +1,11 @@
 import { ACCOUNT_TYPES } from '../constants/auth/accountTypes'
 import { MOCK_USERS_STORAGE_KEY } from '../constants/auth/storage'
 import { apiClient, getApiErrorMessage } from './api/client'
+import { isMockMode } from './api/mockMode'
+import { wait } from './api/delay'
 import { normalizeUser } from '../utils/auth/normalizeUser'
 
-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_AUTH || 'true') === 'true'
-
-function wait(duration = 300) {
-  return new Promise((resolve) => setTimeout(resolve, duration))
-}
+const MOCK_MODE = isMockMode()
 
 function loadMockUsers() {
   try {
@@ -53,8 +51,9 @@ function resolveAccountType(data) {
 }
 
 // بناء بيانات المصادقة (user/token/accountType) من استجابة الـ API أو الـ Mock
-// ملاحظة مهمة: responseData هنا هو بالفعل response.data.data القادم من Laravel
-// أي أنه على شكل { user, token } مباشرة، وليس فيه مستوى "data" إضافي
+// ملاحظة: apiClient يفكّ تغليف Laravel تلقائيًا (راجع unwrapLaravelEnvelope
+// في api/client.js)، فـ responseData هون هو { user, token } مباشرة، بدون
+// أي حاجة لقراءة response.data.data يدويًا هنا
 function buildAuthPayload(responseData, fallbackEmail = '') {
   const apiUser = responseData?.user
   const apiToken = responseData?.token
@@ -80,7 +79,10 @@ function buildRegisterFormData(payload) {
   formData.append('password', payload.password)
   formData.append('password_confirmation', payload.password)
 
-  if (payload.phone) formData.append('phone_number', payload.phone)
+  // الهاتف مطلوب دائمًا هون (تم التحقق منه مسبقًا بـ validation.js)، فما في
+  // داعي لشرط "if" وكأنه ممكن يكون فاضي — التناقض القديم بين الفورم (يمنع
+  // الإرسال بدون هاتف) والكود هون (كان يتعامل معه كاختياري) صار محلول
+  formData.append('phone_number', payload.phone)
 
   if (payload.accountType === ACCOUNT_TYPES.VOLUNTEER) {
     formData.append('first_name', payload.firstName)
@@ -121,7 +123,7 @@ export async function registerUser(payload) {
   try {
     const formData = buildRegisterFormData(payload)
     const response = await apiClient.post('/register', formData)
-    return { success: true, data: buildAuthPayload(response.data.data, payload.email.trim().toLowerCase()) }
+    return { success: true, data: buildAuthPayload(response.data, payload.email.trim().toLowerCase()) }
   } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Unable to register account') }
   }
@@ -149,7 +151,7 @@ export async function loginUser(payload) {
     const response = await apiClient.post('/login', payload)
     return {
       success: true,
-      data: buildAuthPayload(response.data.data, payload.email.trim().toLowerCase()),
+      data: buildAuthPayload(response.data, payload.email.trim().toLowerCase()),
     }
   } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Unable to sign in') }

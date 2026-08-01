@@ -6,15 +6,17 @@
 // + category (via "categorized"), skills (via "requires"),
 // + organization (via "publishes").
 //
-// TODO: once Laravel is ready, set VITE_USE_MOCK_OPPORTUNITIES=false
+// TODO: once Laravel is ready, set VITE_API_MODE=real
 // GET  /api/opportunities            -> list (supports ?search=&categoryId=&skillId=&location=)
 // GET  /api/opportunities/{id}       -> single opportunity
 // POST /api/opportunities/{id}/participate -> join an opportunity
 
 import { apiClient, getApiErrorMessage } from './api/client'
+import { isMockMode } from './api/mockMode'
+import { wait } from './api/delay'
 import { OPPORTUNITY_STATUS } from '../constants/opportunityStatus'
 
-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_OPPORTUNITIES || 'true') === 'true'
+const MOCK_MODE = isMockMode()
 
 // مُعرّف حساب المنظمة الوهمي الوحيد المتاح حاليًا للتجربة — يُستخدم فقط
 // لفلترة "My Causes" من نفس المصدر الموحّد أدناه (بدل جلبها من مصفوفة منفصلة)
@@ -142,10 +144,6 @@ let MOCK_OPPORTUNITIES = [
   },
 ]
 
-function wait(duration = 300) {
-  return new Promise((resolve) => setTimeout(resolve, duration))
-}
-
 // تتحقق إذا وصل عدد المتطوعين الحاليين للحد الأقصى — تُستخدم لتفعيل
 // الإغلاق التلقائي فور انضمام آخر متطوع، بمعزل عن أي إغلاق يدوي من المنظمة
 function isOpportunityFull(currentVolunteers, maxVolunteers) {
@@ -197,7 +195,7 @@ export async function fetchCompletedOpportunities() {
 
   try {
     const response = await apiClient.get('/opportunities', { params: { status: 'closed' } })
-    return Array.isArray(response.data) ? response.data : response.data?.data || []
+    return response.data || []
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load completed opportunities'))
   }
@@ -215,7 +213,7 @@ export async function fetchOpportunities(filters = {}) {
 
   try {
     const response = await apiClient.get('/opportunities', { params: filters })
-    return Array.isArray(response.data) ? response.data : response.data?.data || []
+    return response.data || []
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load opportunities'))
   }
@@ -265,7 +263,7 @@ export async function fetchSuggestedOpportunities({ skillIds = [], age = null, c
 
   try {
     const response = await apiClient.get('/volunteers/me/suggested-opportunities')
-    return Array.isArray(response.data) ? response.data : response.data?.data || []
+    return response.data || []
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load suggested opportunities'))
   }
@@ -312,7 +310,7 @@ export async function fetchMyOpportunities() {
 
   try {
     const response = await apiClient.get('/organizations/me/opportunities')
-    return Array.isArray(response.data) ? response.data : response.data?.data || []
+    return response.data || []
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load your causes'))
   }

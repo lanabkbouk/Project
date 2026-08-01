@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Users } from "lucide-react";
 import Typography from "../components/ui/Typography";
@@ -7,11 +7,9 @@ import Skeleton from "../components/ui/Skeleton";
 import EmptyState from "../components/common/EmptyState";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
-import { fetchOpportunityById } from "../services/opportunities";
-import {
-  fetchApplicantsForOpportunity,
-  updateParticipationStatus,
-} from "../services/participations";
+import { useOpportunityDetailsQuery } from "../hooks/queries/useOpportunityDetailsQuery";
+import { useApplicantsQuery } from "../hooks/queries/useApplicantsQuery";
+import { useUpdateParticipationStatusMutation } from "../hooks/queries/useUpdateParticipationStatusMutation";
 import { PARTICIPATION_STATUS } from "../constants/participationStatus";
 import { CARD_SURFACE } from "../utils/surfaceStyles";
 import { ROUTES } from "../constants/paths";
@@ -20,54 +18,32 @@ export default function ApplicantsList() {
   const { id } = useParams();
   const { status, isVerified } = useOrganizationVerification();
 
-  const [opportunity, setOpportunity] = useState(null);
-  const [applicants, setApplicants] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // نفس هوك تفاصيل الفرصة المستخدم بصفحة عرض الفرصة — بس بحاجة الحقل
+  // opportunity منه، مو similar
+  const opportunityQuery = useOpportunityDetailsQuery(id);
+  const applicantsQuery = useApplicantsQuery(id);
+  const updateStatusMutation = useUpdateParticipationStatusMutation(id);
+
+  const opportunity = opportunityQuery.data?.opportunity ?? null;
+  const applicants = applicantsQuery.data ?? [];
+  const loading = opportunityQuery.isPending || applicantsQuery.isPending;
   const [error, setError] = useState("");
-  const [updatingId, setUpdatingId] = useState(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  // بفضل mutation.variables: نعرف بالضبط أي متقدّم قيد التحديث حاليًا
+  // بدون الحاجة لـ useState منفصلة (updatingId) نديرها يدويًا
+  const updatingId = updateStatusMutation.isPending
+    ? updateStatusMutation.variables?.applicantId
+    : null;
 
-    async function load() {
-      try {
-        const [{ opportunity: opportunityData }, applicantsData] = await Promise.all([
-          fetchOpportunityById(id),
-          fetchApplicantsForOpportunity(id),
-        ]);
-        if (!isMounted) return;
-        setOpportunity(opportunityData);
-        setApplicants(applicantsData);
-      } catch (err) {
-        if (isMounted) setError(err.message || "Failed to load applicants");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      isMounted = false;
-    };
-  }, [id]);
-
-  const handleStatusChange = async (applicantId, status) => {
+  const handleStatusChange = async (applicantId, newStatus) => {
     if (!isVerified) return;
 
-    setUpdatingId(applicantId);
-    const result = await updateParticipationStatus(applicantId, status);
-    setUpdatingId(null);
+    setError("");
+    const result = await updateStatusMutation.mutateAsync({ applicantId, status: newStatus });
 
     if (!result.success) {
       setError(result.error || "Failed to update this request");
-      return;
     }
-
-    setApplicants((current) =>
-      current.map((applicant) =>
-        applicant.id === applicantId ? { ...applicant, status } : applicant,
-      ),
-    );
   };
 
   const pendingCount = applicants.filter(

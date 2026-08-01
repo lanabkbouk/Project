@@ -1,9 +1,9 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../context/AuthContext";
-import { updateVolunteerProfile } from "../services/volunteer";
-import { fetchAvailableSkills } from "../services/skills";
+import { useSkillsQuery } from "../hooks/queries/useSkillsQuery";
+import { useUpdateVolunteerProfileMutation } from "../hooks/queries/useUpdateVolunteerProfileMutation";
 import { PANEL_SURFACE } from "../utils/surfaceStyles";
 
 import ProfileHeader from "../components/volunteerProfile/ProfileHeader";
@@ -28,29 +28,18 @@ const normalizeGenderFromUser = (gender) => {
 export default function VolunteerProfile() {
   const { user, updateUser } = useAuth();
 
-  const [availableSkills, setAvailableSkills] = useState([]);
-  const [skillsLoading, setSkillsLoading] = useState(true);
+  // نفس هوك المهارات مستخدم هون وبـ ProfilePreview سوا — بفضل الكاش
+  // المشترك ما بتنجلب مرتين حتى لو الاثنين رندروا بنفس اللحظة
+  const skillsQuery = useSkillsQuery();
+  const availableSkills = skillsQuery.data ?? [];
+  const skillsLoading = skillsQuery.isPending;
+
+  const updateProfileMutation = useUpdateVolunteerProfileMutation();
 
   const [imagePreview, setImagePreview] = useState(user?.imageUrl || "");
   const [imageFile, setImageFile] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-
-  // 🔥 جلب المهارات هنا أيضًا حتى نمرّرها للـ Preview
-  useEffect(() => {
-    async function loadSkills() {
-      try {
-        const skills = await fetchAvailableSkills();
-        setAvailableSkills(skills);
-      } catch (err) {
-        console.error("Failed to load skills:", err);
-      } finally {
-        setSkillsLoading(false);
-      }
-    }
-    loadSkills();
-  }, []);
 
   const defaultValues = useMemo(
     () => ({
@@ -76,7 +65,7 @@ export default function VolunteerProfile() {
   // نحجز التنقّل بس لما فيه تعديلات فعلية غير محفوظة، وما نحجزه أثناء
   // عملية الحفظ نفسها (submitting) حتى ما يعلق المستخدم بمنتصف الحفظ
   const unsavedChangesBlocker = useUnsavedChangesGuard(
-    methods.formState.isDirty && !submitting
+    methods.formState.isDirty && !updateProfileMutation.isPending
   );
 
   const fullName = user?.displayName;
@@ -94,12 +83,11 @@ export default function VolunteerProfile() {
   };
 
   const onSubmit = async (data) => {
-    setSubmitting(true);
     setSubmitError("");
     setSuccessMessage("");
 
     try {
-      const result = await updateVolunteerProfile({ values: data, photoFile: imageFile });
+      const result = await updateProfileMutation.mutateAsync({ values: data, photoFile: imageFile });
 
       if (!result.success) {
         setSubmitError(result.error || "Failed to save profile");
@@ -123,8 +111,6 @@ export default function VolunteerProfile() {
       });
     } catch (err) {
       setSubmitError(err.message || "Failed to save profile");
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -145,7 +131,7 @@ export default function VolunteerProfile() {
           >
             <div className={`lg:col-span-2 ${PANEL_SURFACE} p-6 md:p-8`}>
               <ProfileForm
-                submitting={submitting}
+                submitting={updateProfileMutation.isPending}
                 availableSkills={availableSkills}
                 skillsLoading={skillsLoading}
               />

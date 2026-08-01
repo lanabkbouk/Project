@@ -11,7 +11,10 @@ const requiredFile = (message) =>
     return Boolean(value)
   }, message)
 
-const loginSchema = z.object({
+// الـ schemas نفسها مُصدَّرة مباشرة (بدل دوال parse يدوية) عشان تصير
+// قابلة للاستخدام مباشرة مع zodResolver من react-hook-form، بدل تكرار
+// منطق "safeParse + مطابقة الأخطاء يدويًا" بكل صفحة على حدة.
+export const loginSchema = z.object({
   email: requiredText('Email is required').email('Invalid email address'),
   password: requiredText('Password is required'),
 })
@@ -22,44 +25,29 @@ const registerBaseSchema = z.object({
   orgName: z.string().optional(),
   contactPerson: z.string().optional(),
   email: requiredText('Email is required').email('Invalid email address'),
-  phone: z.string().optional(),
+  // الهاتف مطلوب دائمًا عند التسجيل (متطوع أو منظمة على حد سواء)، فحطيناه
+  // هون مرة وحدة بدل تكرار "required" برسالتين مختلفتين بكل extend() تحت
+  phone: requiredText('Phone number is required'),
   password: requiredText('Password is required').min(8, 'Password must be at least 8 characters'),
 })
 
-function getRegisterSchema(accountType) {
+/**
+ * يبني schema التسجيل حسب نوع الحساب (متطوع/منظمة) — تُستخدم كـ resolver
+ * ديناميكي بـ Register.jsx، فتُعاد حسابها تلقائيًا كل مرة يتغيّر فيها
+ * accountType (بدون إعادة تركيب useForm نفسه).
+ * @param {string} accountType
+ */
+export function getRegisterSchema(accountType) {
   if (accountType === ACCOUNT_TYPES.VOLUNTEER) {
-    return registerBaseSchema
-      .extend({
-        firstName: requiredText('First name is required'),
-        lastName: requiredText('Last name is required'),
-        phone: requiredText('Phone number is required for volunteers'),
-      })
+    return registerBaseSchema.extend({
+      firstName: requiredText('First name is required'),
+      lastName: requiredText('Last name is required'),
+    })
   }
 
-  return registerBaseSchema
-    .extend({
-      orgName: requiredText('Organization name is required'),
-      contactPerson: requiredText('Contact person is required'),
-      phone: requiredText('Phone number is required for organizations'),
-      verificationImage: requiredFile('Organization verification image is required'),
-    })
-}
-
-export function parseLoginForm(values) {
-  return loginSchema.safeParse(values)
-}
-
-export function parseRegisterForm(values, accountType) {
-  return getRegisterSchema(accountType).safeParse(values)
-}
-
-export function mapZodErrors(error) {
-  return error.issues.reduce((accumulator, issue) => {
-    const field = issue.path[0]
-    if (typeof field === 'string' && !accumulator[field]) {
-      accumulator[field] = issue.message
-    }
-
-    return accumulator
-  }, {})
+  return registerBaseSchema.extend({
+    orgName: requiredText('Organization name is required'),
+    contactPerson: requiredText('Contact person is required'),
+    verificationImage: requiredFile('Organization verification image is required'),
+  })
 }

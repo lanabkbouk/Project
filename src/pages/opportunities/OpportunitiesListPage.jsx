@@ -1,25 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
-import { Sparkles, SearchX } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Sparkles, SearchX, Loader2 } from "lucide-react";
 import Typography from "../../components/ui/Typography";
 import OpportunityCard from "../../components/opportunity/OpportunityCard";
 import CategorySidebar from "../../components/opportunity/CategorySidebar";
 import OpportunityTabs, { OPPORTUNITY_TABS } from "../../components/opportunity/OpportunityTabs";
 import CardSkeleton from "../../components/ui/CardSkeleton";
 import EmptyState from "../../components/common/EmptyState";
-import { fetchCategories } from "../../services/categories";
-import { fetchOpportunities, fetchSuggestedOpportunities } from "../../services/opportunities";
+import { useCategoriesQuery } from "../../hooks/queries/useCategoriesQuery";
+import { useOpportunitiesQuery } from "../../hooks/queries/useOpportunitiesQuery";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { useAuth } from "../../context/AuthContext";
 import { ACCOUNT_TYPES } from "../../constants/auth/accountTypes";
-import { calculateAge } from "../../utils/validators";
 
 export default function OpportunitiesListPage() {
   const { isAuthenticated, accountType, user } = useAuth();
   const isVolunteer = isAuthenticated && accountType === ACCOUNT_TYPES.VOLUNTEER;
-
-  const [categories, setCategories] = useState([]);
-  const [opportunities, setOpportunities] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
   const [activeCategoryId, setActiveCategoryId] = useState("");
@@ -27,55 +22,29 @@ export default function OpportunitiesListPage() {
   const [activeTab, setActiveTab] = useState(OPPORTUNITY_TABS.ALL);
   const isSuggestedTab = isVolunteer && activeTab === OPPORTUNITY_TABS.SUGGESTED;
 
-  useEffect(() => {
-    let isMounted = true;
+  // تأخير 300ms على البحث بس (نفس القيمة القديمة بالضبط) — التبويب
+  // المقترح ما بيعتمد على البحث أصلًا فما بيتأثر فيه
+  const debouncedSearch = useDebouncedValue(search, 300);
 
-    async function loadCategories() {
-      try {
-        const data = await fetchCategories();
-        if (isMounted) setCategories(data);
-      } catch {
-        // categories are a non-critical filter aid; fail silently
-      }
-    }
+  const categoriesQuery = useCategoriesQuery();
+  const opportunitiesQuery = useOpportunitiesQuery({
+    isSuggestedTab,
+    search: debouncedSearch,
+    categoryId: activeCategoryId,
+    user,
+  });
 
-    loadCategories();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const categories = categoriesQuery.data ?? [];
+  const opportunities = opportunitiesQuery.data ?? [];
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadOpportunities() {
-      setLoading(true);
-      setError("");
-
-      try {
-        const data = isSuggestedTab
-          ? await fetchSuggestedOpportunities({
-              skillIds: Array.isArray(user?.skillIds) ? user.skillIds : [],
-              age: calculateAge(user?.dateOfBirth),
-              city: user?.city || "",
-            })
-          : await fetchOpportunities({ search, categoryId: activeCategoryId });
-
-        if (isMounted) setOpportunities(data);
-      } catch (err) {
-        if (isMounted) setError(err.message || "Failed to load opportunities");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    // التبويب المقترح ما بيعتمد على البحث/الفئة، فما في داعي نأخر جلبه
-    const debounce = setTimeout(loadOpportunities, isSuggestedTab ? 0 : 300);
-    return () => {
-      isMounted = false;
-      clearTimeout(debounce);
-    };
-  }, [search, activeCategoryId, isSuggestedTab, user]);
+  // isPending = ما في أي بيانات لسا (أول تحميل فعلي لهالفلتر بالذات) —
+  // بيختلف عن isFetching اللي بيصير true حتى أثناء إعادة الجلب بالخلفية
+  // (لما نغيّر فلتر ولسا عنا نتيجة سابقة ظاهرة بفضل placeholderData)
+  const isInitialLoading = opportunitiesQuery.isPending;
+  const isRefetching = opportunitiesQuery.isFetching && !isInitialLoading;
+  const error = opportunitiesQuery.isError
+    ? opportunitiesQuery.error?.message || "Failed to load opportunities"
+    : "";
 
   const resultsLabel = useMemo(() => {
     const count = opportunities.length;
@@ -107,9 +76,16 @@ export default function OpportunitiesListPage() {
         ) : null}
 
         <div className={`flex-1 ${isSuggestedTab ? "max-w-5xl mx-auto w-full" : ""}`}>
-          {!loading ? (
+          {!isInitialLoading ? (
             <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-              <p className="text-sm text-heading/50">{resultsLabel}</p>
+              <p className="text-sm text-heading/50 flex items-center gap-2">
+                {resultsLabel}
+                {/* مؤشر خفيف أثناء إعادة الجلب بالخلفية (تغيير فلتر/بحث)،
+                    بدون ما نخفي النتائج الحالية أو نعرض سكيلتون كامل */}
+                {isRefetching ? (
+                  <Loader2 size={14} className="animate-spin text-heading/30" aria-hidden="true" />
+                ) : null}
+              </p>
             </div>
           ) : null}
 
@@ -123,7 +99,7 @@ export default function OpportunitiesListPage() {
             </div>
           ) : null}
 
-          {loading ? (
+          {isInitialLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {Array.from({ length: 6 }).map((_, index) => (
                 <CardSkeleton key={index} />
@@ -142,7 +118,7 @@ export default function OpportunitiesListPage() {
               }
             />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 transition-opacity">
               {opportunities.map((opportunity) => (
                 <OpportunityCard
                   key={opportunity.id}

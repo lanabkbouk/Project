@@ -2,15 +2,17 @@
 // Returns the opportunities the currently logged-in volunteer has joined,
 // each enriched with participation-specific fields (status, hours logged).
 //
-// TODO: once Laravel is ready, set VITE_USE_MOCK_PARTICIPATIONS=false
+// TODO: once Laravel is ready, set VITE_API_MODE=real
 // GET /api/volunteers/me/participations
 // Expected response: [{ opportunityId, status, hoursLogged, joinedDate, opportunity }, ...]
 
 import { apiClient, getApiErrorMessage } from './api/client'
+import { isMockMode } from './api/mockMode'
+import { wait } from './api/delay'
 import { fetchOpportunities } from './opportunities'
 import { PARTICIPATION_STATUS } from '../constants/participationStatus'
 
-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_PARTICIPATIONS || 'true') === 'true'
+const MOCK_MODE = isMockMode()
 
 // مثال واحد على كل حالة من الحالات الثلاث المؤكدة، لعرضها بالتصميم قبل الربط مع الباك اند
 const MOCK_PARTICIPATIONS = [
@@ -25,10 +27,6 @@ const MOCK_APPLICANT_PROFILES = {
   p1: { name: 'Lina Haddad', photo: null, city: 'Damascus', skills: ['First Aid', 'Communication'], phone: '+963911111111' },
   p2: { name: 'Omar Khalil', photo: null, city: 'Aleppo', skills: ['Teaching'], phone: '+963922222222' },
   p5: { name: 'Maya Saleh', photo: null, city: 'Damascus', skills: ['Photography'], phone: '+963955555555' },
-}
-
-function wait(duration = 300) {
-  return new Promise((resolve) => setTimeout(resolve, duration))
 }
 
 /**
@@ -47,7 +45,7 @@ export async function fetchMyParticipations() {
 
   try {
     const response = await apiClient.get('/volunteers/me/participations')
-    return Array.isArray(response.data) ? response.data : response.data?.data || []
+    return response.data || []
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load your volunteering history'))
   }
@@ -72,7 +70,7 @@ export async function fetchApplicantsForOpportunity(opportunityId) {
 
   try {
     const response = await apiClient.get(`/opportunities/${opportunityId}/participants`)
-    return Array.isArray(response.data) ? response.data : response.data?.data || []
+    return response.data || []
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load applicants'))
   }

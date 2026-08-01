@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Input from '../../components/ui/Input'
 import Button from '../../components/ui/Button'
@@ -11,19 +12,30 @@ import { ACCOUNT_TYPES, isAccountType } from '../../constants/auth/accountTypes'
 import AuthShell from '../../components/auth/AuthShell'
 import { useAuth } from '../../context/AuthContext'
 import useAsyncAction from '../../hooks/useAsyncAction'
-import { mapZodErrors, parseRegisterForm } from '../../utils/auth/validation'
+import { useImageUpload } from '../../hooks/useImageUpload'
+import { getRegisterSchema } from '../../utils/auth/validation'
 import { registerUser } from '../../services/auth'
 
-const initialValues = {
-
-  firstName: '' ,
-  lastName: '',
-  orgName: '',
-  contactPerson: '',
-  verificationImage: null,
+// حقول مشتركة بين نوعي الحساب (متطوع/منظمة)
+const SHARED_INITIAL_VALUES = {
   email: '',
   phone: '',
   password: '',
+}
+
+// حقول خاصة بالمتطوع فقط
+const VOLUNTEER_INITIAL_VALUES = {
+  ...SHARED_INITIAL_VALUES,
+  firstName: '',
+  lastName: '',
+}
+
+// حقول خاصة بالمنظمة فقط
+const ORGANIZATION_INITIAL_VALUES = {
+  ...SHARED_INITIAL_VALUES,
+  orgName: '',
+  contactPerson: '',
+  verificationImage: null,
 }
 
 export default function Register() {
@@ -53,7 +65,11 @@ export default function Register() {
     setFocus,
     formState: { errors },
   } = useForm({
-    defaultValues: initialValues,
+    // resolver ديناميكي: بيُعاد استدعاؤه بكل submit، فبياخد accountType
+    // الحالي (بعد أي تبديل عبر AccountSwitcher) بدل schema ثابتة كانت
+    // ستضل مرتبطة بالقيمة الأولى وقت أول render فقط
+    resolver: (values, context, options) => zodResolver(getRegisterSchema(accountType))(values, context, options),
+    defaultValues: isVolunteer ? VOLUNTEER_INITIAL_VALUES : ORGANIZATION_INITIAL_VALUES,
   })
 
   const handleFormChange = () => {
@@ -61,22 +77,25 @@ export default function Register() {
     setSuccessMessage('')
   }
 
-  const onSubmit = async (values) => {
-    const validationResult = parseRegisterForm(values, accountType)
-    if (!validationResult.success) {
-      const fieldErrors = mapZodErrors(validationResult.error)
-      Object.entries(fieldErrors).forEach(([name, message]) => {
-        setError(name, { type: 'manual', message })
-      })
-      return
-    }
+  // useImageUpload يتكفّل بالمعاينة المحلية والتحقق من نوع/حجم الصورة
+  // (JPG/PNG/WEBP، حتى 2MB) — نفس الـ hook المستخدم بصفحة بروفايل
+  // المتطوع، بدل ما كان حقل الصورة هون بدون أي معاينة ولا تحقق إطلاقًا
+  const verificationImage = useImageUpload()
 
-    // نمرر بيانات النموذج كما هي (camelCase) + نوع الحساب
-    // خدمة registerUser هي المسؤولة عن تحويلها لصيغة الـ API (snake_case / FormData)
-    const payload = {
-      accountType,
-      ...validationResult.data,
-    }
+  const handleVerificationImageChange = (event) => {
+    const selectedFile = event.target.files?.[0] || null
+
+    verificationImage.handleFileChange(event)
+    // نسجّل الملف بالفورم يدويًا (بدل register() تقليدي) عشان zod
+    // (requiredFile) تتحقق من وجوده وقت الإرسال
+    setValue('verificationImage', selectedFile, { shouldValidate: true })
+    handleFormChange()
+  }
+
+  const onSubmit = async (values) => {
+    // ما في داعي للتحقق اليدوي هون — zodResolver ما بينادي onSubmit إلا
+    // إذا values مطابقة للـ schema أصلًا (نفس آلية Login.jsx تمامًا)
+    const payload = { accountType, ...values }
 
     const result = await execute(payload)
     if (!result?.success) {
@@ -126,7 +145,14 @@ export default function Register() {
             {isVolunteer ? (
               <VolunteerForm register={register} errors={errors} onFieldChange={handleFormChange} />
             ) : (
-              <OrganizationForm register={register} errors={errors} onFieldChange={handleFormChange} />
+              <OrganizationForm
+                register={register}
+                errors={errors}
+                onFieldChange={handleFormChange}
+                verificationImagePreview={verificationImage.previewUrl}
+                verificationImageError={verificationImage.error}
+                onVerificationImageChange={handleVerificationImageChange}
+              />
             )}
 
             <Input
@@ -138,11 +164,12 @@ export default function Register() {
               placeholder={isVolunteer ? 'you@example.com' : 'org@example.com'}
               error={errors.email?.message}
               autoComplete='email'
+              labelClassName="text-white"
               required
             />
 
             <Input
-              label={`Phone Number${!isVolunteer ? ' *' : ''}`}
+              label='Phone Number'
               type='tel'
               name='phone'
               register={register}
@@ -150,7 +177,8 @@ export default function Register() {
               placeholder='+1 234 567 890'
               error={errors.phone?.message}
               autoComplete='tel'
-              required={!isVolunteer}
+              labelClassName="text-white"
+              required
             />
 
             <Input
@@ -162,17 +190,18 @@ export default function Register() {
               placeholder='********'
               error={errors.password?.message}
               autoComplete='new-password'
+              labelClassName="text-white"
               required
             />
 
             {error || errors.root?.message ? (
-              <p className='rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger'>
+              <p className='rounded-lg border border-danger bg-red-500/10 px-3 py-2 text-sm text-red-200'>
                 {error || errors.root?.message}
               </p>
             ) : null}
 
             {successMessage ? (
-              <p className='rounded-lg border border-green-600 bg-green-50 px-3 py-2 text-sm text-green-700'>{successMessage}</p>
+              <p className='rounded-lg border border-green-500 bg-green-500/10 px-3 py-2 text-sm text-green-200'>{successMessage}</p>
             ) : null}
 
             <Button type='submit' disabled={loading} fullWidth>

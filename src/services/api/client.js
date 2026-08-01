@@ -26,11 +26,29 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
+// Laravel API Resources تلف كل استجابة (عنصر واحد أو قائمة) بمفتاح "data"،
+// وأحيانًا تضيف "meta"/"links" مع الـ Pagination. كنا نفكّ هالتغليف يدويًا
+// وبأشكال مختلفة داخل كل ملف خدمة على حدة:
+//   Array.isArray(response.data) ? response.data : response.data?.data || []
+// نفكّه هون مرة وحدة بس، فيصير كود كل خدمة يتعامل مع response.data مباشرة
+// وكأنه البيانات النهائية فعلاً، بغض النظر إذا كانت قائمة أو كائن واحد.
+function unwrapLaravelEnvelope(response) {
+  const body = response.data
+
+  if (body && typeof body === 'object' && !Array.isArray(body) && 'data' in body) {
+    response.meta = body.meta
+    response.links = body.links
+    response.data = body.data
+  }
+
+  return response
+}
+
 // عند انتهاء صلاحية التوكن أو رفضه (401)، الجلسة القديمة صارت عديمة الفائدة:
 // نمسحها فورًا ونرجّع المستخدم لصفحة تسجيل الدخول، بدل ما يضل "مسجل دخول"
 // شكليًا وهو فعليًا مرفوض من كل استدعاء API لاحق.
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => unwrapLaravelEnvelope(response),
   (error) => {
     if (axios.isAxiosError(error) && error.response?.status === 401) {
       localStorage.removeItem(AUTH_STORAGE_KEY)

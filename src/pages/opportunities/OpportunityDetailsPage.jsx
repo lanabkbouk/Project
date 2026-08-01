@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { MapPin, Calendar, Clock } from "lucide-react";
 import Typography from "../../components/ui/Typography";
@@ -9,9 +9,9 @@ import CategorySidebar from "../../components/opportunity/CategorySidebar";
 import SimilarOpportunities from "../../components/opportunity/SimilarOpportunities";
 import Skeleton from "../../components/ui/Skeleton";
 import { PANEL_SURFACE } from "../../utils/surfaceStyles";
-import useAsyncAction from "../../hooks/useAsyncAction";
-import { fetchOpportunityById, participateInOpportunity } from "../../services/opportunities";
-import { fetchCategories } from "../../services/categories";
+import { useOpportunityDetailsQuery } from "../../hooks/queries/useOpportunityDetailsQuery";
+import { useParticipateMutation } from "../../hooks/queries/useParticipateMutation";
+import { useCategoriesQuery } from "../../hooks/queries/useCategoriesQuery";
 import { useAuth } from "../../context/AuthContext";
 import { ACCOUNT_TYPES } from "../../constants/auth/accountTypes";
 import { ROUTES } from "../../constants/paths";
@@ -31,49 +31,33 @@ export default function OpportunityDetailsPage() {
   const navigate = useNavigate();
   const { isAuthenticated, accountType } = useAuth();
 
-  const [opportunity, setOpportunity] = useState(null);
-  const [similar, setSimilar] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
   const [hasJoined, setHasJoined] = useState(false);
+  const [joinError, setJoinError] = useState("");
 
-  const { loading: joining, error: joinError, execute: joinOpportunity } = useAsyncAction(
-    () => participateInOpportunity(id),
-  );
+  // نفس هوك التصنيفات المستخدم بصفحة قائمة الفرص — React Query بيتشارك
+  // نفس الكاش (['categories']) تلقائيًا، فما في طلب مكرر لو الصفحتين
+  // فُتحتا بنفس الجلسة
+  const categoriesQuery = useCategoriesQuery();
+  const detailsQuery = useOpportunityDetailsQuery(id);
+  const participateMutation = useParticipateMutation(id);
 
-  useEffect(() => {
-    let isMounted = true;
+  const opportunity = detailsQuery.data?.opportunity ?? null;
+  const similar = detailsQuery.data?.similar ?? [];
+  const categories = categoriesQuery.data ?? [];
 
-    async function load() {
-      setLoading(true);
-
-      try {
-        const [{ opportunity: data, similar: similarData }, categoryList] = await Promise.all([
-          fetchOpportunityById(id),
-          fetchCategories(),
-        ]);
-        if (isMounted) {
-          setOpportunity(data);
-          setSimilar(similarData);
-          setCategories(categoryList);
-        }
-      } catch (err) {
-        if (isMounted) setLoadError(err.message || "Failed to load this opportunity");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      isMounted = false;
-    };
-  }, [id]);
+  const loading = detailsQuery.isPending;
+  const loadError = detailsQuery.isError
+    ? detailsQuery.error?.message || "Failed to load this opportunity"
+    : "";
 
   async function handleParticipate() {
-    const result = await joinOpportunity();
-    if (result.success) setHasJoined(true);
+    setJoinError("");
+    const result = await participateMutation.mutateAsync();
+    if (result?.success) {
+      setHasJoined(true);
+    } else {
+      setJoinError(result?.error || "Failed to join this opportunity");
+    }
   }
 
   if (loading) {
@@ -211,7 +195,7 @@ export default function OpportunityDetailsPage() {
                   ? handleParticipate
                   : undefined
             }
-            isLoading={joining}
+            isLoading={participateMutation.isPending}
             // الزر يتعطل بس لحالة: انضم فعلاً / اكتملت الفرصة / حساب منظمة مسجّل دخوله
             // الزائر ما بينعطل الزر عندو، بينقله للتسجيل بدل ما يمنعه
             disabled={isNonVolunteerAccount || hasJoined || spotsLeft === 0}

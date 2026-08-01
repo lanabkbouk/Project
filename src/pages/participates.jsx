@@ -1,39 +1,22 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Compass } from "lucide-react";
 import Typography from "../components/ui/Typography";
 import ParticipationCard from "../components/opportunity/ParticipationCard";
 import Skeleton from "../components/ui/Skeleton";
 import EmptyState from "../components/common/EmptyState";
-import { fetchMyParticipations } from "../services/participations";
+import { useMyParticipationsQuery } from "../hooks/queries/useMyParticipationsQuery";
 import { CARD_SURFACE } from "../utils/surfaceStyles";
 import { ROUTES } from "../constants/paths";
 
 export default function Participates() {
   const navigate = useNavigate();
-  const [participations, setParticipations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const participationsQuery = useMyParticipationsQuery();
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function load() {
-      try {
-        const data = await fetchMyParticipations();
-        if (isMounted) setParticipations(data);
-      } catch (err) {
-        if (isMounted) setError(err.message || "Failed to load your volunteering history");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const participations = participationsQuery.data ?? [];
+  const loading = participationsQuery.isPending;
+  const error = participationsQuery.isError
+    ? participationsQuery.error?.message || "Failed to load your volunteering history"
+    : "";
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

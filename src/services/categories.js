@@ -12,12 +12,14 @@
 // a Laravel `withCount('opportunities')` relation would return, used only
 // to render the counts next to each category in the sidebar.
 //
-// TODO: once Laravel is ready, set VITE_USE_MOCK_CATALOG=false
+// TODO: once Laravel is ready, set VITE_API_MODE=real
 // GET /api/categories -> [{ id, name, description, opportunitiesCount }, ...]
 
 import { apiClient, getApiErrorMessage } from './api/client'
+import { isMockMode } from './api/mockMode'
+import { wait } from './api/delay'
 
-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_CATALOG || 'true') === 'true'
+const MOCK_MODE = isMockMode()
 
 const MOCK_CATEGORIES = [
   { id: 'c1', name: 'Health', description: 'Health awareness, care, and support programs', opportunitiesCount: 6 },
@@ -27,10 +29,6 @@ const MOCK_CATEGORIES = [
   { id: 'c5', name: 'Environment', description: 'Environmental cleanup and conservation', opportunitiesCount: 4 },
   { id: 'c6', name: 'Technical', description: 'IT, design, and technical support projects', opportunitiesCount: 4 },
 ]
-
-function wait(duration = 250) {
-  return new Promise((resolve) => setTimeout(resolve, duration))
-}
 
 /**
  * Fetches all categories (shared across opportunities, skills, and achievements).
@@ -44,7 +42,7 @@ export async function fetchCategories() {
 
   try {
     const response = await apiClient.get('/categories')
-    return Array.isArray(response.data) ? response.data : response.data?.data || []
+    return response.data || []
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load categories'))
   }

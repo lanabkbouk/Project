@@ -1,5 +1,4 @@
-// services/volunteer.js
-//
+
 // Handles saving the currently logged-in volunteer's own profile
 // (personal info, skills, photo). Keeps the API call out of the page
 // component, consistent with every other service in this project.
@@ -8,12 +7,10 @@
 // Laravel requires POST + _method: PUT for file uploads in updates.
 
 import { apiClient, getApiErrorMessage } from './api/client'
+import { isMockMode } from './api/mockMode'
+import { wait } from './api/delay'
 
-const MOCK_MODE = (import.meta.env.VITE_USE_MOCK_VOLUNTEER_PROFILE || 'true') === 'true'
-
-function wait(duration = 300) {
-  return new Promise((resolve) => setTimeout(resolve, duration))
-}
+const MOCK_MODE = isMockMode()
 
 // يبني FormData بأسماء وقيَم حقول Laravel الصحيحة انطلاقًا من بيانات الفورم الخام (camelCase)
 // هذا هو المكان الوحيد الذي يعرف شكل الباك اند، بدل تكرار هذا التحويل داخل صفحة الـ Profile
