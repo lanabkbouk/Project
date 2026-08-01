@@ -1,7 +1,9 @@
+import { Suspense } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import Navbar from './navbar/Navbar'
 import Footer from './Footer'
+import PageLoader from '../components/common/PageLoader'
 import { useAuth } from '../context/AuthContext'
 
 export default function MainLayout() {
@@ -25,7 +27,11 @@ export default function MainLayout() {
             exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
             transition={{ duration: prefersReducedMotion ? 0 : 0.22, ease: 'easeInOut' }}
           >
-            <Outlet />
+            {/* Suspense مركزي واحد يغطي كل الصفحات اللي تحت هالليّة
+                (lazy) — بديل عن تكرار Suspense بكل Route لحاله بـ App.jsx */}
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </main>

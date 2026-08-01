@@ -1,4 +1,3 @@
-
 // جلب وتحديث بروفايل المنظمة الحالية (المسجّلة دخول). بنفس نمط
 //
 // TODO: لما يجهز الباك اند، خلي VITE_API_MODE=real
@@ -16,6 +15,7 @@ import { wait } from './api/delay'
 import { ORGANIZATION_STATUS } from '../constants/organizationStatus'
 import { AUTH_STORAGE_KEY } from '../constants/auth/storage'
 import { loadMockUsers, updateMockUser } from './mock/mockUserStore'
+import { validateOrganizationProfileResponse } from '../utils/api/apiResponseSchemas'
 
 const MOCK_MODE = isMockMode()
 
@@ -74,16 +74,39 @@ export async function fetchOrganizationProfile() {
 
   try {
     const response = await apiClient.get('/organizations/me')
-    return { success: true, data: response.data }
+
+    // نتحقق من شكل الاستجابة قبل ما توصل لأي Component — لو حقل ناقص
+    // أو النوع غلط، هون التحقق بيرجّع قيمة افتراضية آمنة أو خطأ واضح
+    const validation = validateOrganizationProfileResponse(response.data)
+    if (!validation.success) return validation
+
+    return { success: true, data: validation.data }
   } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Failed to load organization profile') }
   }
 }
 
+// يبني FormData لتحديث بروفايل المنظمة، مع إرفاق الشعار (logo) إن وُجد —
+// نفس نمط buildOpportunityFormData بـ services/opportunities.js
+function buildOrganizationFormData({ name, description, city, website }, logoFile) {
+  const formData = new FormData()
+
+  formData.append('name', name)
+  formData.append('description', description)
+  formData.append('city', city)
+  formData.append('website', website || '')
+
+  if (logoFile) formData.append('logo', logoFile)
+
+  return formData
+}
+
 /**
- * @param {FormData} formData - name/description/city/website + logo optional
+ * @param {object} profileData - { name, description, city, website }
+ * @param {File} [logoFile] - ملف الشعار الجديد إن اختاره المستخدم
  */
-export async function updateOrganizationProfile(formData) {
+export async function updateOrganizationProfile(profileData, logoFile) {
+  const formData = buildOrganizationFormData(profileData, logoFile)
   if (MOCK_MODE) {
     await wait()
 

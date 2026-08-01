@@ -4,6 +4,7 @@ import { apiClient, getApiErrorMessage } from './api/client'
 import { isMockMode } from './api/mockMode'
 import { wait } from './api/delay'
 import { normalizeUser } from '../utils/auth/normalizeUser'
+import { validateAuthResponse } from '../utils/api/apiResponseSchemas'
 
 const MOCK_MODE = isMockMode()
 
@@ -123,7 +124,16 @@ export async function registerUser(payload) {
   try {
     const formData = buildRegisterFormData(payload)
     const response = await apiClient.post('/register', formData)
-    return { success: true, data: buildAuthPayload(response.data, payload.email.trim().toLowerCase()) }
+
+    // نتحقق من شكل الاستجابة قبل ما نبني منها جلسة — لو الباك اند غيّر
+    // شكل الرد بالغلط، منفشل بوضوح هون بدل جلسة "مكسورة" بصمت
+    const validation = validateAuthResponse(response.data)
+    if (!validation.success) return validation
+
+    return {
+      success: true,
+      data: buildAuthPayload(validation.data, payload.email.trim().toLowerCase()),
+    }
   } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Unable to register account') }
   }
@@ -149,9 +159,15 @@ export async function loginUser(payload) {
 
   try {
     const response = await apiClient.post('/login', payload)
+
+    // نفس التحقق يلي بالتسجيل — نقطة الدخول التانية الوحيدة لبيانات
+    // الجلسة، فلازم تخضع لنفس الحماية
+    const validation = validateAuthResponse(response.data)
+    if (!validation.success) return validation
+
     return {
       success: true,
-      data: buildAuthPayload(response.data, payload.email.trim().toLowerCase()),
+      data: buildAuthPayload(validation.data, payload.email.trim().toLowerCase()),
     }
   } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Unable to sign in') }

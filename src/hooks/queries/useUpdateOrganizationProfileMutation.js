@@ -8,6 +8,8 @@ import { updateOrganizationProfile } from '../../services/organization'
  */
 export function useUpdateOrganizationProfileMutation() {
   return useMutation({
-    mutationFn: updateOrganizationProfile,
+    // منفك الكائن {profileData, logoFile} يلي وصل من الصفحة (mutateAsync)
+    // عشان نمرره لدالة الخدمة بنفس التوقيع الجديد (profileData, logoFile)
+    mutationFn: ({ profileData, logoFile }) => updateOrganizationProfile(profileData, logoFile),
   })
 }

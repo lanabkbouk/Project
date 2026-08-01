@@ -77,15 +77,12 @@ export default function OrgProfile() {
     setSuccessMessage("");
 
     try {
-      const formData = new FormData();
-
-      if (imageFile) formData.append("logo", imageFile);
-      formData.append("name", data.name);
-      formData.append("description", data.description);
-      formData.append("city", data.city);
-      formData.append("website", data.website || "");
-
-      const result = await updateProfileMutation.mutateAsync(formData);
+      // بناء FormData صار مسؤولية طبقة الخدمة (services/organization.js)
+      // بدل الصفحة — نفس نمط buildOpportunityFormData
+      const result = await updateProfileMutation.mutateAsync({
+        profileData: data,
+        logoFile: imageFile,
+      });
 
       if (!result.success) {
         setSubmitError(result.error || "Failed to save changes");

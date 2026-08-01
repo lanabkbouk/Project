@@ -5,25 +5,30 @@ import {
   createRoutesFromElements,
   RouterProvider,
 } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
 import { LEGACY_REDIRECTS, ROUTES } from './constants/paths'
 import { ACCOUNT_TYPES } from './constants/auth/accountTypes'
 import ProtectedRoute from './app/routes/ProtectedRoute'
 import RequireCompleteProfile from './app/routes/RequireCompleteProfile'
 import MainLayout from './layouts/MainLayout'
+import PageLoader from './components/common/PageLoader'
 
+// الصفحة الرئيسية بس eager (أول شي بيشوفه أي زائر) — كل الباقي lazy
+// عشان أول تحميل للموقع ما يجرّ معه كود صفحات ما رح يزورها معظم الزوار
+// (مثلًا لوحة تحكم منظمة، لو الزائر متطوع أصلًا)
 import Home from './pages/home'
-import About from './pages/about'
-import Participates from './pages/participates'
-import Login from './pages/auth/Login'
-import Register from './pages/auth/Register'
-import VolunteerProfile from './pages/volunteerProfile'
-import OrgProfile from './pages/orgProfile'
-import MyCauses from './pages/myCauses'
-import CreateEditCause from './pages/createEditCause'
-import ApplicantsList from './pages/applicantsList'
-import OpportunitiesListPage from './pages/opportunities/OpportunitiesListPage'
-import OpportunityDetailsPage from './pages/opportunities/OpportunityDetailsPage'
-import Dashboard from './pages/dashboard'
+const About = lazy(() => import('./pages/about'))
+const Participates = lazy(() => import('./pages/participates'))
+const Login = lazy(() => import('./pages/auth/Login'))
+const Register = lazy(() => import('./pages/auth/Register'))
+const VolunteerProfile = lazy(() => import('./pages/volunteerProfile'))
+const OrgProfile = lazy(() => import('./pages/orgProfile'))
+const MyCauses = lazy(() => import('./pages/myCauses'))
+const CreateEditCause = lazy(() => import('./pages/createEditCause'))
+const ApplicantsList = lazy(() => import('./pages/applicantsList'))
+const OpportunitiesListPage = lazy(() => import('./pages/opportunities/OpportunitiesListPage'))
+const OpportunityDetailsPage = lazy(() => import('./pages/opportunities/OpportunityDetailsPage'))
+const Dashboard = lazy(() => import('./pages/dashboard'))
 
 function ComingSoon({ title }) {
   return <div>{title} Page (Coming Soon)</div>
@@ -68,9 +73,23 @@ const router = createBrowserRouter(
         </Route>
       </Route>
 
-      {/* Auth */}
-      <Route path={ROUTES.LOGIN} element={<Login />} />
-      <Route path={ROUTES.REGISTER} element={<Register />} />
+      {/* Auth — برا MainLayout، فمحتاجين Suspense خاص فيهم */}
+      <Route
+        path={ROUTES.LOGIN}
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <Login />
+          </Suspense>
+        }
+      />
+      <Route
+        path={ROUTES.REGISTER}
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <Register />
+          </Suspense>
+        }
+      />
 
       {/* Legacy redirects */}
       {LEGACY_REDIRECTS.map(({ from, to }) => (
