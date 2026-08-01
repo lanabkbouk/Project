@@ -67,6 +67,14 @@ function translateFieldErrors(rawFieldErrors) {
 }
 
 // تحديد نوع الحساب من استجابة الباك اند الحقيقي (roles) أو من بيانات الـ Mock (accountType)
+//
+// ⚠️ لا نرجّع "volunteer" كافتراضي صامت لما ما نلاقي role واضح. كانت
+// النتيجة سابقًا إنه أي حساب منظمة وصلت بياناته roles فاضية أو غير متوقعة
+// (خلل مؤقت بالباك اند مثلاً) بيتعامل معه كل الفرونت اند كمتطوع: رابط
+// Dashboard يختفي من الناف بار، وزر "My Profile" بيوديه لصفحة بروفايل
+// غلط. نرجّع null بدل هيك، وAuthContext.login() أصلاً برفض أي جلسة بدون
+// accountType صالح (بيمسح التخزين ويرجّع false) — يعني الحساب ما بينسجّل
+// دخول أصلًا بدل ما ينسجّل بدور خاطئ.
 function resolveAccountType(data) {
   const roles = data?.roles
   if (Array.isArray(roles)) {
@@ -77,7 +85,7 @@ function resolveAccountType(data) {
   if (data?.accountType === ACCOUNT_TYPES.ORGANIZATION) return ACCOUNT_TYPES.ORGANIZATION
   if (data?.accountType === ACCOUNT_TYPES.VOLUNTEER) return ACCOUNT_TYPES.VOLUNTEER
 
-  return ACCOUNT_TYPES.VOLUNTEER
+  return null
 }
 
 // بناء بيانات المصادقة (user/token/accountType) من استجابة الـ API أو الـ Mock
