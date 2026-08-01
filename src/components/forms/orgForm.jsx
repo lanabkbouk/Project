@@ -21,7 +21,6 @@ export default function OrganizationForm({
         registerOptions={{ onChange: onFieldChange }}
         placeholder='Your Organization'
         error={errors?.orgName?.message}
-        labelClassName="text-white"
         required
       />
 
@@ -33,28 +32,45 @@ export default function OrganizationForm({
         registerOptions={{ onChange: onFieldChange }}
         placeholder='Full Name'
         error={errors?.contactPerson?.message}
-        labelClassName="text-white"
         required
       />
 
-      <div className='flex flex-col gap-2'>
-        <label className='text-sm font-medium text-white'>
-          Organization Verification Image <span className='text-danger'>*</span>
+      {/* حقل رفع صورة التوثيق: الصف بالكامل قابل للنقر (label واحد يلف
+          كل شي) بدل الاعتماد على أيقونة كاميرا صغيرة داخل الصورة — تصميم
+          أوضح وأسهل بالاستخدام، خصوصًا إنه النص جنب الصورة أصلاً بيشرح
+          إنه المنطقة كاملة قابلة للنقر. */}
+      <div className='flex w-full flex-col gap-1'>
+        <label className='mb-1 text-sm font-medium text-heading'>
+          Organization Verification Image
+          <span className='ml-1 text-primary'>*</span>
         </label>
 
-        <div className='flex items-center gap-4'>
+        <label
+          className='flex w-full cursor-pointer items-center gap-4 rounded-xl border border-heading/10 bg-field px-4 py-3 transition-colors hover:border-primary/40 focus-within:ring-2 focus-within:ring-primary/40'
+        >
           <ImageUploader
             previewUrl={verificationImagePreview}
-            onFileChange={onVerificationImageChange}
             shape='square'
-            size='md'
+            size='sm'
             fallbackIcon='organization'
+            disabled
           />
-          <p className='text-xs text-gray-400'>JPG, PNG أو WEBP — حتى 2MB</p>
-        </div>
+          <div className='flex flex-col gap-0.5'>
+            <span className='text-sm font-medium text-heading'>
+              {verificationImagePreview ? 'Change verification image' : 'Upload verification image'}
+            </span>
+            <span className='text-xs text-body/70'>JPG, PNG or WEBP — up to 2MB</span>
+          </div>
+          <input
+            type='file'
+            accept='image/jpeg,image/png,image/webp'
+            className='sr-only'
+            onChange={onVerificationImageChange}
+          />
+        </label>
 
         {(verificationImageError || errors?.verificationImage?.message) && (
-          <p className='text-sm text-red-400'>
+          <p className='mt-1 text-xs text-danger'>
             {verificationImageError || errors?.verificationImage?.message}
           </p>
         )}

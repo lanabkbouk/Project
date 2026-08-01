@@ -164,7 +164,6 @@ export default function Register() {
               placeholder={isVolunteer ? 'you@example.com' : 'org@example.com'}
               error={errors.email?.message}
               autoComplete='email'
-              labelClassName="text-white"
               required
             />
 
@@ -177,7 +176,6 @@ export default function Register() {
               placeholder='+1 234 567 890'
               error={errors.phone?.message}
               autoComplete='tel'
-              labelClassName="text-white"
               required
             />
 
@@ -190,18 +188,17 @@ export default function Register() {
               placeholder='********'
               error={errors.password?.message}
               autoComplete='new-password'
-              labelClassName="text-white"
               required
             />
 
             {error || errors.root?.message ? (
-              <p className='rounded-lg border border-danger bg-red-500/10 px-3 py-2 text-sm text-red-200'>
+              <p className='rounded-lg border border-danger bg-red-500/10 px-3 py-2 text-sm text-danger'>
                 {error || errors.root?.message}
               </p>
             ) : null}
 
             {successMessage ? (
-              <p className='rounded-lg border border-green-500 bg-green-500/10 px-3 py-2 text-sm text-green-200'>{successMessage}</p>
+              <p className='rounded-lg border border-green-500 bg-green-500/10 px-3 py-2 text-sm text-green-700'>{successMessage}</p>
             ) : null}
 
             <Button type='submit' disabled={loading} fullWidth>

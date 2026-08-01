@@ -93,7 +93,6 @@ export default function Login() {
           placeholder='you@example.com'
           error={errors.email?.message}
           autoComplete='email'
-          labelClassName="text-white"
           required
         />
 
@@ -106,12 +105,11 @@ export default function Login() {
           placeholder='********'
           error={errors.password?.message}
           autoComplete='current-password'
-          labelClassName="text-white"
           required
         />
 
         {error || errors.root?.message ? (
-          <p className='rounded-lg border border-danger bg-red-500/10 px-3 py-2 text-sm text-red-200'>
+          <p className='rounded-lg border border-danger bg-red-500/10 px-3 py-2 text-sm text-danger'>
             {error || errors.root?.message}
           </p>
         ) : null}
