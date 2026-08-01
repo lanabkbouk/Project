@@ -16,7 +16,7 @@ export const queryKeys = {
   },
 
   organization: {
-    profile: ['organization', 'profile'],
+    profile: (organizationId) => ['organization', 'profile', organizationId],
   },
 
   opportunities: {

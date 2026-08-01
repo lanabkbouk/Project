@@ -1,5 +1,6 @@
 import { useOrganizationProfileQuery } from "./queries/useOrganizationProfileQuery";
 import { ORGANIZATION_STATUS, getOrganizationStatusMeta } from "../constants/organizationStatus";
+import { useAuth } from "../context/AuthContext";
 
 /**
  * يجلب حالة توثيق المنظمة الحالية، ليستخدمه أي صفحة (My Causes، إنشاء/تعديل
@@ -14,14 +15,16 @@ import { ORGANIZATION_STATUS, getOrganizationStatusMeta } from "../constants/org
  * بصفحة orgProfile) بينعكس تلقائيًا على البقية بدون طلب شبكة إضافي.
  */
 export function useOrganizationVerification() {
-  const { data, isPending } = useOrganizationProfileQuery();
+  const { user } = useAuth();
+  const organizationId = user?.organization?.id ?? user?.organizationId ?? null;
+  const { data, isLoading } = useOrganizationProfileQuery(organizationId);
 
   // الخدمة بترجع { success, data } دايمًا (ما بترمي استثناء عند الفشل)
   const status = data?.success ? data.data?.status : null;
 
   return {
     status,
-    loading: isPending,
+    loading: isLoading,
     isVerified: status === ORGANIZATION_STATUS.VERIFIED,
     meta: getOrganizationStatusMeta(status),
   };

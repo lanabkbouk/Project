@@ -99,6 +99,14 @@ export default function Register() {
 
     const result = await execute(payload)
     if (!result?.success) {
+      // نربط كل خطأ حقل رجعه الباك اند (مثلاً Laravel 422) بحقله
+      // المقابل بالفورم مباشرة، بدل رسالة عامة واحدة بس فوق الفورم
+      if (result?.fieldErrors) {
+        Object.entries(result.fieldErrors).forEach(([field, message]) => {
+          setError(field, { type: 'server', message })
+        })
+      }
+
       setValue('password', '')
       setFocus('password')
       return

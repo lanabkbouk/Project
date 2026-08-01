@@ -72,3 +72,23 @@ export function getApiErrorMessage(error, fallbackMessage = 'Something went wron
 
   return fallbackMessage
 }
+
+// يستخرج أخطاء التحقق لكل حقل من استجابة Laravel 422 (شكلها المعتاد:
+// { message, errors: { field: ["msg1", "msg2"] } }) — بترجع أول رسالة
+// لكل حقل بس (كافي لعرضها تحت حقل الفورم المقابل مباشرة)، أو null لو
+// مافي أخطاء حقول إطلاقًا (401 بيانات دخول خاطئة، 500، انقطاع شبكة...)
+export function getApiFieldErrors(error) {
+  if (!axios.isAxiosError(error)) return null
+
+  const errors = error.response?.data?.errors
+  if (!errors || typeof errors !== 'object') return null
+
+  const fieldErrors = {}
+  Object.entries(errors).forEach(([field, messages]) => {
+    if (Array.isArray(messages) && messages.length > 0) {
+      fieldErrors[field] = messages[0]
+    }
+  })
+
+  return Object.keys(fieldErrors).length > 0 ? fieldErrors : null
+}

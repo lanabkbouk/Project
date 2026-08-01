@@ -12,15 +12,15 @@ import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_MB } from '../../constants/media'
  * @returns {{ valid: boolean, error?: string }}
  */
 export function validateImageFile(file) {
-  if (!file) return { valid: false, error: 'لم يتم اختيار أي صورة' }
+  if (!file) return { valid: false, error: 'Please select an image to upload.' }
 
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    return { valid: false, error: 'صيغة الصورة غير مدعومة (JPG, PNG, WEBP فقط)' }
+    return { valid: false, error: 'Please upload a valid image file (JPG, PNG, or WEBP only).' }
   }
 
   const maxSizeBytes = MAX_IMAGE_SIZE_MB * 1024 * 1024
   if (file.size > maxSizeBytes) {
-    return { valid: false, error: `حجم الصورة يجب ألا يتجاوز ${MAX_IMAGE_SIZE_MB}MB` }
+    return { valid: false, error: `Image size must not exceed ${MAX_IMAGE_SIZE_MB}MB.` }
   }
 
   return { valid: true }

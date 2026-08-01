@@ -24,6 +24,10 @@ export default function Navbar({ role = "guest" }) {
   const navigate = useNavigate();
   const { user, accountType, isAuthenticated, logout } = useAuth();
   const hasUnseenAchievement = useUnseenAchievements();
+  // بيوصل من AuthContext (real API) أو محليًا (mock mode بعد التسجيل —
+  // راجع registerUser بـ services/auth.js). زر الـ Dashboard لازم
+  // يعتمد على وجوده فعليًا، مش بس على نوع الحساب
+  const organizationId = user?.organization?.id ?? user?.organizationId ?? null;
 
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -36,7 +40,12 @@ export default function Navbar({ role = "guest" }) {
   const baseLinks = [{ name: "Home", href: ROUTES.HOME }];
   const aboutLink = { name: "About Us", href: ROUTES.ABOUT };
 
-  const roleLinks = linksByRole[role] || [];
+  // "Dashboard" مرتبط فعليًا بمنظمة موثّقة بـ id — لو مش متوفر بعد
+  // (مثلًا مباشرة بعد التسجيل بوضع real API لسا ما وصل)، منخفيه بدل ما
+  // يوصل المستخدم لصفحة داشبورد بدون organizationId صالح
+  const roleLinks = (linksByRole[role] || []).filter(
+    (link) => link.name !== "Dashboard" || Boolean(organizationId)
+  );
   const allLinks = [...baseLinks, ...roleLinks, aboutLink];
 
   const linkClass = ({ isActive }) =>

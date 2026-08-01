@@ -1,6 +1,6 @@
 import { ACCOUNT_TYPES } from '../constants/auth/accountTypes'
 import { MOCK_USERS_STORAGE_KEY } from '../constants/auth/storage'
-import { apiClient, getApiErrorMessage } from './api/client'
+import { apiClient, getApiErrorMessage, getApiFieldErrors } from './api/client'
 import { isMockMode } from './api/mockMode'
 import { wait } from './api/delay'
 import { normalizeUser } from '../utils/auth/normalizeUser'
@@ -35,6 +35,35 @@ function sanitizeUser(user) {
 function extractFile(value) {
   if (typeof FileList !== 'undefined' && value instanceof FileList) return value[0] || null
   return value || null
+}
+
+// يترجم أسماء حقول التحقق يلي بيرجعها Laravel (snake_case) لأسماء حقول
+// الفورم بالفرونت (camelCase) — نفس اتجاه buildRegisterFormData بس
+// بالعكس، عشان الصفحة تقدر تربط كل خطأ بحقله الصحيح مباشرة عبر
+// react-hook-form's setError(fieldName, ...) بدون ما تعرف تفاصيل
+// تسمية الباك اند
+const LARAVEL_FIELD_TO_FORM_FIELD = {
+  email: 'email',
+  password: 'password',
+  phone_number: 'phone',
+  first_name: 'firstName',
+  last_name: 'lastName',
+  organization_name: 'orgName',
+  contact_person: 'contactPerson',
+  verification_document: 'verificationImage',
+}
+
+// أي حقل ما إله مقابل معروف (نادر) بيضل بإسمه الأصلي بدل ما يُفقد بصمت
+function translateFieldErrors(rawFieldErrors) {
+  if (!rawFieldErrors) return null
+
+  const translated = {}
+  Object.entries(rawFieldErrors).forEach(([laravelField, message]) => {
+    const formField = LARAVEL_FIELD_TO_FORM_FIELD[laravelField] || laravelField
+    translated[formField] = message
+  })
+
+  return translated
 }
 
 // تحديد نوع الحساب من استجابة الباك اند الحقيقي (roles) أو من بيانات الـ Mock (accountType)
@@ -109,10 +138,17 @@ export async function registerUser(payload) {
 
     if (existingUser) return { success: false, error: 'Email is already registered' }
 
+    const accountType = payload.accountType || ACCOUNT_TYPES.VOLUNTEER
+
     const normalizedUser = {
       ...payload,
-      accountType: payload.accountType || ACCOUNT_TYPES.VOLUNTEER,
+      accountType,
       email: normalizedEmail,
+      // بدون backend، ما في حدا يولّد organizationId — لازم نعمله محليًا
+      // هون وإلا organizationId بيضل غير موجود للأبد بوضع Mock، وبالتالي
+      // useOrganizationProfileQuery (enabled: Boolean(organizationId))
+      // ما بينفّذ أبدًا وصفحة بروفايل المنظمة/زر الـ Dashboard ما بيشتغلوا
+      ...(accountType === ACCOUNT_TYPES.ORGANIZATION ? { organizationId: `org-${Date.now()}` } : {}),
     }
 
     mockUsers.push(normalizedUser)
@@ -135,7 +171,11 @@ export async function registerUser(payload) {
       data: buildAuthPayload(validation.data, payload.email.trim().toLowerCase()),
     }
   } catch (error) {
-    return { success: false, error: getApiErrorMessage(error, 'Unable to register account') }
+    return {
+      success: false,
+      error: getApiErrorMessage(error, 'Unable to register account'),
+      fieldErrors: translateFieldErrors(getApiFieldErrors(error)),
+    }
   }
 }
 
@@ -170,6 +210,10 @@ export async function loginUser(payload) {
       data: buildAuthPayload(validation.data, payload.email.trim().toLowerCase()),
     }
   } catch (error) {
-    return { success: false, error: getApiErrorMessage(error, 'Unable to sign in') }
+    return {
+      success: false,
+      error: getApiErrorMessage(error, 'Unable to sign in'),
+      fieldErrors: translateFieldErrors(getApiFieldErrors(error)),
+    }
   }
 }

@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { useOrganizationProfileQuery } from "../hooks/queries/useOrganizationProfileQuery";
 import { useUpdateOrganizationProfileMutation } from "../hooks/queries/useUpdateOrganizationProfileMutation";
+import { useImageUpload } from "../hooks/useImageUpload";
 import { queryKeys } from "../app/queryKeys";
 import { organizationProfileSchema } from "../utils/auth/OrganizationProfileValidation";
 import { ORGANIZATION_STATUS } from "../constants/organizationStatus";
@@ -20,22 +21,24 @@ import Skeleton from "../components/ui/Skeleton";
 export default function OrgProfile() {
   const { user, updateUser } = useAuth();
   const queryClient = useQueryClient();
+  const organizationId = user?.organization?.id ?? user?.organizationId ?? null;
 
-  const organizationQuery = useOrganizationProfileQuery();
-  const isLoading = organizationQuery.isPending;
+  const organizationQuery = useOrganizationProfileQuery(organizationId);
+  // isLoading (isPending && isFetching) مش isPending لحالها: isPending
+  // بتضل true للأبد لما الاستعلام يكون enabled:false (organizationId
+  // غير متوفر بعد)، فكانت الصفحة بتعلق بالـ Skeleton بشكل دائم
+  const isLoading = organizationQuery.isLoading;
   // الخدمة بترجع { success, data } دايمًا (ما بترمي استثناء)، فمنطق
   // التحقق يضل هون بدل الاعتماد على query.isError
   const organization = organizationQuery.data?.success ? organizationQuery.data.data : null;
 
-  const updateProfileMutation = useUpdateOrganizationProfileMutation();
+  const updateProfileMutation = useUpdateOrganizationProfileMutation(organizationId);
 
-  const [localImagePreview, setLocalImagePreview] = useState(null);
-  const [imageFile, setImageFile] = useState(null);
-
-  // معاينة الصورة "مشتقة" مباشرة من الحالة، مو Effect منفصل بيزامنها:
-  // لو المستخدم اختار صورة جديدة محليًا (localImagePreview) منعرضها،
-  // وإلا منرجع لصورة المنظمة القادمة من الكاش
-  const imagePreview = localImagePreview ?? organization?.imageUrl ?? "";
+  // useImageUpload يتكفّل بالمعاينة المحلية والتحقق من نوع/حجم الصورة —
+  // نفس الـ hook المستخدم بصفحة Register وorgForm، بدل FileReader يدوي
+  // مكرر هون لحاله
+  const imageUpload = useImageUpload();
+  const imagePreview = imageUpload.previewUrl || organization?.imageUrl || "";
 
   const [submitError, setSubmitError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -49,6 +52,10 @@ export default function OrgProfile() {
   // منزامن الفورم والمعاينة مع بيانات المنظمة أول ما توصل (أو تتحدّث)
   // من الكاش — useEffect هون شرعي لأنه بيربط نظامين مختلفين (React Query
   // وreact-hook-form) مع بعض، مو جلب بيانات بحد ذاته
+  //
+  // ملاحظة: imageUpload مش بالـ deps array عمدًا — كائن جديد بكل render
+  // (دوال useCallback بس الكائن نفسه literal جديد)، فإضافته كانت رح
+  // تشغّل الـ effect بكل render بدل بس لما organization تتغيّر فعليًا
   useEffect(() => {
     if (!organization) return;
 
@@ -58,19 +65,10 @@ export default function OrgProfile() {
       city: organization.city || "",
       website: organization.website || "",
     });
+
+    imageUpload.setPreviewUrl(organization.imageUrl || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organization, methods]);
-
-  const onImageChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImageFile(file);
-      setLocalImagePreview(reader.result);
-    };
-    reader.readAsDataURL(file);
-  };
 
   const onSubmit = async (data) => {
     setSubmitError("");
@@ -79,10 +77,7 @@ export default function OrgProfile() {
     try {
       // بناء FormData صار مسؤولية طبقة الخدمة (services/organization.js)
       // بدل الصفحة — نفس نمط buildOpportunityFormData
-      const result = await updateProfileMutation.mutateAsync({
-        profileData: data,
-        logoFile: imageFile,
-      });
+      const result = await updateProfileMutation.mutateAsync(data);
 
       if (!result.success) {
         setSubmitError(result.error || "Failed to save changes");
@@ -94,7 +89,7 @@ export default function OrgProfile() {
       // ندمج قيم الفورم المحفوظة مباشرة بكاش React Query — وإلا رأس
       // الصفحة (الاسم، الشارة) يضل عارض البيانات القديمة للأبد بنفس
       // الجلسة، رغم إنه الحفظ نجح فعليًا بالتخزين
-      queryClient.setQueryData(queryKeys.organization.profile, (current) => ({
+      queryClient.setQueryData(queryKeys.organization.profile(organizationId), (current) => ({
         success: true,
         data: { ...(current?.data ?? {}), ...data },
       }));
@@ -158,9 +153,13 @@ export default function OrgProfile() {
           <OrgProfileHeader
             name={organization?.name}
             imagePreview={imagePreview}
-            onImageChange={onImageChange}
+            onImageChange={imageUpload.handleFileChange}
             status={organization?.status}
           />
+
+          {imageUpload.error && (
+            <p className="mt-2 text-sm text-danger">{imageUpload.error}</p>
+          )}
 
           {/* FORM + PREVIEW */}
           <form

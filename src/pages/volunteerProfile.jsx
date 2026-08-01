@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useSkillsQuery } from "../hooks/queries/useSkillsQuery";
 import { useUpdateVolunteerProfileMutation } from "../hooks/queries/useUpdateVolunteerProfileMutation";
+import { useImageUpload } from "../hooks/useImageUpload";
 import { PANEL_SURFACE } from "../utils/surfaceStyles";
 
 import ProfileHeader from "../components/volunteerProfile/ProfileHeader";
@@ -13,6 +15,7 @@ import AchievementsList from "../components/volunteerProfile/AchievementsList";
 import Typography from "../components/ui/Typography";
 import Modal from "../components/ui/Modal";
 import Button from "../components/ui/Button";
+import Toast from "../components/common/Toast";
 import useUnsavedChangesGuard from "../hooks/useUnsavedChangesGuard";
 import { profileSchema } from "../utils/auth/VolunteerProfileValidation";
 
@@ -27,6 +30,8 @@ const normalizeGenderFromUser = (gender) => {
 
 export default function VolunteerProfile() {
   const { user, updateUser } = useAuth();
+  const location = useLocation();
+  const guardMessage = location.state?.message || '';
 
   // نفس هوك المهارات مستخدم هون وبـ ProfilePreview سوا — بفضل الكاش
   // المشترك ما بتنجلب مرتين حتى لو الاثنين رندروا بنفس اللحظة
@@ -36,10 +41,14 @@ export default function VolunteerProfile() {
 
   const updateProfileMutation = useUpdateVolunteerProfileMutation();
 
-  const [imagePreview, setImagePreview] = useState(user?.imageUrl || "");
-  const [imageFile, setImageFile] = useState(null);
+  // useImageUpload يتكفّل بالمعاينة المحلية والتحقق من نوع/حجم الصورة —
+  // نفس الـ hook المستخدم بصفحة Register وorgForm، بدل FileReader يدوي
+  // مكرر هون لحاله. user متوفر فورًا من AuthContext (بعكس orgProfile
+  // يلي بينتظر React Query)، فمنقدر نمرر قيمة أولية مباشرة
+  const imageUpload = useImageUpload(user?.imageUrl || "");
   const [submitError, setSubmitError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [profileNotice, setProfileNotice] = useState(guardMessage);
 
   const defaultValues = useMemo(
     () => ({
@@ -70,24 +79,12 @@ export default function VolunteerProfile() {
 
   const fullName = user?.displayName;
 
-  const onImageChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImageFile(file);
-      setImagePreview(reader.result);
-    };
-    reader.readAsDataURL(file);
-  };
-
   const onSubmit = async (data) => {
     setSubmitError("");
     setSuccessMessage("");
 
     try {
-      const result = await updateProfileMutation.mutateAsync({ values: data, photoFile: imageFile });
+      const result = await updateProfileMutation.mutateAsync({ values: data, photoFile: imageUpload.file });
 
       if (!result.success) {
         setSubmitError(result.error || "Failed to save profile");
@@ -106,7 +103,7 @@ export default function VolunteerProfile() {
       updateUser({
         ...data,
         skillIds: data.skills,
-        imageUrl: result.data?.imageUrl || imagePreview,
+        imageUrl: result.data?.imageUrl || imageUpload.previewUrl,
         profileCompleted: true,
       });
     } catch (err) {
@@ -121,9 +118,13 @@ export default function VolunteerProfile() {
           <ProfileHeader
             fullName={fullName}
             gender={methods.watch("gender")}
-            imagePreview={imagePreview}
-            onImageChange={onImageChange}
+            imagePreview={imageUpload.previewUrl}
+            onImageChange={imageUpload.handleFileChange}
           />
+
+          {imageUpload.error && (
+            <p className="mt-2 text-sm text-danger">{imageUpload.error}</p>
+          )}
 
           <form
             onSubmit={methods.handleSubmit(onSubmit)}
@@ -184,6 +185,13 @@ export default function VolunteerProfile() {
       >
         You have unsaved changes to your profile. If you leave now, these changes will be lost.
       </Modal>
+
+      <Toast
+        message={profileNotice}
+        variant="info"
+        duration={7000}
+        onClose={() => setProfileNotice('')}
+      />
     </FormProvider>
   );
 }

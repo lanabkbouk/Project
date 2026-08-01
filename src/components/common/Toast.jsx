@@ -1,9 +1,13 @@
-
 // إشعار عابر (Toast) عام يظهر أعلى الشاشة، قابل لإعادة الاستخدام لأي حدث
 // لحظي (توثيق منظمة، نجاح عملية، خطأ عام...) وليس فقط لحالة التوثيق.
 // يُغلق تلقائيًا بعد `duration`، أو يدويًا بزر الإغلاق.
+//
+// نرندره عبر createPortal على document.body لنفس سبب Modal.jsx: الصفحات
+// ملفوفة بـ motion.div (framer-motion) بيطبّق transform، فيكسر تموضع
+// position:fixed لو تركناه جوا شجرة الصفحة العادية.
 
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { CheckCircle2, XCircle, Info, X } from 'lucide-react'
 
 const VARIANT_STYLES = {
@@ -24,7 +28,7 @@ export default function Toast({ message, variant = 'info', duration = 6000, onCl
 
   const { icon: Icon, className } = VARIANT_STYLES[variant] ?? VARIANT_STYLES.info
 
-  return (
+  return createPortal(
     <div
       role="status"
       aria-live="polite"
@@ -42,6 +46,7 @@ export default function Toast({ message, variant = 'info', duration = 6000, onCl
           <X size={16} />
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

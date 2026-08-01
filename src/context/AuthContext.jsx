@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { isAccountType } from '../constants/auth/accountTypes'
 import { AUTH_STORAGE_KEY } from '../constants/auth/storage'
 import { normalizeUser } from '../utils/auth/normalizeUser'
@@ -40,6 +41,9 @@ function persistSession({ user, token, accountType }) {
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(loadPersistedSession)
+  // نفس نسخة الـ QueryClient المزروعة بـ main.jsx (AuthProvider جوا
+  // QueryClientProvider)، فـ clear() هون بيمسح فعليًا كل الكاش المشترك
+  const queryClient = useQueryClient()
 
   const login = (payload = {}) => {
     const user = payload.user && typeof payload.user === 'object' ? payload.user : null
@@ -52,6 +56,11 @@ export function AuthProvider({ children }) {
       return false
     }
 
+    // نصفّر الكاش قبل تفعيل الجلسة الجديدة: أي query بدون scope بالـ id
+    // (زي opportunities.mine أو participations.mine) بيتحمّل من جديد
+    // للمستخدم الجديد بدل ما يورّث بيانات آخر مستخدم كان مسجّل دخول
+    queryClient.clear()
+
     const next = { user, token, accountType, isAuthenticated: true }
     setSession(next)
     persistSession(next)
@@ -61,6 +70,9 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setSession(emptySession)
     localStorage.removeItem(AUTH_STORAGE_KEY)
+    // نفس السبب: منع أي شاشة تالية (حتى صفحة تسجيل دخول تانية بنفس التبويب)
+    // من عرض بيانات مستخدم سجّل خروجه فعليًا
+    queryClient.clear()
   }
 
   const updateUser = (nextUser) => {

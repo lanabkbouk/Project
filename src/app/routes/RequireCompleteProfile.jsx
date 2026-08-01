@@ -22,7 +22,16 @@ export default function RequireCompleteProfile() {
   const isAlreadyOnProfilePage = location.pathname === ROUTES.VOLUNTEER_PROFILE
 
   if (profileIncomplete && !isAlreadyOnProfilePage) {
-    return <Navigate to={ROUTES.VOLUNTEER_PROFILE} replace />
+    return (
+      <Navigate
+        to={ROUTES.VOLUNTEER_PROFILE}
+        replace
+        state={{
+          reason: 'complete-profile',
+          message: 'Please complete and save your volunteer profile before navigating elsewhere.',
+        }}
+      />
+    )
   }
 
   return <Outlet />

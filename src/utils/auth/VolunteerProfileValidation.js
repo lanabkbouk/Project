@@ -1,3 +1,14 @@
+/**
+ * Validation Guideline:
+ * All select fields in profile pages (organization & volunteer)
+ * must use custom error messages such as:
+ *   - "Please select your governorate."
+ *   - "Please select a category."
+ *
+ * Do NOT use Zod's default enum error messages.
+ * This rule ensures consistent UX across all profile forms.
+ */
+
 import { z } from 'zod'
 import { calculateAge } from '../validators'
 
@@ -30,31 +41,31 @@ const SYRIA_GOVERNORATES = [
   'Quneitra',
 ]
 
+const requiredSelect = (options, message) =>
+  z
+    .string()
+    .min(1, message)
+    .refine((value) => options.includes(value), message)
+
 export const profileSchema = z.object({
-  educationLevel: z.enum(EDUCATION_LEVEL_OPTIONS, {
-    errorMap: () => ({ message: 'Please select your education level' }),
-  }),
+  educationLevel: requiredSelect(EDUCATION_LEVEL_OPTIONS, 'Please select your education level.'),
 
   dateOfBirth: z
     .string()
-    .min(1, 'Date of birth is required')
+    .min(1, 'Date of birth is required.')
     .refine((value) => {
       const age = calculateAge(value)
       return age !== null && age >= 18
-    }, 'You must be 18 years or older to register as a volunteer'),
+    }, 'You must be at least 18 years old to register as a volunteer.'),
 
-  gender: z.enum(GENDER_OPTIONS, {
-    errorMap: () => ({ message: 'Please select your gender' }),
-  }),
+  gender: requiredSelect(GENDER_OPTIONS, 'Please select your gender.'),
 
   // كانت غير موجودة أصلًا بالـ schema رغم وجودها بالفورم — كان ممكن
   // تُحفظ فارغة بدون أي خطأ. هلق إجبارية متل باقي البروفايل.
-  city: z.enum(SYRIA_GOVERNORATES, {
-    errorMap: () => ({ message: 'Please select your governorate' }),
-  }),
+  city: requiredSelect(SYRIA_GOVERNORATES, 'Please select your governorate.'),
 
   // Array of skill IDs — at least one is required
-  skills: z.array(z.string()).min(1, 'Please select at least one skill'),
+  skills: z.array(z.string()).min(1, 'Please select at least one skill.'),
 
   // الوحيدان الاختياريان بالبروفايل بقرار صريح
   interests: z.string().optional(),
