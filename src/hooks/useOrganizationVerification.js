@@ -1,6 +1,7 @@
 import { useOrganizationProfileQuery } from "./queries/useOrganizationProfileQuery";
 import { ORGANIZATION_STATUS, getOrganizationStatusMeta } from "../constants/organizationStatus";
 import { useAuth } from "../context/AuthContext";
+import { getOrganizationId } from "../utils/auth/getOrganizationId";
 
 /**
  * يجلب حالة توثيق المنظمة الحالية، ليستخدمه أي صفحة (My Causes، إنشاء/تعديل
@@ -16,7 +17,7 @@ import { useAuth } from "../context/AuthContext";
  */
 export function useOrganizationVerification() {
   const { user } = useAuth();
-  const organizationId = user?.organization?.id ?? user?.organizationId ?? null;
+  const organizationId = getOrganizationId(user);
   const { data, isLoading } = useOrganizationProfileQuery(organizationId);
 
   // الخدمة بترجع { success, data } دايمًا (ما بترمي استثناء عند الفشل)

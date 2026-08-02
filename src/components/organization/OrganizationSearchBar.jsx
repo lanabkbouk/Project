@@ -1,16 +1,27 @@
-import { useQuery } from '@tanstack/react-query'
-import { fetchOpportunitiesByOrganization } from '../../services/opportunities'
-import { queryKeys } from '../../app/queryKeys'
+// components/organization/OrganizationSearchBar.jsx
+//
+// شريط بحث بسيط (controlled input) لدليل المنظمات العام — البحث الفعلي
+// (فلترة الاسم/المدينة + الـ debounce) يصير بـ OrganizationsListPage
+// عبر useOrganizationsQuery، هاي المكوّن فقط يعرض حقل الإدخال ويبلّغ
+// التغيير للأعلى، نفس مسؤولية أي search input تحت تحكّم أبيه.
+
+import { Search } from 'lucide-react'
+import Input from '../ui/Input'
 
 /**
- * يجلب الفرص المفتوحة لمنظمة معيّنة — منفصل عن useOrganizationDetailsQuery
- * عمدًا، حتى لو فشل جلب الفرص (أو تأخر) ما يعطّل عرض بيانات المنظمة نفسها.
- * @param {string} organizationId
+ * @param {{ value: string, onChange: (value: string) => void }} props
  */
-export function useOrganizationOpportunitiesQuery(organizationId) {
-  return useQuery({
-    queryKey: queryKeys.organizations.opportunities(organizationId),
-    queryFn: () => fetchOpportunitiesByOrganization(organizationId),
-    enabled: Boolean(organizationId),
-  })
+export default function OrganizationSearchBar({ value, onChange }) {
+  return (
+    <Input
+      name="organization-search"
+      type="search"
+      icon={Search}
+      placeholder="Search organizations by name or city..."
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      aria-label="Search organizations"
+      fullWidth
+    />
+  )
 }

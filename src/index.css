@@ -62,7 +62,7 @@ textarea:-webkit-autofill:focus {
   bottom: -2px;
   height: 2px;
   width: 0%;
-  background-color: #ff7a00; /* اللون البرتقالي */
+  background-color: var(--color-primary);
   transition: width 0.3s ease;
 }
 

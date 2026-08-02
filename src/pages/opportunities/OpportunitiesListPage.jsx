@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Sparkles, SearchX, Loader2 } from "lucide-react";
 import Typography from "../../components/ui/Typography";
 import OpportunityCard from "../../components/opportunity/OpportunityCard";
@@ -15,9 +16,16 @@ import { ACCOUNT_TYPES } from "../../constants/auth/accountTypes";
 export default function OpportunitiesListPage() {
   const { isAuthenticated, accountType, user } = useAuth();
   const isVolunteer = isAuthenticated && accountType === ACCOUNT_TYPES.VOLUNTEER;
+  const location = useLocation();
 
   const [search, setSearch] = useState("");
-  const [activeCategoryId, setActiveCategoryId] = useState("");
+  // لو وصلنا هون من زر تصنيف بصفحة تفاصيل فرصة (CategorySidebar هناك)،
+  // categoryId بيوصل عبر location.state — نفس نمط تمرير guardMessage
+  // المستخدم بصفحة volunteerProfile. state initializer (function) عشان
+  // القراءة تصير مرة وحدة بس عند أول mount، مش بكل re-render
+  const [activeCategoryId, setActiveCategoryId] = useState(
+    () => location.state?.categoryId || "",
+  );
   // التبويب متاح بس للمتطوعين — الزائر والمنظمة بيشوفوا "كل الفرص" دايمًا
   const [activeTab, setActiveTab] = useState(OPPORTUNITY_TABS.ALL);
   const isSuggestedTab = isVolunteer && activeTab === OPPORTUNITY_TABS.SUGGESTED;

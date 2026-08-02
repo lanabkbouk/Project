@@ -5,7 +5,6 @@
 // — كل قسم Component منفصل بمجلد components/dashboard/ مسؤول عن
 // عرضه هو بس، بنفس نمط صفحة Home.
 
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LayoutDashboard } from "lucide-react";
 import Typography from "../components/ui/Typography";
@@ -15,11 +14,12 @@ import VerificationStatusBanner from "../components/OrgProfile/VerificationStatu
 import DashboardStatsGrid from "../components/dashboard/DashboardStatsGrid";
 import OpportunitiesBreakdownChart from "../components/dashboard/OpportunitiesBreakdownChart";
 import RecentActivityFeed from "../components/dashboard/RecentActivityFeed";
-import { fetchOrganizationDashboard } from "../services/dashboard";
+import { useOrganizationDashboardQuery } from "../hooks/queries/useOrganizationDashboardQuery";
 import { useAuth } from "../context/AuthContext";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
 import { PANEL_SURFACE, CARD_SURFACE } from "../utils/surfaceStyles";
 import { ROUTES } from "../constants/paths";
+import { getOrganizationId } from "../utils/auth/getOrganizationId";
 
 function DashboardSkeleton() {
   return (
@@ -55,29 +55,24 @@ function DashboardSkeleton() {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const organizationId = user?.organization?.id ?? user?.organizationId ?? null;
+  const organizationId = getOrganizationId(user);
   const { status, isVerified, hasLoadError } = useOrganizationVerification();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
-  useEffect(() => {
-    let isMounted = true;
-
-    fetchOrganizationDashboard(organizationId).then((result) => {
-      if (!isMounted) return;
-      if (result.success) {
-        setData(result.data);
-      } else {
-        setError(result.error || "Unable to load dashboard data");
-      }
-      setLoading(false);
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [organizationId]);
+  const dashboardQuery = useOrganizationDashboardQuery(organizationId);
+  // isLoading (isPending && isFetching) مش isPending لحالها: isPending
+  // بتضل true للأبد لما الاستعلام يكون enabled:false (organizationId غير
+  // متوفر بعد)، فكانت الصفحة رح تعلق بالـ Skeleton بشكل دائم (نفس ملاحظة
+  // orgProfile.jsx بالضبط)
+  const loading = dashboardQuery.isLoading;
+  // الخدمة بترجع { success, data } دايمًا (ما بترمي استثناء)، فمنطق
+  // التحقق يضل هون بدل الاعتماد على query.isError
+  const data = dashboardQuery.data?.success ? dashboardQuery.data.data : null;
+  // isFetched (مو !loading): الاستعلام لازم يكون نفّذ فعليًا مرة عالأقل
+  // قبل ما نعتبرها "فشلت" — تفاديًا لظهور رسالة خطأ لحظية بوضع real
+  // بينما لسا منستنى organizationId يوصل من AuthContext
+  const error = dashboardQuery.isFetched && !dashboardQuery.data?.success
+    ? dashboardQuery.data?.error || "Unable to load dashboard data"
+    : "";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

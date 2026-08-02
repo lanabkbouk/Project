@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { MapPin, Calendar, Clock, Phone } from "lucide-react";
 import Typography from "../../components/ui/Typography";
 import Chip from "../../components/ui/Chip";
 import Button from "../../components/ui/Button";
 import OpportunityProgressBar from "../../components/opportunity/OpportunityProgressBar";
 import CategorySidebar from "../../components/opportunity/CategorySidebar";
-import SimilarOpportunities from "../../components/opportunity/SimilarOpportunities";
 import Skeleton from "../../components/ui/Skeleton";
 import { PANEL_SURFACE } from "../../utils/surfaceStyles";
 import { useOpportunityDetailsQuery } from "../../hooks/queries/useOpportunityDetailsQuery";
@@ -33,6 +33,10 @@ export default function OpportunityDetailsPage() {
 
   const [hasJoined, setHasJoined] = useState(false);
   const [joinError, setJoinError] = useState("");
+  // نفس pattern استخدام useReducedMotion المتبع بـ MainLayout.jsx و
+  // AchievementCard.jsx — نحترم تفضيل المستخدم لتقليل الحركة قبل ما
+  // نشغّل انتقال "Joining..." → "You're in! ✓"
+  const prefersReducedMotion = useReducedMotion();
 
   // نفس هوك التصنيفات المستخدم بصفحة قائمة الفرص — React Query بيتشارك
   // نفس الكاش (['categories']) تلقائيًا، فما في طلب مكرر لو الصفحتين
@@ -42,7 +46,6 @@ export default function OpportunityDetailsPage() {
   const participateMutation = useParticipateMutation(id);
 
   const opportunity = detailsQuery.data?.opportunity ?? null;
-  const similar = detailsQuery.data?.similar ?? [];
   const categories = categoriesQuery.data ?? [];
 
   const loading = detailsQuery.isPending;
@@ -110,6 +113,14 @@ export default function OpportunityDetailsPage() {
   const categoryName = opportunity.category?.name;
   const categoryStyle = CATEGORY_COLORS[categoryName] || CATEGORY_COLORS.Social;
   const CategoryIcon = CATEGORY_ICONS[categoryName] || MapPin;
+
+  const participateLabel = isGuest
+    ? "Participate"
+    : hasJoined
+      ? "You're in! ✓"
+      : spotsLeft === 0
+        ? "Fully Booked"
+        : "Participate";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -220,13 +231,23 @@ export default function OpportunityDetailsPage() {
             disabled={isNonVolunteerAccount || hasJoined || spotsLeft === 0}
             loadingText="Joining..."
           >
-            {isGuest
-              ? "Participate"
-              : hasJoined
-                ? "You're in! ✓"
-                : spotsLeft === 0
-                  ? "Fully Booked"
-                  : "Participate"}
+            {/* AnimatePresence بـ mode="wait": الكلمة القديمة تخرج (fade+scale)
+                قبل ما الجديدة تدخل، بدل استبدال فجائي — "You're in! ✓"
+                بيوصل بإحساس احتفالي خفيف بدل مجرد تغيّر نص. mode="wait"
+                هون (مو "popLayout" أو غيره) لأنه الزر بحجم ثابت، ما في
+                داعي لأي حساب layout إضافي أثناء التبديل */}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={participateLabel}
+                initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.9 }}
+                transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
+                className="inline-block"
+              >
+                {participateLabel}
+              </motion.span>
+            </AnimatePresence>
           </Button>
 
           {/* رسالة توضيحية تبقى بس لحساب منظمة مسجّل دخوله (مو متطوع) */}
@@ -247,9 +268,14 @@ export default function OpportunityDetailsPage() {
           <CategorySidebar
             categories={categories}
             activeCategoryId={opportunity.category?.id || ""}
-            onSelectCategory={() => navigate(ROUTES.OPPORTUNITIES)}
+            // كانت هون بتتجاهل categoryId بالكامل وتنقل دايمًا لصفحة
+            // فرص عامة بدون فلترة — تصليحها: نمرر categoryId فعليًا عبر
+            // location.state (نفس نمط guardMessage بصفحة volunteerProfile)
+            // وصفحة القائمة بتقرأه كقيمة ابتدائية لفلترها
+            onSelectCategory={(categoryId) =>
+              navigate(ROUTES.OPPORTUNITIES, { state: { categoryId } })
+            }
           />
-          <SimilarOpportunities opportunities={similar} />
         </div>
       </div>
     </div>

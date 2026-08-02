@@ -40,7 +40,7 @@ export default function Toast({ message, variant = 'info', duration = 6000, onCl
         <button
           type="button"
           onClick={onClose}
-          aria-label="إغلاق الإشعار"
+          aria-label="Close notification"
           className="shrink-0 opacity-60 transition-opacity hover:opacity-100"
         >
           <X size={16} />

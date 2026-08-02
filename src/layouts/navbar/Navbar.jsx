@@ -19,6 +19,7 @@ import Button from "../../components/ui/Button";
 import NavbarDropdown from "../../components/ui/NavbarDropdown";
 import { useAuth } from "../../context/AuthContext";
 import useUnseenAchievements from "../../hooks/useUnseenAchievements";
+import { getOrganizationId } from "../../utils/auth/getOrganizationId";
 
 export default function Navbar({ role = "guest" }) {
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ export default function Navbar({ role = "guest" }) {
   // بيوصل من AuthContext (real API) أو محليًا (mock mode بعد التسجيل —
   // راجع registerUser بـ services/auth.js). زر الـ Dashboard لازم
   // يعتمد على وجوده فعليًا، مش بس على نوع الحساب
-  const organizationId = user?.organization?.id ?? user?.organizationId ?? null;
+  const organizationId = getOrganizationId(user);
 
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);

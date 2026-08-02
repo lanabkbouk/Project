@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Plus, FolderPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Typography from "../components/ui/Typography";
@@ -7,16 +6,19 @@ import MyCauseCard from "../components/organization/MyCauseCard";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
 import CardSkeleton from "../components/ui/CardSkeleton";
 import EmptyState from "../components/common/EmptyState";
+import Toast from "../components/common/Toast";
 import { useAuth } from "../context/AuthContext";
 import { useMyOpportunitiesQuery } from "../hooks/queries/useMyOpportunitiesQuery";
 import { useDeleteOpportunityMutation } from "../hooks/queries/useDeleteOpportunityMutation";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
+import { useToast } from "../hooks/useToast";
 import { ROUTES } from "../constants/paths";
+import { getOrganizationId } from "../utils/auth/getOrganizationId";
 
 export default function MyCauses() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const organizationId = user?.organization?.id ?? user?.organizationId ?? null;
+  const organizationId = getOrganizationId(user);
   const { status, isVerified, hasLoadError } = useOrganizationVerification();
 
   const opportunitiesQuery = useMyOpportunitiesQuery(organizationId);
@@ -24,14 +26,17 @@ export default function MyCauses() {
 
   const opportunities = opportunitiesQuery.data ?? [];
   const loading = opportunitiesQuery.isPending;
-  const [error, setError] = useState("");
+  const { toast, showSuccess, showError, closeToast } = useToast();
 
   const handleDelete = async (id) => {
-    setError("");
     const result = await deleteMutation.mutateAsync(id);
     if (!result.success) {
-      setError(result.error || "Failed to delete this cause");
+      showError(result.error || "Failed to delete this cause");
+      return;
     }
+    // أول مرة هالفعل بيعطي تأكيد واضح — قبلها كان الكارد يختفي بصمت
+    // بدون أي إشارة للمستخدم إنه الحذف نجح فعلًا
+    showSuccess("Cause deleted successfully.");
   };
 
   return (
@@ -64,12 +69,6 @@ export default function MyCauses() {
           </div>
         )}
       </div>
-
-      {error && (
-        <p className="mb-4 rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
-          {error}
-        </p>
-      )}
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -105,6 +104,13 @@ export default function MyCauses() {
           ))}
         </div>
       )}
+
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        duration={7000}
+        onClose={closeToast}
+      />
     </div>
   );
 }

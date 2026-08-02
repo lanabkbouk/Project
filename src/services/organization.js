@@ -52,7 +52,11 @@ const EMPTY_ORGANIZATION = {
   description: '',
   city: '',
   website: '',
-  profileImageUrl: null,
+  // ⚠️ imageUrl (مو profileImageUrl): كان فيه عدم تطابق بين الاسم هون
+  // واسم الحقل يلي orgProfile.jsx فعليًا بيقرأه (organization.imageUrl) —
+  // نفس الاسم بالضبط يلي صار تصحيحه بـ organizationProfileResponseSchema
+  // (apiResponseSchemas.js) لوضع real، حتى الوضعين يطابقوا نفس الـ Component
+  imageUrl: null,
   verificationDocumentUrl: null,
   status: ORGANIZATION_STATUS.PENDING,
   owner: null,
@@ -80,7 +84,7 @@ export async function fetchOrganizationProfile(organizationId) {
         description: mockUser.description || '',
         city: mockUser.city || '',
         website: mockUser.website || '',
-        profileImageUrl: mockUser.imageUrl || null,
+        imageUrl: mockUser.imageUrl || null,
         verificationDocumentUrl: mockUser.verificationDocumentUrl || null,
         status: mockUser.status || ORGANIZATION_STATUS.PENDING,
         owner: { id: mockUser.id, name: mockUser.name, email: mockUser.email },

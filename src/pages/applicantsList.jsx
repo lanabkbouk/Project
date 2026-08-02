@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Users } from "lucide-react";
 import Typography from "../components/ui/Typography";
@@ -6,10 +5,12 @@ import ApplicantCard from "../components/organization/ApplicantCard";
 import Skeleton from "../components/ui/Skeleton";
 import EmptyState from "../components/common/EmptyState";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
+import Toast from "../components/common/Toast";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
 import { useOpportunityDetailsQuery } from "../hooks/queries/useOpportunityDetailsQuery";
 import { useApplicantsQuery } from "../hooks/queries/useApplicantsQuery";
 import { useUpdateParticipationStatusMutation } from "../hooks/queries/useUpdateParticipationStatusMutation";
+import { useToast } from "../hooks/useToast";
 import { PARTICIPATION_STATUS } from "../constants/participationStatus";
 import { CARD_SURFACE } from "../utils/surfaceStyles";
 import { ROUTES } from "../constants/paths";
@@ -27,7 +28,7 @@ export default function ApplicantsList() {
   const opportunity = opportunityQuery.data?.opportunity ?? null;
   const applicants = applicantsQuery.data ?? [];
   const loading = opportunityQuery.isPending || applicantsQuery.isPending;
-  const [error, setError] = useState("");
+  const { toast, showSuccess, showError, closeToast } = useToast();
 
   // بفضل mutation.variables: نعرف بالضبط أي متقدّم قيد التحديث حاليًا
   // بدون الحاجة لـ useState منفصلة (updatingId) نديرها يدويًا
@@ -38,12 +39,20 @@ export default function ApplicantsList() {
   const handleStatusChange = async (applicantId, newStatus) => {
     if (!isVerified) return;
 
-    setError("");
     const result = await updateStatusMutation.mutateAsync({ applicantId, status: newStatus });
 
     if (!result.success) {
-      setError(result.error || "Failed to update this request");
+      showError(result.error || "Failed to update this request");
+      return;
     }
+
+    // أول مرة هالفعل بيعطي تأكيد واضح — قبلها كان تغيّر حالة الكارد
+    // نفسه هو التأكيد الوحيد، بدون أي رسالة صريحة للمستخدم
+    showSuccess(
+      newStatus === PARTICIPATION_STATUS.ACCEPTED
+        ? "Applicant accepted."
+        : "Applicant rejected.",
+    );
   };
 
   const pendingCount = applicants.filter(
@@ -71,12 +80,6 @@ export default function ApplicantsList() {
           {pendingCount > 0 ? ` — ${pendingCount} awaiting your review` : ""}
         </Typography>
       ) : null}
-
-      {error && (
-        <p className="mb-4 rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
-          {error}
-        </p>
-      )}
 
       {loading ? (
         <div className="flex flex-col gap-4">
@@ -115,6 +118,13 @@ export default function ApplicantsList() {
           ))}
         </div>
       )}
+
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        duration={7000}
+        onClose={closeToast}
+      />
     </div>
   );
 }

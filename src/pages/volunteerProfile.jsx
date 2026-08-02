@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "react-router-dom";
@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { useSkillsQuery } from "../hooks/queries/useSkillsQuery";
 import { useUpdateVolunteerProfileMutation } from "../hooks/queries/useUpdateVolunteerProfileMutation";
 import { useImageUpload } from "../hooks/useImageUpload";
+import { useToast } from "../hooks/useToast";
 import { PANEL_SURFACE } from "../utils/surfaceStyles";
 
 import ProfileHeader from "../components/volunteerProfile/ProfileHeader";
@@ -46,9 +47,13 @@ export default function VolunteerProfile() {
   // مكرر هون لحاله. user متوفر فورًا من AuthContext (بعكس orgProfile
   // يلي بينتظر React Query)، فمنقدر نمرر قيمة أولية مباشرة
   const imageUpload = useImageUpload(user?.imageUrl || "");
-  const [submitError, setSubmitError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [profileNotice, setProfileNotice] = useState(guardMessage);
+  // لو المستخدم انتقل هون بسبب حارس تنقّل (مثلًا بروفايل ناقص)، بتوصل
+  // رسالة جاهزة عبر location.state — منستخدمها كقيمة ابتدائية لنفس الـ
+  // Toast يلي هيك رح يعرض لاحقًا نتيجة الحفظ، بدل Toast منفصل لكل حالة
+  const { toast, showSuccess, showError, closeToast } = useToast({
+    message: guardMessage,
+    variant: "info",
+  });
 
   const defaultValues = useMemo(
     () => ({
@@ -80,18 +85,15 @@ export default function VolunteerProfile() {
   const fullName = user?.displayName;
 
   const onSubmit = async (data) => {
-    setSubmitError("");
-    setSuccessMessage("");
-
     try {
       const result = await updateProfileMutation.mutateAsync({ values: data, photoFile: imageUpload.file });
 
       if (!result.success) {
-        setSubmitError(result.error || "Failed to save profile");
+        showError(result.error || "Failed to save profile");
         return;
       }
 
-      setSuccessMessage("Profile saved successfully.");
+      showSuccess("Profile saved successfully.");
 
       // نصفّر حالة "isDirty" بعد نجاح الحفظ — وإلا حارس التنقّل الجديد
       // (useUnsavedChangesGuard) رح يضل يحذّر المستخدم حتى بعد ما حفظ فعليًا
@@ -107,7 +109,7 @@ export default function VolunteerProfile() {
         profileCompleted: true,
       });
     } catch (err) {
-      setSubmitError(err.message || "Failed to save profile");
+      showError(err.message || "Failed to save profile");
     }
   };
 
@@ -136,17 +138,6 @@ export default function VolunteerProfile() {
                 availableSkills={availableSkills}
                 skillsLoading={skillsLoading}
               />
-              {submitError && (
-                <p className="mt-4 rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
-                  {submitError}
-                </p>
-              )}
-
-              {successMessage && (
-                <p className="mt-4 rounded-lg border border-green-600 bg-green-50 px-3 py-2 text-sm text-green-700">
-                  {successMessage}
-                </p>
-              )}
             </div>
 
             {/*  رير المهارات للـ Preview */}
@@ -188,10 +179,10 @@ export default function VolunteerProfile() {
       </Modal>
 
       <Toast
-        message={profileNotice}
-        variant="info"
+        message={toast.message}
+        variant={toast.variant}
         duration={7000}
-        onClose={() => setProfileNotice('')}
+        onClose={closeToast}
       />
     </FormProvider>
   );

@@ -60,20 +60,59 @@ export function validateAuthResponse(responseData) {
 // حدود بروفايل المنظمة (services/organization.js)
 // ---------------------------------------------------------------------------
 
-// كل حقل معه .default() عمدًا: لو الباك اند ما رجّع حقل معيّن (مثلًا
-// website فاضي)، منستخدم قيمة افتراضية آمنة بدل undefined ينتشر بالواجهة
+// ✅ مصحّح بعد فحص فعلي لـ OrganizationController + OrganizationResource
+// بالباك اند: الحقول الحقيقية بالاستجابة snake_case (contact_person،
+// profile_image)، والبريد مش موجود بمستوى أول — جوا owner.email بس.
+// نستخدم .transform() هون عشان نحوّل الشكل الخام لنفس الشكل يلي orgProfile.jsx
+// و OrganizationDetailsPage.jsx بيتوقعوه، بمكان واحد بس، بدل ما كل صفحة
+// تتعامل مع snake_case يدويًا.
+//
+// 🔴 status دايمًا null من الباك حاليًا (عمود status مش موجود إطلاقًا
+// بجدول organizations) — الـ fallback لـ 'pending' هون قرار متعمّد لحد
+// ما الباك يضيف العمود، مش قيمة حقيقية.
 const organizationProfileResponseSchema = z
   .object({
+    id: z.union([z.string(), z.number()]).optional(),
     name: z.string().default(''),
-    email: z.string().default(''),
-    description: z.string().default(''),
-    city: z.string().default(''),
+    description: z.string().nullable().default(''),
+    city: z.string().nullable().default(''),
     website: z.string().nullable().default(''),
-    imageUrl: z.string().nullable().default(null),
-    status: z.string().default('pending'),
-    rejectionReason: z.string().nullable().default(null),
+    contact_person: z.string().default(''),
+    profile_image: z.string().nullable().default(null),
+    verification_document: z.string().nullable().default(null),
+    status: z.string().nullable().default(null),
+    owner: z
+      .object({
+        id: z.union([z.string(), z.number()]).optional(),
+        name: z.string().nullable().optional(),
+        email: z.string().nullable().optional(),
+      })
+      .nullable()
+      .optional(),
   })
   .passthrough()
+  .transform((data) => ({
+    id: data.id ?? null,
+    name: data.name,
+    email: data.owner?.email || '',
+    // ⚠️ .nullable().default('') بـ Zod ما بيحوّل null لـ '' تلقائيًا —
+    // الـ default بتشتغل بس لما القيمة undefined (حقل غير موجود)، مش
+    // لما تكون null صراحة (حقل موجود وقيمته فاضية). لازم نستكمل التحويل
+    // هون يدويًا وإلا null بتنسرّب للـ Component وتكسر .toLowerCase()
+    // أو أي عملية نص تانية بتفترض string دايمًا
+    description: data.description || '',
+    city: data.city || '',
+    website: data.website || '',
+    contactPerson: data.contact_person,
+    imageUrl: data.profile_image,
+    verificationDocumentUrl: data.verification_document,
+    status: data.status || 'pending',
+    // 🔴 مفهوم "سبب الرفض" غير موجود إطلاقًا بالباك اند حاليًا (زي status
+    // تمامًا) — null صراحة هون بدل ما تختفي بصمت، وVerificationStatusBanner
+    // أصلاً بيتعامل معها كـ optional
+    rejectionReason: null,
+    owner: data.owner || null,
+  }))
 
 /**
  * تتحقق من شكل استجابة بروفايل المنظمة الحقيقية عند الجلب.

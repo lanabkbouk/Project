@@ -28,12 +28,10 @@ const CreateEditCause = lazy(() => import('./pages/createEditCause'))
 const ApplicantsList = lazy(() => import('./pages/applicantsList'))
 const OpportunitiesListPage = lazy(() => import('./pages/opportunities/OpportunitiesListPage'))
 const OpportunityDetailsPage = lazy(() => import('./pages/opportunities/OpportunityDetailsPage'))
+const OrganizationsListPage = lazy(() => import('./pages/organization/OrganizationsListPage'))
+const OrganizationDetailsPage = lazy(() => import('./pages/organization/OrganizationDetailsPage'))
 const Dashboard = lazy(() => import('./pages/dashboard'))
 const NotFound = lazy(() => import('./pages/notFound'))
-
-function ComingSoon({ title }) {
-  return <div>{title} Page (Coming Soon)</div>
-}
 
 // نفس شجرة الراوتس القديمة بالضبط، بس عبر createRoutesFromElements حتى
 // تصير جزء من Data Router — هاد التحويل ضروري لدعم useBlocker (حجز
@@ -53,7 +51,8 @@ const router = createBrowserRouter(
           <Route path={ROUTES.PARTICIPATES} element={<Participates />} />
           <Route path={ROUTES.OPPORTUNITIES} element={<OpportunitiesListPage />} />
           <Route path={ROUTES.OPPORTUNITY_DETAILS} element={<OpportunityDetailsPage />} />
-          <Route path={ROUTES.ORGANIZATIONS} element={<ComingSoon title='Organizations' />} />
+          <Route path={ROUTES.ORGANIZATIONS} element={<OrganizationsListPage />} />
+          <Route path={`${ROUTES.ORGANIZATIONS}/:id`} element={<OrganizationDetailsPage />} />
 
           {/* Volunteer */}
           <Route element={<ProtectedRoute allowedAccountTypes={[ACCOUNT_TYPES.VOLUNTEER]} />}>

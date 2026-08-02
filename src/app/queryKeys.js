@@ -17,6 +17,19 @@ export const queryKeys = {
 
   organization: {
     profile: (organizationId) => ['organization', 'profile', organizationId],
+    // لوحة تحكم المنظمة (إحصائيات + توزيع فرص + نشاطات) — مرتبطة بمعرّف
+    // المنظمة نفسه، بنفس منطق "profile" أعلاه، حتى ما يصير cache
+    // collision بين منظمتين أو بين جلسة فيها منظمة وأخرى بدونها
+    dashboard: (organizationId) => ['organization', 'dashboard', organizationId],
+  },
+
+  // دليل المنظمات العام (Organizations Directory) — منفصل عمدًا عن
+  // "organization" أعلاه: هذا لتصفح أي منظمة من الخارج، مش لبروفايل
+  // منظمتي أنا
+  organizations: {
+    list: (filters) => ['organizations', 'list', filters],
+    detail: (id) => ['organizations', 'detail', id],
+    opportunities: (id) => ['organizations', 'opportunities', id],
   },
 
   opportunities: {

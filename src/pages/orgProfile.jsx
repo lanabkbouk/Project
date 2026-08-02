@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,11 +17,14 @@ import OrgProfileForm from "../components/OrgProfile/ProfileForm";
 import OrgProfilePreview from "../components/OrgProfile/ProfilePreview";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
 import Skeleton from "../components/ui/Skeleton";
+import Toast from "../components/common/Toast";
+import { useToast } from "../hooks/useToast";
+import { getOrganizationId } from "../utils/auth/getOrganizationId";
 
 export default function OrgProfile() {
   const { user, updateUser } = useAuth();
   const queryClient = useQueryClient();
-  const organizationId = user?.organization?.id ?? user?.organizationId ?? null;
+  const organizationId = getOrganizationId(user);
 
   const organizationQuery = useOrganizationProfileQuery(organizationId);
   // isLoading (isPending && isFetching) مش isPending لحالها: isPending
@@ -40,8 +43,7 @@ export default function OrgProfile() {
   const imageUpload = useImageUpload();
   const imagePreview = imageUpload.previewUrl || organization?.imageUrl || "";
 
-  const [submitError, setSubmitError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const { toast, showSuccess, showError, closeToast } = useToast();
 
   const methods = useForm({
     resolver: zodResolver(organizationProfileSchema),
@@ -71,16 +73,13 @@ export default function OrgProfile() {
   }, [organization, methods]);
 
   const onSubmit = async (data) => {
-    setSubmitError("");
-    setSuccessMessage("");
-
     try {
       // بناء FormData صار مسؤولية طبقة الخدمة (services/organization.js)
       // بدل الصفحة — نفس نمط buildOpportunityFormData
       const result = await updateProfileMutation.mutateAsync(data);
 
       if (!result.success) {
-        setSubmitError(result.error || "Failed to save changes");
+        showError(result.error || "Failed to save changes");
         return;
       }
 
@@ -95,9 +94,9 @@ export default function OrgProfile() {
       }));
 
       methods.reset(data);
-      setSuccessMessage("Changes saved successfully.");
+      showSuccess("Changes saved successfully.");
     } catch (err) {
-      setSubmitError(err.message || "Failed to save changes");
+      showError(err.message || "Failed to save changes");
     }
   };
 
@@ -169,17 +168,6 @@ export default function OrgProfile() {
             {/* LEFT: FORM */}
             <div className={`lg:col-span-2 ${PANEL_SURFACE} p-6 md:p-8`}>
               <OrgProfileForm submitting={updateProfileMutation.isPending} />
-              {submitError && (
-                <p className="mt-4 rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
-                  {submitError}
-                </p>
-              )}
-
-              {successMessage && (
-                <p className="mt-4 rounded-lg border border-green-600 bg-green-50 px-3 py-2 text-sm text-green-700">
-                  {successMessage}
-                </p>
-              )}
             </div>
 
             {/* RIGHT: PREVIEW */}
@@ -193,6 +181,13 @@ export default function OrgProfile() {
           )}
         </div>
       </div>
+
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        duration={7000}
+        onClose={closeToast}
+      />
     </FormProvider>
   );
 }

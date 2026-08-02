@@ -12,6 +12,7 @@ import { useOrganizationOpportunitiesQuery } from "../../hooks/queries/useOrgani
 import { useAuth } from "../../context/AuthContext";
 import { ROUTES } from "../../constants/paths";
 import { getOrganizationStatusMeta, ORGANIZATION_STATUS } from "../../constants/organizationStatus";
+import { getOrganizationId } from "../../utils/auth/getOrganizationId";
 
 export default function OrganizationDetailsPage() {
   const { id } = useParams();
@@ -31,7 +32,7 @@ export default function OrganizationDetailsPage() {
 
   // نفس منطق تحديد "منظمتي" المستخدم بالـ Navbar — لو هاي فعلًا منظمة
   // المستخدم المسجّل دخوله حاليًا، منظهر زر تعديل بروفايلها
-  const myOrganizationId = user?.organization?.id ?? user?.organizationId ?? null;
+  const myOrganizationId = getOrganizationId(user);
   const isOwnOrganization = organization && myOrganizationId === organization.id;
 
   if (loading) {

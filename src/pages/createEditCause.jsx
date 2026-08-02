@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
@@ -6,14 +6,17 @@ import Typography from "../components/ui/Typography";
 import CauseForm from "../components/organization/CauseForm";
 import Skeleton from "../components/ui/Skeleton";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
+import Toast from "../components/common/Toast";
 import { useAuth } from "../context/AuthContext";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
 import { useCategoriesQuery } from "../hooks/queries/useCategoriesQuery";
 import { useOpportunityDetailsQuery } from "../hooks/queries/useOpportunityDetailsQuery";
 import { useSaveOpportunityMutation } from "../hooks/queries/useSaveOpportunityMutation";
 import { useImageUpload } from "../hooks/useImageUpload";
+import { useToast } from "../hooks/useToast";
 import { opportunitySchema } from "../utils/opportunityValidation";
 import { ROUTES } from "../constants/paths";
+import { getOrganizationId } from "../utils/auth/getOrganizationId";
 
 const DEFAULT_VALUES = {
   title: "",
@@ -32,7 +35,7 @@ export default function CreateEditCause() {
   const isEditMode = Boolean(id);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const organizationId = user?.organization?.id ?? user?.organizationId ?? null;
+  const organizationId = getOrganizationId(user);
   const { status, isVerified, hasLoadError } = useOrganizationVerification();
 
   // نفس هوك التصنيفات المستخدم بصفحتي الفرص — كاش مشترك، ما بينجلب مرتين
@@ -52,8 +55,7 @@ export default function CreateEditCause() {
   const categories = categoriesQuery.data ?? [];
   const opportunity = opportunityQuery.data?.opportunity ?? null;
 
-  const [submitError, setSubmitError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const { toast, showSuccess, showError, closeToast } = useToast();
 
   const {
     previewUrl: imagePreview,
@@ -95,9 +97,6 @@ export default function CreateEditCause() {
     : categoriesQuery.isPending;
 
   const onSubmit = async (values) => {
-    setSubmitError("");
-    setSuccessMessage("");
-
     const selectedCategory = categories.find((category) => category.id === values.categoryId);
     const payload = {
       ...values,
@@ -109,13 +108,13 @@ export default function CreateEditCause() {
     const result = await saveMutation.mutateAsync(payload);
 
     if (!result.success) {
-      setSubmitError(result.error || "Something went wrong");
+      showError(result.error || "Something went wrong");
       return;
     }
 
     // نعرض تأكيد نجاح واضح للمستخدم قبل ما ننتقل، بدل انتقال صامت فوري
     // ما بيعطي أي إحساس إنه الحفظ صار فعلًا
-    setSuccessMessage(isEditMode ? "Changes saved successfully." : "Cause published successfully.");
+    showSuccess(isEditMode ? "Changes saved successfully." : "Cause published successfully.");
     setTimeout(() => navigate(ROUTES.MY_CAUSES), 900);
   };
 
@@ -150,17 +149,6 @@ export default function CreateEditCause() {
           : "Publish a new volunteering opportunity for people to join."}
       </Typography>
 
-      {submitError && (
-        <p className="mb-4 rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
-          {submitError}
-        </p>
-      )}
-
-      {successMessage && (
-        <p className="mb-4 rounded-lg border border-green-600 bg-green-50 px-3 py-2 text-sm text-green-700">
-          {successMessage}
-        </p>
-      )}
 
       <FormProvider {...methods}>
         <form onSubmit={methods.handleSubmit(onSubmit)}>
@@ -181,6 +169,13 @@ export default function CreateEditCause() {
           )}
         </form>
       </FormProvider>
+
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        duration={7000}
+        onClose={closeToast}
+      />
     </div>
   );
 }
