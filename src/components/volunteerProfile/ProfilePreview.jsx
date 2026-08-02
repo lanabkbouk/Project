@@ -19,7 +19,7 @@ const splitCsvToChips = (input) => {
     .filter(Boolean);
 };
 
-export default function ProfilePreview({ fullName, email, availableSkills }) {
+export default function ProfilePreview({ fullName, email, phone, availableSkills }) {
   const { watch } = useFormContext();
   const values = watch();
 
@@ -40,6 +40,7 @@ export default function ProfilePreview({ fullName, email, availableSkills }) {
       <div className="space-y-4">
         <InfoRow label="Full Name" value={fullName} />
         <InfoRow label="Email" value={email} />
+        <InfoRow label="Phone Number" value={phone} />
         <InfoRow label="Education Level" value={values.educationLevel} />
 
         {isAdult && <InfoRow label="Date of Birth" value={values.dateOfBirth} />}

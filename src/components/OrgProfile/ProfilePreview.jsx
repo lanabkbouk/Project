@@ -1,5 +1,3 @@
-// components/OrgProfile/ProfilePreview.jsx
-//
 // بطاقة معاينة (Live Preview) تعرض القيم الحية بالفورم المجاور أثناء
 // الكتابة — نفس آلية volunteerProfile/ProfilePreview.jsx بالضبط
 // (useFormContext + watch)، بدل الاعتماد على لقطة ثابتة محمّلة مرة
@@ -11,7 +9,7 @@ import { PANEL_SURFACE } from "../../utils/surfaceStyles";
 import InfoRow from "../ui/InfoRow";
 import Typography from "../ui/Typography";
 
-export default function OrgProfilePreview({ email }) {
+export default function OrgProfilePreview({ email, phone }) {
   const { watch } = useFormContext();
   const values = watch();
 
@@ -22,6 +20,7 @@ export default function OrgProfilePreview({ email }) {
       <div className="space-y-4">
         <InfoRow label="Name" value={values.name} />
         <InfoRow label="Email" value={email} />
+        <InfoRow label="Phone Number" value={phone} />
         <InfoRow label="Governorate" value={values.city} />
         <InfoRow label="Website" value={values.website} />
 

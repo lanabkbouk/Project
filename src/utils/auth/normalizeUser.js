@@ -15,5 +15,10 @@ export function normalizeUser(rawUser) {
     displayName: getUserDisplayName(rawUser),
     // صورة جاهزة للعرض مع قيمة افتراضية فارغة بدل تكرار هذا الشرط في كل مكوّن
     avatarUrl: rawUser.imageUrl || rawUser.avatarUrl || '',
+    // توحيد اسم حقل الهاتف: الـ API الحقيقي بيرجّعه phone_number (Laravel
+    // snake_case)، بينما وضع الـ Mock بيخزّنه أصلًا كـ phone (camelCase،
+    // جاي مباشرة من حقل فورم التسجيل) — كل الواجهة بعد هالنقطة بتستخدم
+    // user.phone بس، بغض النظر عن الوضع
+    phone: rawUser.phone_number || rawUser.phone || '',
   }
 }

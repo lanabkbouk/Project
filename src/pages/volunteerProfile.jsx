@@ -153,6 +153,7 @@ export default function VolunteerProfile() {
             <ProfilePreview
               fullName={fullName}
               email={user?.email}
+              phone={user?.phone}
               availableSkills={availableSkills}
             />
           </form>

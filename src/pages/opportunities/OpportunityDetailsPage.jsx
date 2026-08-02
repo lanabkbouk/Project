@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { MapPin, Calendar, Clock } from "lucide-react";
+import { MapPin, Calendar, Clock, Phone } from "lucide-react";
 import Typography from "../../components/ui/Typography";
 import Chip from "../../components/ui/Chip";
 import Button from "../../components/ui/Button";
@@ -175,7 +175,26 @@ export default function OpportunityDetailsPage() {
 
           <div className={`${PANEL_SURFACE} p-6 mb-8`}>
             <p className="text-sm text-heading/50 mb-1">Organized by</p>
-            <p className="font-semibold text-heading">{opportunity.organization.name}</p>
+            {opportunity.organization?.id ? (
+              <Link
+                to={`${ROUTES.ORGANIZATIONS}/${opportunity.organization.id}`}
+                className="font-semibold text-heading hover:text-primary rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                {opportunity.organization.name}
+              </Link>
+            ) : (
+              <p className="font-semibold text-heading">{opportunity.organization.name}</p>
+            )}
+
+            {opportunity.organization?.phone ? (
+              <a
+                href={`tel:${opportunity.organization.phone}`}
+                className="mt-2 flex items-center gap-2 text-sm text-body hover:text-primary w-fit rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                <Phone size={14} className="text-primary shrink-0" aria-hidden="true" />
+                {opportunity.organization.phone}
+              </a>
+            ) : null}
           </div>
 
           <Typography variant="h4" className="mb-3">

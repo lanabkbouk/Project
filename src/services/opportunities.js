@@ -18,6 +18,10 @@ import { OPPORTUNITY_STATUS } from '../constants/opportunityStatus'
 
 const MOCK_MODE = isMockMode()
 
+// مُعرّف حساب المنظمة الوهمي الوحيد المتاح حاليًا للتجربة — يُستخدم فقط
+// لفلترة "My Causes" من نفس المصدر الموحّد أدناه (بدل جلبها من مصفوفة منفصلة)
+const MOCK_MY_ORGANIZATION_ID = 'org-mock'
+
 // مصدر بيانات وهمي واحد لكل الفرص — يحاكي جدول "opportunity" الحقيقي بالباك.
 // أي فرصة تُنشئها منظمة (createOpportunity) تُضاف هنا مباشرة، فتظهر فورًا
 // بصفحة تصفح الفرص العامة للمتطوعين، تمامًا كما ستتصرف مع Laravel لاحقًا.
@@ -40,7 +44,7 @@ let MOCK_OPPORTUNITIES = [
     maxVolunteers: 30,
     category: { id: 'c1', name: 'Health' },
     skills: [{ id: 's1', name: 'First Aid' }, { id: 's7', name: 'Communication' }],
-    organization: { id: 'org1', name: 'Blue Drop Foundation', imageUrl: null },
+    organization: { id: 'org1', name: 'Blue Drop Foundation', phone: '+31611111111', imageUrl: null },
     image: null,
   },
   {
@@ -59,7 +63,7 @@ let MOCK_OPPORTUNITIES = [
     maxVolunteers: 15,
     category: { id: 'c2', name: 'Education' },
     skills: [{ id: 's4', name: 'Teaching' }, { id: 's5', name: 'Tutoring' }],
-    organization: { id: 'org2', name: 'Bright Minds NGO', imageUrl: null },
+    organization: { id: 'org2', name: 'Bright Minds NGO', phone: '+31622222222', imageUrl: null },
     image: null,
   },
   {
@@ -78,7 +82,7 @@ let MOCK_OPPORTUNITIES = [
     maxVolunteers: 40,
     category: { id: 'c5', name: 'Environment' },
     skills: [{ id: 's12', name: 'Environmental Awareness' }],
-    organization: { id: 'org3', name: 'Green Coast Initiative', imageUrl: null },
+    organization: { id: 'org3', name: 'Green Coast Initiative', phone: '+31633333333', imageUrl: null },
     image: null,
   },
   {
@@ -97,7 +101,7 @@ let MOCK_OPPORTUNITIES = [
     maxVolunteers: 50,
     category: { id: 'c3', name: 'Social' },
     skills: [{ id: 's8', name: 'Event Management' }],
-    organization: { id: 'org4', name: 'City Food Bank', imageUrl: null },
+    organization: { id: 'org4', name: 'City Food Bank', phone: '+31644444444', imageUrl: null },
     image: null,
   },
   {
@@ -116,7 +120,7 @@ let MOCK_OPPORTUNITIES = [
     maxVolunteers: 25,
     category: { id: 'c3', name: 'Social' },
     skills: [{ id: 's8', name: 'Event Management' }],
-    organization: { id: 'org4', name: 'City Food Bank', imageUrl: null },
+    organization: { id: 'org4', name: 'City Food Bank', phone: '+31644444444', imageUrl: null },
     image: null,
   },
   {
@@ -135,7 +139,7 @@ let MOCK_OPPORTUNITIES = [
     maxVolunteers: 18,
     category: { id: 'c2', name: 'Education' },
     skills: [{ id: 's4', name: 'Teaching' }],
-    organization: { id: 'org2', name: 'Bright Minds NGO', imageUrl: null },
+    organization: { id: 'org2', name: 'Bright Minds NGO', phone: '+31622222222', imageUrl: null },
     image: null,
   },
 ]
@@ -296,17 +300,11 @@ export async function fetchOpportunityById(id) {
  * حساب Mock واحد بس متاح للتجربة حاليًا — سيُستبدل بفلترة حقيقية حسب
  * organization_id لما يجهز GET /organizations/me/opportunities.
  */
-
-/**
- * يجلب الفرص الخاصة بالمنظمة المسجّلة دخولها حاليًا (لصفحة "My Causes").
- * @param {string} organizationId - هوية المنظمة الحالية (من AuthContext)
- */
-export async function fetchMyOpportunities(organizationId) {
+export async function fetchMyOpportunities() {
   if (MOCK_MODE) {
     await wait()
-    if (!organizationId) return []
     return MOCK_OPPORTUNITIES.filter(
-      (opportunity) => opportunity.organization?.id === organizationId,
+      (opportunity) => opportunity.organization?.id === MOCK_MY_ORGANIZATION_ID,
     )
   }
 
@@ -317,6 +315,35 @@ export async function fetchMyOpportunities(organizationId) {
     throw new Error(getApiErrorMessage(error, 'Failed to load your causes'))
   }
 }
+
+/**
+ * يجلب الفرص المفتوحة الخاصة بمنظمة معيّنة (للعرض بصفحة تفاصيل تلك
+ * المنظمة العامة) — يختلف عن fetchMyOpportunities لأنه يقبل أي
+ * organizationId (مو بس صاحبة الجلسة الحالية).
+ *
+ * ⚠️ الباك اند الحقيقي ما عنده endpoint فرص مفعّل إطلاقًا لسا (راجع
+ * OpportunityController — كل الدوال فاضية بدون أي implementation). لما
+ * يجهز، رح يشتغل مباشرة عبر ?organization_id= بدون أي تعديل هون.
+ */
+export async function fetchOpportunitiesByOrganization(organizationId) {
+  if (MOCK_MODE) {
+    await wait()
+    return MOCK_OPPORTUNITIES.filter(
+      (opportunity) =>
+        opportunity.organization?.id === organizationId && opportunity.status === 'open',
+    )
+  }
+
+  try {
+    const response = await apiClient.get('/opportunities', {
+      params: { organization_id: organizationId, status: 'open' },
+    })
+    return response.data || []
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, 'Failed to load this organization\'s opportunities'), { cause: error })
+  }
+}
+
 /**
  * يحذف فرصة تنشرها المنظمة (بعد تأكيد المستخدم).
  */
@@ -337,12 +364,7 @@ export async function deleteOpportunity(id) {
 /**
  * ينشئ فرصة جديدة (من طرف المنظمة).
  */
-
-/**
- * ينشئ فرصة جديدة (من طرف المنظمة).
- * @param {{organizationId: string, organizationName?: string, imageFile?: File}} params
- */
-export async function createOpportunity({ organizationId, organizationName, imageFile, ...payload }) {
+export async function createOpportunity({ imageFile, ...payload }) {
   if (MOCK_MODE) {
     await wait()
     const newOpportunity = {
@@ -350,9 +372,11 @@ export async function createOpportunity({ organizationId, organizationName, imag
       id: `o${Date.now()}`,
       status: OPPORTUNITY_STATUS.OPEN,
       currentVolunteers: 0,
-      organization: { id: organizationId, name: organizationName || 'My Organization', imageUrl: null },
+      organization: { id: MOCK_MY_ORGANIZATION_ID, name: 'My Organization', phone: '+31600000000', imageUrl: null },
       image: imageFile ? URL.createObjectURL(imageFile) : null,
     }
+    // تُضاف مباشرة لنفس المصدر الموحّد، فتظهر فورًا بصفحة التصفح العامة
+    // للمتطوعين تمامًا كما ستظهر بـ "My Causes" — بلا أي فرق بينهما
     MOCK_OPPORTUNITIES.unshift(newOpportunity)
     return { success: true, data: newOpportunity }
   }
@@ -365,6 +389,7 @@ export async function createOpportunity({ organizationId, organizationName, imag
     return { success: false, error: getApiErrorMessage(error, 'Failed to create this cause') }
   }
 }
+
 /**
  * يعدّل فرصة موجودة (من طرف المنظمة).
  */
