@@ -1,12 +1,9 @@
-import { useState } from "react";
-import { Mail, Phone, Check } from "lucide-react";
+import { Clock, Mail, Phone } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import FacebookIcon from "../components/social/FacebookIcon";
 import InstagramIcon from "../components/social/InstagramIcon";
 import LinkedInIcon from "../components/social/LinkedInIcon";
 import SocialIconLink from "../components/social/SocialIconLink";
-import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
 import LogoIcon from "../components/ui/LogoIcon";
 import { ROUTES } from "../constants/paths";
 
@@ -58,29 +55,6 @@ const quickLinks = [
 ];
 
 export default function Footer() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState("idle"); // idle | loading | success | error
-
-  // ⚠️ لا يوجد Endpoint حقيقي للنشرة البريدية بالباك اند بعد (ما شفناه
-  // بـ routes/api.php). هاي محاكاة محلية بس عشان النموذج يعطي إحساس
-  // حقيقي (Loading + Success State) بدل ما يكون بلا أي أثر إطلاقًا —
-  // استبدلها بطلب API فعلي أول ما يجهز الـ Endpoint بالباك اند.
-  async function handleSubscribe(event) {
-    event.preventDefault();
-    if (status === "loading") return;
-
-    setStatus("loading");
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    if (!email.includes("@")) {
-      setStatus("error");
-      return;
-    }
-
-    setStatus("success");
-    setEmail("");
-  }
-
   return (
     <footer className="mt-auto bg-black text-white">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-12 lg:px-8">
@@ -115,7 +89,10 @@ export default function Footer() {
 
           <div className="mt-6 flex items-center gap-3">
             {socialLinks.map((social) => (
-              <SocialIconLink key={social.label} href="#" {...social} />
+              // ⚠️ لا يوجد بعد حسابات تواصل اجتماعي حقيقية للمنصة —
+              // ما إن تتوفر الروابط، يكفي إضافة href هون وبيصير الأيقونة
+              // رابط فعلي تلقائيًا (بدون أي تعديل على SocialIconLink)
+              <SocialIconLink key={social.label} {...social} />
             ))}
           </div>
         </div>
@@ -150,45 +127,10 @@ export default function Footer() {
             Get updates about new opportunities and community news.
           </p>
 
-          {status === "success" ? (
-            <p className="flex items-center gap-2 rounded-xl border border-green-600/40 bg-green-500/10 px-4 py-3 text-sm text-green-400">
-              <Check size={16} aria-hidden="true" /> You're subscribed! Check your inbox for a confirmation.
-            </p>
-          ) : (
-            <form
-              className="flex flex-col gap-3 sm:flex-row sm:items-start"
-              onSubmit={handleSubscribe}
-              noValidate
-            >
-              <Input
-                placeholder="Email address"
-                type="email"
-                variant="default"
-                fullWidth
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="h-11 rounded-xl bg-black/30 text-sm placeholder:text-white/40"
-                required
-              />
-              <Button
-                size="medium"
-                isLoading={status === "loading"}
-                loadingText="Subscribing..."
-                className="h-11 w-full rounded-xl px-5 text-sm font-medium sm:w-auto"
-                type="submit"
-              >
-                Subscribe
-              </Button>
-            </form>
-          )}
-
-          {status === "error" && (
-            <p className="mt-2 text-xs text-red-400">Please enter a valid email address.</p>
-          )}
-
-          <p className="mt-3 text-xs text-white/50">
-            By subscribing, you agree to our Privacy Policy.
-          </p>
+          <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/70">
+            <Clock size={16} className="shrink-0 text-primary" aria-hidden="true" />
+            <span>Newsletter sign-ups are launching soon — stay tuned!</span>
+          </div>
         </div>
       </div>
 

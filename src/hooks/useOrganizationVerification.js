@@ -22,9 +22,17 @@ export function useOrganizationVerification() {
   // الخدمة بترجع { success, data } دايمًا (ما بترمي استثناء عند الفشل)
   const status = data?.success ? data.data?.status : null;
 
+  // ⚠️ مهم: status=null بيصير بحالتين مختلفتين تمامًا:
+  // 1) الطلب نجح لكن ما في organization/status (نادر) → مفيش خطأ فعلي
+  // 2) الطلب فشل فعليًا (data.success === false) → لازم نعرف هاد الفرق
+  // وإلا الواجهة بتصمت تمامًا وكأنه "ما في داعي لأي Banner"، بينما
+  // الحقيقة إنه فشل تحميل الحالة ولازم يظهر خطأ واضح للمستخدم
+  const hasLoadError = Boolean(data && data.success === false);
+
   return {
     status,
     loading: isLoading,
+    hasLoadError,
     isVerified: status === ORGANIZATION_STATUS.VERIFIED,
     meta: getOrganizationStatusMeta(status),
   };

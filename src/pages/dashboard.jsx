@@ -16,6 +16,7 @@ import DashboardStatsGrid from "../components/dashboard/DashboardStatsGrid";
 import OpportunitiesBreakdownChart from "../components/dashboard/OpportunitiesBreakdownChart";
 import RecentActivityFeed from "../components/dashboard/RecentActivityFeed";
 import { fetchOrganizationDashboard } from "../services/dashboard";
+import { useAuth } from "../context/AuthContext";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
 import { PANEL_SURFACE, CARD_SURFACE } from "../utils/surfaceStyles";
 import { ROUTES } from "../constants/paths";
@@ -53,7 +54,9 @@ function DashboardSkeleton() {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { status, isVerified } = useOrganizationVerification();
+  const { user } = useAuth();
+  const organizationId = user?.organization?.id ?? user?.organizationId ?? null;
+  const { status, isVerified, hasLoadError } = useOrganizationVerification();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -61,7 +64,7 @@ export default function Dashboard() {
   useEffect(() => {
     let isMounted = true;
 
-    fetchOrganizationDashboard().then((result) => {
+    fetchOrganizationDashboard(organizationId).then((result) => {
       if (!isMounted) return;
       if (result.success) {
         setData(result.data);
@@ -74,11 +77,11 @@ export default function Dashboard() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [organizationId]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <VerificationStatusBanner status={status} />
+      <VerificationStatusBanner status={status} hasLoadError={hasLoadError} />
 
       <Typography variant="sectionTitle" className="mb-2">
         Dashboard

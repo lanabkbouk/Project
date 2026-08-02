@@ -7,6 +7,7 @@ import MyCauseCard from "../components/organization/MyCauseCard";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
 import CardSkeleton from "../components/ui/CardSkeleton";
 import EmptyState from "../components/common/EmptyState";
+import { useAuth } from "../context/AuthContext";
 import { useMyOpportunitiesQuery } from "../hooks/queries/useMyOpportunitiesQuery";
 import { useDeleteOpportunityMutation } from "../hooks/queries/useDeleteOpportunityMutation";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
@@ -14,10 +15,12 @@ import { ROUTES } from "../constants/paths";
 
 export default function MyCauses() {
   const navigate = useNavigate();
-  const { status, isVerified } = useOrganizationVerification();
+  const { user } = useAuth();
+  const organizationId = user?.organization?.id ?? user?.organizationId ?? null;
+  const { status, isVerified, hasLoadError } = useOrganizationVerification();
 
-  const opportunitiesQuery = useMyOpportunitiesQuery();
-  const deleteMutation = useDeleteOpportunityMutation();
+  const opportunitiesQuery = useMyOpportunitiesQuery(organizationId);
+  const deleteMutation = useDeleteOpportunityMutation(organizationId);
 
   const opportunities = opportunitiesQuery.data ?? [];
   const loading = opportunitiesQuery.isPending;
@@ -33,7 +36,7 @@ export default function MyCauses() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <VerificationStatusBanner status={status} />
+      <VerificationStatusBanner status={status} hasLoadError={hasLoadError} />
 
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>

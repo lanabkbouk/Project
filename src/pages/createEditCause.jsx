@@ -6,6 +6,7 @@ import Typography from "../components/ui/Typography";
 import CauseForm from "../components/organization/CauseForm";
 import Skeleton from "../components/ui/Skeleton";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
+import { useAuth } from "../context/AuthContext";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
 import { useCategoriesQuery } from "../hooks/queries/useCategoriesQuery";
 import { useOpportunityDetailsQuery } from "../hooks/queries/useOpportunityDetailsQuery";
@@ -30,14 +31,23 @@ export default function CreateEditCause() {
   const { id } = useParams();
   const isEditMode = Boolean(id);
   const navigate = useNavigate();
-  const { status, isVerified } = useOrganizationVerification();
+  const { user } = useAuth();
+  const organizationId = user?.organization?.id ?? user?.organizationId ?? null;
+  const { status, isVerified, hasLoadError } = useOrganizationVerification();
 
   // نفس هوك التصنيفات المستخدم بصفحتي الفرص — كاش مشترك، ما بينجلب مرتين
   const categoriesQuery = useCategoriesQuery();
   // بوضع "تعديل" بس: id موجود فبيتفعّل الجلب تلقائيًا (enabled: Boolean(id)
   // داخل الهوك نفسه) — بوضع "إنشاء" الهوك معطّل تلقائيًا بدون أي شرط هون
   const opportunityQuery = useOpportunityDetailsQuery(id);
-  const saveMutation = useSaveOpportunityMutation({ isEditMode, id });
+  // organizationId/organizationName لازمين بس وقت الإنشاء — الهوك نفسه
+  // بيتجاهلهم بوضع التعديل (راجع useSaveOpportunityMutation)
+  const saveMutation = useSaveOpportunityMutation({
+    isEditMode,
+    id,
+    organizationId,
+    organizationName: user?.orgName,
+  });
 
   const categories = categoriesQuery.data ?? [];
   const opportunity = opportunityQuery.data?.opportunity ?? null;
@@ -129,7 +139,7 @@ export default function CreateEditCause() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <VerificationStatusBanner status={status} />
+      <VerificationStatusBanner status={status} hasLoadError={hasLoadError} />
 
       <Typography variant="sectionTitle" className="mb-2">
         {isEditMode ? "Edit Cause" : "Create a New Cause"}

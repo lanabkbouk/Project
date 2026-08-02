@@ -118,6 +118,13 @@ export async function updateOrganizationProfile(organizationId, profileData) {
   if (MOCK_MODE) {
     await wait()
 
+    // ⚠️ contactPerson كان يُمسح لفاضي بصمت بكل حفظ: الفورم (ProfileForm.jsx)
+    // أصلًا ما بيجمع هالحقل إطلاقًا (مش موجود بالتصميم — نفس منطق
+    // verification_document، بيتحدد مرة وحدة وقت التسجيل بس)، فـ
+    // profileData.contactPerson كانت دايمًا undefined، ومنطق updateMockUser
+    // (spread merge) كان يستبدل القيمة الأصلية بـ '' بدل ما يحافظ عليها.
+    // الحل: ما منرسل المفتاح إطلاقًا لو مش موجود بالـ payload، فالقيمة
+    // الأصلية تضل محفوظة زي ما هي.
     const email = getCurrentSessionEmail()
     if (email) {
       updateMockUser(email, {
@@ -125,7 +132,6 @@ export async function updateOrganizationProfile(organizationId, profileData) {
         description: profileData.description || '',
         city: profileData.city || '',
         website: profileData.website || '',
-        contactPerson: profileData.contactPerson || '',
       })
     }
 
@@ -137,14 +143,16 @@ export async function updateOrganizationProfile(organizationId, profileData) {
   }
 
   try {
-    // لا حاجة لـ FormData/multipart هون: التحديث الحالي بالباك اند لا يقبل
-    // أي ملف، فقط حقول نصية عادية → نرسل JSON بسيط.
+    // ⚠️ نفس السبب: contact_person مش جزء من هالفورم، فما منرسله هون.
+    // ملاحظة لفريق الباك اند: OrganizationRequest حاليًا بيطلب contact_person
+    // بكل الحالات (store وupdate بنفس القواعد) — يعني أي PUT من هالفورم
+    // (بدون contact_person) رح يترفض بخطأ تحقق 422 لحد ما تصير قاعدة
+    // التحقق مختلفة بين الإنشاء والتعديل (contact_person اختياري بالتحديث).
     const response = await apiClient.put(`/organizations/${organizationId}`, {
       name: profileData.name,
       description: profileData.description,
       city: profileData.city,
       website: profileData.website || '',
-      contact_person: profileData.contactPerson,
     })
     return { success: true, data: response.data }
   } catch (error) {

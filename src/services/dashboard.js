@@ -26,11 +26,12 @@ import { PARTICIPATION_STATUS } from '../constants/participationStatus'
 
 /**
  * يجلب ويجمّع كل بيانات لوحة تحكم المنظمة الحالية.
+ * @param {string} organizationId - هوية المنظمة الحالية (من AuthContext)
  * @returns {Promise<{success: boolean, data?: OrganizationDashboardData, error?: string}>}
  */
-export async function fetchOrganizationDashboard() {
+export async function fetchOrganizationDashboard(organizationId) {
   try {
-    const opportunities = await fetchMyOpportunities()
+    const opportunities = await fetchMyOpportunities(organizationId)
 
     if (opportunities.length === 0) {
       return {

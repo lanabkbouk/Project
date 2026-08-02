@@ -30,7 +30,10 @@ export default function OrgProfile() {
   const isLoading = organizationQuery.isLoading;
   // الخدمة بترجع { success, data } دايمًا (ما بترمي استثناء)، فمنطق
   // التحقق يضل هون بدل الاعتماد على query.isError
-  const organization = organizationQuery.data?.success ? organizationQuery.data.data : null;
+ const organization = organizationQuery.data?.success ? organizationQuery.data.data : null;
+  // نفس تمييز hasLoadError: فشل فعلي بجلب البيانات (success: false) مختلف
+  // عن "لا توجد حالة" — لازم يظهر تنبيه واضح للمستخدم
+  const hasLoadError = Boolean(organizationQuery.data && organizationQuery.data.success === false);
 
   const updateProfileMutation = useUpdateOrganizationProfileMutation(organizationId);
 
@@ -38,7 +41,7 @@ export default function OrgProfile() {
   // نفس الـ hook المستخدم بصفحة Register وorgForm، بدل FileReader يدوي
   // مكرر هون لحاله
   const imageUpload = useImageUpload();
-  const imagePreview = imageUpload.previewUrl || organization?.imageUrl || "";
+  const imagePreview = imageUpload.previewUrl || organization?.profileImageUrl || "";
 
   const [submitError, setSubmitError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -66,7 +69,7 @@ export default function OrgProfile() {
       website: organization.website || "",
     });
 
-    imageUpload.setPreviewUrl(organization.imageUrl || "");
+    imageUpload.setPreviewUrl(organization.profileImageUrl || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organization, methods]);
 
@@ -148,6 +151,7 @@ export default function OrgProfile() {
           <VerificationStatusBanner
             status={organization?.status}
             rejectionReason={organization?.rejectionReason}
+            hasLoadError={hasLoadError}
           />
 
           <OrgProfileHeader
@@ -183,7 +187,7 @@ export default function OrgProfile() {
             </div>
 
             {/* RIGHT: PREVIEW */}
-            <OrgProfilePreview email={organization?.email} />
+            <OrgProfilePreview email={organization?.owner?.email} />
           </form>
 
           {!canUseServices && (

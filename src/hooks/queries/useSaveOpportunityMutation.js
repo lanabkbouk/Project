@@ -6,13 +6,19 @@ import { queryKeys } from '../../app/queryKeys'
  * إنشاء أو تعديل فرصة بنفس الهوك — يقرر لحاله أي دالة يستخدم حسب
  * isEditMode، فصفحة الفورم ما بتحتاج تفرّق بين الحالتين إلا بالنص
  * المعروض وبس.
- * @param {{isEditMode: boolean, id?: string}} params
+ * @param {{isEditMode: boolean, id?: string, organizationId?: string, organizationName?: string}} params
+ * organizationId/organizationName مطلوبين بوضع الإنشاء بس (تعديل فرصة
+ * موجودة ما بيغيّر مالكها) — بدونهم كانت كل فرصة جديدة تُنسب لمنظمة
+ * وهمية ثابتة بدل المنظمة الحقيقية المسجّلة دخولها.
  */
-export function useSaveOpportunityMutation({ isEditMode, id }) {
+export function useSaveOpportunityMutation({ isEditMode, id, organizationId, organizationName }) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (payload) => (isEditMode ? updateOpportunity(id, payload) : createOpportunity(payload)),
+    mutationFn: (payload) =>
+      isEditMode
+        ? updateOpportunity(id, payload)
+        : createOpportunity({ ...payload, organizationId, organizationName }),
     onSuccess: (result) => {
       if (!result?.success) return
       // فرصة جديدة أو معدّلة بتأثر على كل قوائم الفرص المعروضة بأي مكان

@@ -6,8 +6,10 @@ import { queryKeys } from '../../app/queryKeys'
  * حذف فرصة (من طرف المنظمة). بعد النجاح: نشيلها فورًا من كاش "My Causes"
  * (بدل انتظار إعادة جلب كاملة، عشان تجربة إزالة فورية زي القديمة تمامًا)،
  * ونبطّل باقي قوائم الفرص (تصفح عام/مقترح/تفاصيل) عشان تنعكس بالمرة الجاية.
+ * @param {string} organizationId - لازم لتحديد مفتاح كاش "My Causes" الصحيح
+ * (صار مرتبط بهوية المنظمة بعد إصلاح مشكلة معرّف المنظمة الثابت)
  */
-export function useDeleteOpportunityMutation() {
+export function useDeleteOpportunityMutation(organizationId) {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -15,7 +17,7 @@ export function useDeleteOpportunityMutation() {
     onSuccess: (result, id) => {
       if (!result?.success) return
 
-      queryClient.setQueryData(queryKeys.opportunities.mine, (current) =>
+      queryClient.setQueryData(queryKeys.opportunities.mine(organizationId), (current) =>
         Array.isArray(current) ? current.filter((opportunity) => opportunity.id !== id) : current,
       )
 

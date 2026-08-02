@@ -27,7 +27,7 @@ export const queryKeys = {
     list: (filters) => ['opportunities', 'list', filters],
     suggested: (params) => ['opportunities', 'suggested', params],
     detail: (id) => ['opportunities', 'detail', id],
-    mine: ['opportunities', 'mine'],
+    mine: (organizationId) => ['opportunities', 'mine', organizationId],
     completed: ['opportunities', 'completed'],
   },
 

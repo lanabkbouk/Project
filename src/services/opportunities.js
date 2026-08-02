@@ -18,10 +18,6 @@ import { OPPORTUNITY_STATUS } from '../constants/opportunityStatus'
 
 const MOCK_MODE = isMockMode()
 
-// مُعرّف حساب المنظمة الوهمي الوحيد المتاح حاليًا للتجربة — يُستخدم فقط
-// لفلترة "My Causes" من نفس المصدر الموحّد أدناه (بدل جلبها من مصفوفة منفصلة)
-const MOCK_MY_ORGANIZATION_ID = 'org-mock'
-
 // مصدر بيانات وهمي واحد لكل الفرص — يحاكي جدول "opportunity" الحقيقي بالباك.
 // أي فرصة تُنشئها منظمة (createOpportunity) تُضاف هنا مباشرة، فتظهر فورًا
 // بصفحة تصفح الفرص العامة للمتطوعين، تمامًا كما ستتصرف مع Laravel لاحقًا.
@@ -300,11 +296,17 @@ export async function fetchOpportunityById(id) {
  * حساب Mock واحد بس متاح للتجربة حاليًا — سيُستبدل بفلترة حقيقية حسب
  * organization_id لما يجهز GET /organizations/me/opportunities.
  */
-export async function fetchMyOpportunities() {
+
+/**
+ * يجلب الفرص الخاصة بالمنظمة المسجّلة دخولها حاليًا (لصفحة "My Causes").
+ * @param {string} organizationId - هوية المنظمة الحالية (من AuthContext)
+ */
+export async function fetchMyOpportunities(organizationId) {
   if (MOCK_MODE) {
     await wait()
+    if (!organizationId) return []
     return MOCK_OPPORTUNITIES.filter(
-      (opportunity) => opportunity.organization?.id === MOCK_MY_ORGANIZATION_ID,
+      (opportunity) => opportunity.organization?.id === organizationId,
     )
   }
 
@@ -315,7 +317,6 @@ export async function fetchMyOpportunities() {
     throw new Error(getApiErrorMessage(error, 'Failed to load your causes'))
   }
 }
-
 /**
  * يحذف فرصة تنشرها المنظمة (بعد تأكيد المستخدم).
  */
@@ -336,7 +337,12 @@ export async function deleteOpportunity(id) {
 /**
  * ينشئ فرصة جديدة (من طرف المنظمة).
  */
-export async function createOpportunity({ imageFile, ...payload }) {
+
+/**
+ * ينشئ فرصة جديدة (من طرف المنظمة).
+ * @param {{organizationId: string, organizationName?: string, imageFile?: File}} params
+ */
+export async function createOpportunity({ organizationId, organizationName, imageFile, ...payload }) {
   if (MOCK_MODE) {
     await wait()
     const newOpportunity = {
@@ -344,11 +350,9 @@ export async function createOpportunity({ imageFile, ...payload }) {
       id: `o${Date.now()}`,
       status: OPPORTUNITY_STATUS.OPEN,
       currentVolunteers: 0,
-      organization: { id: MOCK_MY_ORGANIZATION_ID, name: 'My Organization', imageUrl: null },
+      organization: { id: organizationId, name: organizationName || 'My Organization', imageUrl: null },
       image: imageFile ? URL.createObjectURL(imageFile) : null,
     }
-    // تُضاف مباشرة لنفس المصدر الموحّد، فتظهر فورًا بصفحة التصفح العامة
-    // للمتطوعين تمامًا كما ستظهر بـ "My Causes" — بلا أي فرق بينهما
     MOCK_OPPORTUNITIES.unshift(newOpportunity)
     return { success: true, data: newOpportunity }
   }
@@ -361,7 +365,6 @@ export async function createOpportunity({ imageFile, ...payload }) {
     return { success: false, error: getApiErrorMessage(error, 'Failed to create this cause') }
   }
 }
-
 /**
  * يعدّل فرصة موجودة (من طرف المنظمة).
  */

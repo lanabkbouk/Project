@@ -4,6 +4,7 @@ export const linksByRole = {
   volunteer: [
     { name: 'Explore Opportunities', href: ROUTES.EXPLORE },
     { name: 'My Volunteering', href: ROUTES.MY_VOLUNTEERING },
+    { name: 'Organizations', href: ROUTES.ORGANIZATIONS },
   ],
 
   organization: [

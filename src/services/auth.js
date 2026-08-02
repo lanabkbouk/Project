@@ -199,9 +199,23 @@ export async function loginUser(payload) {
       return { success: false, error: 'Invalid email or password' }
     }
 
+    // ⚠️ ترقيع ذاتي لحسابات منظمة قديمة (اتسجّلت قبل ما صار registerUser
+    // يولّد organizationId تلقائيًا): بدون organizationId، useOrganizationProfileQuery
+    // (enabled: Boolean(organizationId)) ما بينفّذ إطلاقًا، وVerificationStatusBanner
+    // بيضل ما يظهر أبدًا — مش لأنه الحالة مش موجودة، لأنه الطلب نفسه
+    // ما بيصير. منولّدها هون مرة وحدة ونحفظها بصمت، فباقي الجلسة (وكل
+    // جلسة جاية) تشتغل صح بدون ما تحتاج المستخدمة تمسح الحساب وتسجّل من جديد.
+    let userForSession = existingUser
+    if (existingUser.accountType === ACCOUNT_TYPES.ORGANIZATION && !existingUser.organizationId) {
+      userForSession = { ...existingUser, organizationId: `org-${Date.now()}` }
+      const index = mockUsers.findIndex((user) => user.email === normalizedEmail)
+      mockUsers[index] = userForSession
+      saveMockUsers(mockUsers)
+    }
+
     return {
       success: true,
-      data: buildAuthPayload(existingUser, normalizedEmail),
+      data: buildAuthPayload(userForSession, normalizedEmail),
     }
   }
 

@@ -1,4 +1,3 @@
-
 // Handles saving the currently logged-in volunteer's own profile
 // (personal info, skills, photo). Keeps the API call out of the page
 // component, consistent with every other service in this project.
@@ -9,8 +8,21 @@
 import { apiClient, getApiErrorMessage } from './api/client'
 import { isMockMode } from './api/mockMode'
 import { wait } from './api/delay'
+import { AUTH_STORAGE_KEY } from '../constants/auth/storage'
+import { updateMockUser } from './mock/mockUserStore'
 
 const MOCK_MODE = isMockMode()
+
+// إيميل الجلسة الحالية — نفس النمط المستخدم بـ services/organization.js
+function getCurrentSessionEmail() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw)?.user?.email || null
+  } catch {
+    return null
+  }
+}
 
 // يبني FormData بأسماء وقيَم حقول Laravel الصحيحة انطلاقًا من بيانات الفورم الخام (camelCase)
 // هذا هو المكان الوحيد الذي يعرف شكل الباك اند، بدل تكرار هذا التحويل داخل صفحة الـ Profile
@@ -37,7 +49,28 @@ function buildVolunteerFormData({ values, photoFile }) {
 export async function updateVolunteerProfile({ values, photoFile } = {}) {
   if (MOCK_MODE) {
     await wait()
-    return { success: true, data: { imageUrl: null } }
+
+    const imageUrl = photoFile ? URL.createObjectURL(photoFile) : undefined
+    const email = getCurrentSessionEmail()
+
+    // ⚠️ كانت هون بترجع success بدون ما تحفظ أي شي فعليًا بمخزن
+    // mock_auth_users — التعديلات كانت تظهر ناجحة وتضل بالجلسة الحالية
+    // بس (بفضل updateUser بـ AuthContext)، لكن تضيع فورًا بعد تسجيل
+    // خروج/دخول لأنه loginUser بيرجع يقرأ نسخة قديمة من المخزن.
+    if (email) {
+      updateMockUser(email, {
+        educationLevel: values?.educationLevel || '',
+        dateOfBirth: values?.dateOfBirth || '',
+        gender: values?.gender || '',
+        city: values?.city || '',
+        about: values?.about || '',
+        skillIds: values?.skills || [],
+        interests: values?.interests || '',
+        ...(imageUrl ? { imageUrl } : {}),
+      })
+    }
+
+    return { success: true, data: { imageUrl } }
   }
 
   try {

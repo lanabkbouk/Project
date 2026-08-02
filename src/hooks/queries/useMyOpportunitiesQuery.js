@@ -4,10 +4,12 @@ import { queryKeys } from '../../app/queryKeys'
 
 /**
  * يجلب الفرص المنشورة من طرف المنظمة الحالية (صفحة "My Causes").
+ * @param {string} organizationId - هوية المنظمة الحالية (من AuthContext)
  */
-export function useMyOpportunitiesQuery() {
+export function useMyOpportunitiesQuery(organizationId) {
   return useQuery({
-    queryKey: queryKeys.opportunities.mine,
-    queryFn: fetchMyOpportunities,
+    queryKey: queryKeys.opportunities.mine(organizationId),
+    queryFn: () => fetchMyOpportunities(organizationId),
+    enabled: Boolean(organizationId),
   })
 }

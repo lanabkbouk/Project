@@ -29,6 +29,7 @@ const ApplicantsList = lazy(() => import('./pages/applicantsList'))
 const OpportunitiesListPage = lazy(() => import('./pages/opportunities/OpportunitiesListPage'))
 const OpportunityDetailsPage = lazy(() => import('./pages/opportunities/OpportunityDetailsPage'))
 const Dashboard = lazy(() => import('./pages/dashboard'))
+const NotFound = lazy(() => import('./pages/notFound'))
 
 function ComingSoon({ title }) {
   return <div>{title} Page (Coming Soon)</div>
@@ -71,6 +72,10 @@ const router = createBrowserRouter(
             <Route path={`${ROUTES.APPLICANTS}/:id`} element={<ApplicantsList />} />
           </Route>
         </Route>
+
+        {/* 404 برا حارس RequireCompleteProfile عمدًا: رابط غير موجود
+            لازم يظهر كـ 404 دايمًا، بغض النظر عن حالة اكتمال البروفايل */}
+        <Route path='*' element={<NotFound />} />
       </Route>
 
       {/* Auth — برا MainLayout، فمحتاجين Suspense خاص فيهم */}
@@ -95,8 +100,6 @@ const router = createBrowserRouter(
       {LEGACY_REDIRECTS.map(({ from, to }) => (
         <Route key={from} path={from} element={<Navigate to={to} replace />} />
       ))}
-
-      <Route path='*' element={<div>Page not found</div>} />
     </>,
   ),
 )

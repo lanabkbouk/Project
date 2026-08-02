@@ -16,8 +16,8 @@ import { ROUTES } from "../constants/paths";
 
 export default function ApplicantsList() {
   const { id } = useParams();
-  const { status, isVerified } = useOrganizationVerification();
-
+  const { status, isVerified, hasLoadError } = useOrganizationVerification();
+    
   // نفس هوك تفاصيل الفرصة المستخدم بصفحة عرض الفرصة — بس بحاجة الحقل
   // opportunity منه، مو similar
   const opportunityQuery = useOpportunityDetailsQuery(id);
@@ -52,7 +52,7 @@ export default function ApplicantsList() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <VerificationStatusBanner status={status} />
+      <VerificationStatusBanner status={status} hasLoadError={hasLoadError} />
 
       <Link
         to={ROUTES.MY_CAUSES}
