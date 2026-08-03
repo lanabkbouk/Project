@@ -13,6 +13,7 @@ export default function Card({
   imageAlt,
   imageFallback,
   badge,
+  titleAdornment,
   actionLabel = 'View Details',
   onAction,
   contentClassName = '',
@@ -51,9 +52,12 @@ export default function Card({
       {/* المحتوى */}
       <div className={['px-6 py-6 flex flex-1 flex-col', contentClassName].join(' ')}>
         {title && (
-          <Typography variant="h3" color="heading" className="mb-2 text-2xl font-bold">
-            {title}
-          </Typography>
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <Typography variant="h3" color="heading" className="text-2xl font-bold">
+              {title}
+            </Typography>
+            {titleAdornment}
+          </div>
         )}
 
         {description && (

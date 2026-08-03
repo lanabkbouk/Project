@@ -27,7 +27,14 @@ export default function MyCauseCard({ opportunity, onDelete, onToggleStatus, isV
     opportunity.currentVolunteers,
     opportunity.maxVolunteers,
   );
-  const isClosed = opportunity.status === OPPORTUNITY_STATUS.CLOSED;
+
+  // التبديل اليدوي (قفل/فتح) منطقي بس لما التسجيل لسا بمرحلته (قبل ما
+  // تبدأ الفرصة فعليًا) — بعد ما تصير "قيد العمل" أو "منتهية"، الحالة
+  // محسوبة بالكامل من التواريخ وما في داعي (ولا معنى) لأي تبديل يدوي
+  const isRegistrationClosed = opportunity.status === OPPORTUNITY_STATUS.REGISTRATION_CLOSED;
+  const canToggleRegistration =
+    opportunity.status === OPPORTUNITY_STATUS.REGISTRATION_OPEN ||
+    opportunity.status === OPPORTUNITY_STATUS.REGISTRATION_CLOSED;
 
   const [deleting, setDeleting] = useState(false);
   const [togglingStatus, setTogglingStatus] = useState(false);
@@ -46,14 +53,16 @@ export default function MyCauseCard({ opportunity, onDelete, onToggleStatus, isV
     setDeleting(false);
   };
 
-  // تبديل يدوي بين مفتوحة/مغلقة — منفصل تمامًا عن الإغلاق التلقائي عند
-  // اكتمال العدد (ذاك يحصل من طرف الخدمة نفسها عند انضمام متطوع)
+  // تبديل يدوي بين تسجيل مفتوح/منتهي — منفصل تمامًا عن الإغلاق التلقائي
+  // عند اكتمال العدد أو تجاوز تاريخ نهاية التسجيل (يُحسب تلقائيًا)
   const handleToggleStatus = async () => {
-    const nextStatus = isClosed ? OPPORTUNITY_STATUS.OPEN : OPPORTUNITY_STATUS.CLOSED;
+    const nextStatus = isRegistrationClosed
+      ? OPPORTUNITY_STATUS.REGISTRATION_OPEN
+      : OPPORTUNITY_STATUS.REGISTRATION_CLOSED;
     const confirmed = window.confirm(
-      isClosed
-        ? `Reopen "${opportunity.title}" for new volunteers?`
-        : `Close "${opportunity.title}" to new volunteers?`,
+      isRegistrationClosed
+        ? `Reopen registration for "${opportunity.title}"?`
+        : `Close registration for "${opportunity.title}" early?`,
     );
     if (!confirmed) return;
 
@@ -93,7 +102,7 @@ export default function MyCauseCard({ opportunity, onDelete, onToggleStatus, isV
       ) : null}
 
       {/* تقدّم عدد المتطوعين — معلومة مخصصة لمنظور المنظمة، غير موجودة بكارد المتطوع */}
-      <div className="mb-5">
+      <div className="mb-2">
         <div className="flex items-center justify-between text-sm mb-1.5">
           <span className="flex items-center gap-1 text-heading font-medium">
             <Users size={16} className="text-primary" aria-hidden="true" />
@@ -108,6 +117,15 @@ export default function MyCauseCard({ opportunity, onDelete, onToggleStatus, isV
           />
         </div>
       </div>
+
+      {/* تُعرض بس أثناء مرحلة التسجيل — توضّح للمنظمة متى تنتهي هالمرحلة */}
+      {canToggleRegistration && opportunity.registerEndAt ? (
+        <p className="mb-5 text-xs text-heading/50">
+          Registration {isRegistrationClosed ? "closed" : "closes"} on {opportunity.registerEndAt}
+        </p>
+      ) : (
+        <div className="mb-5" />
+      )}
 
       <div className="mt-auto flex items-center gap-2">
         <Button
@@ -128,22 +146,27 @@ export default function MyCauseCard({ opportunity, onDelete, onToggleStatus, isV
         >
           <Pencil size={18} />
         </Button>
-        <Button
-          variant="ghost"
-          size="medium"
-          disabled={busy || !isVerified}
-          onClick={handleToggleStatus}
-          aria-label={isClosed ? "Reopen this cause" : "Close this cause"}
-          title={
-            !isVerified
-              ? "Available once your organization is verified"
-              : isClosed
-                ? "Reopen for new volunteers"
-                : "Close to new volunteers"
-          }
-        >
-          {isClosed ? <Unlock size={18} /> : <Lock size={18} />}
-        </Button>
+        {/* زر القفل/الفتح يظهر بس أثناء مرحلة التسجيل — إخفاؤه (مو تعطيله
+            فقط) لما الفرصة "قيد العمل" أو "منتهية" لأنه ببساطة ما إله معنى
+            بهاتين المرحلتين (الحالة محسوبة بالكامل من التواريخ) */}
+        {canToggleRegistration && (
+          <Button
+            variant="ghost"
+            size="medium"
+            disabled={busy || !isVerified}
+            onClick={handleToggleStatus}
+            aria-label={isRegistrationClosed ? "Reopen registration" : "Close registration early"}
+            title={
+              !isVerified
+                ? "Available once your organization is verified"
+                : isRegistrationClosed
+                  ? "Reopen registration for new volunteers"
+                  : "Close registration to new volunteers early"
+            }
+          >
+            {isRegistrationClosed ? <Unlock size={18} /> : <Lock size={18} />}
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="medium"

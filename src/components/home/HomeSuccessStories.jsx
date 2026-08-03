@@ -7,9 +7,9 @@ import Typography from "../ui/Typography";
 import SuccessStoryCard from "../opportunity/SuccessStoryCard";
 import CardSkeleton from "../ui/CardSkeleton";
 
-export default function HomeSuccessStories({ opportunities, loading }) {
+export default function HomeSuccessStories({ opportunities, loading, className = "" }) {
   return (
-    <section>
+    <section className={className}>
       <div className="text-center mb-8">
         <Typography variant="h2" className="mb-2">
           Success Stories

@@ -11,6 +11,7 @@ import Toast from "../components/common/Toast";
 import { useAuth } from "../context/AuthContext";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
 import { useCategoriesQuery } from "../hooks/queries/useCategoriesQuery";
+import { useSkillsQuery } from "../hooks/queries/useSkillsQuery";
 import { useOpportunityDetailsQuery } from "../hooks/queries/useOpportunityDetailsQuery";
 import { useSaveOpportunityMutation } from "../hooks/queries/useSaveOpportunityMutation";
 import { useImageUpload } from "../hooks/useImageUpload";
@@ -54,11 +55,18 @@ const DEFAULT_VALUES = {
   description: "",
   categoryId: "",
   city: "",
+  skills: [],
   startDate: "",
   endDate: "",
+  registerStartAt: "",
+  registerEndAt: "",
   minHours: "",
   maxHours: "",
+  totalHours: "",
+  minVolunteers: "",
   maxVolunteers: "",
+  minAge: "",
+  maxAge: "",
 };
 
 export default function CreateEditCause() {
@@ -71,6 +79,9 @@ export default function CreateEditCause() {
 
   // نفس هوك التصنيفات المستخدم بصفحتي الفرص — كاش مشترك، ما بينجلب مرتين
   const categoriesQuery = useCategoriesQuery();
+  // نفس هوك المهارات المستخدم بفورم بروفايل المتطوع — لتحديد المهارات
+  // المطلوبة من المتطوعين بهاي الفرصة (خوارزمية الاقتراح تعتمد عليها)
+  const skillsQuery = useSkillsQuery();
   // بوضع "تعديل" بس: id موجود فبيتفعّل الجلب تلقائيًا (enabled: Boolean(id)
   // داخل الهوك نفسه) — بوضع "إنشاء" الهوك معطّل تلقائيًا بدون أي شرط هون
   const opportunityQuery = useOpportunityDetailsQuery(id);
@@ -84,6 +95,7 @@ export default function CreateEditCause() {
   });
 
   const categories = categoriesQuery.data ?? [];
+  const availableSkills = skillsQuery.data ?? [];
   const opportunity = opportunityQuery.data?.opportunity ?? null;
 
   const { toast, showSuccess, showError, closeToast } = useToast();
@@ -112,11 +124,18 @@ export default function CreateEditCause() {
       description: opportunity.description,
       categoryId: opportunity.category?.id || "",
       city: opportunity.location,
+      skills: opportunity.skills?.map((skill) => skill.id) || [],
       startDate: opportunity.startDate,
       endDate: opportunity.endDate,
+      registerStartAt: opportunity.registerStartAt || "",
+      registerEndAt: opportunity.registerEndAt || "",
       minHours: opportunity.minHours,
       maxHours: opportunity.maxHours,
+      totalHours: opportunity.totalHours,
+      minVolunteers: opportunity.minVolunteers,
       maxVolunteers: opportunity.maxVolunteers,
+      minAge: opportunity.minAge ?? "",
+      maxAge: opportunity.maxAge ?? "",
     });
 
     if (opportunity.image) setPreviewUrl(opportunity.image);
@@ -124,15 +143,26 @@ export default function CreateEditCause() {
   }, [opportunity, isEditMode]);
 
   const loading = isEditMode
-    ? categoriesQuery.isPending || opportunityQuery.isPending
-    : categoriesQuery.isPending;
+    ? categoriesQuery.isPending || skillsQuery.isPending || opportunityQuery.isPending
+    : categoriesQuery.isPending || skillsQuery.isPending;
 
   const onSubmit = async (values) => {
     const selectedCategory = categories.find((category) => category.id === values.categoryId);
+    // حماية دفاعية: لو الحقل ما وصل مسجَّل لأي سبب (مثلاً فورم قديم بدون
+    // SkillsSelector) منرجع مصفوفة فاضية بدل ما ينهار onSubmit بالكامل
+    const selectedSkillIds = Array.isArray(values.skills) ? values.skills : [];
+    const selectedSkills = availableSkills
+      .filter((skill) => selectedSkillIds.includes(skill.id))
+      .map((skill) => ({ id: skill.id, name: skill.name }));
+
     const payload = {
       ...values,
       category: selectedCategory ? { id: selectedCategory.id, name: selectedCategory.name } : null,
+      skills: selectedSkills,
       location: values.city,
+      // نطاق العمر اختياري — نحوّل الحقل الفارغ إلى null بدل نص فاضي
+      minAge: values.minAge === "" ? null : Number(values.minAge),
+      maxAge: values.maxAge === "" ? null : Number(values.maxAge),
       imageFile,
     };
 
@@ -194,6 +224,8 @@ export default function CreateEditCause() {
           <div className={`lg:col-span-2 ${PANEL_SURFACE} p-6 md:p-8`}>
             <CauseForm
               categories={categories}
+              availableSkills={availableSkills}
+              skillsLoading={skillsQuery.isPending}
               submitting={saveMutation.isPending}
               submitDisabled={!isVerified}
               submitLabel={isEditMode ? "Save Changes" : "Publish Cause"}

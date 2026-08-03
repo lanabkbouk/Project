@@ -10,6 +10,7 @@ import Toast from "../components/common/Toast";
 import { useAuth } from "../context/AuthContext";
 import { useMyOpportunitiesQuery } from "../hooks/queries/useMyOpportunitiesQuery";
 import { useDeleteOpportunityMutation } from "../hooks/queries/useDeleteOpportunityMutation";
+import { useToggleOpportunityStatusMutation } from "../hooks/queries/useToggleOpportunityStatusMutation";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
 import { useToast } from "../hooks/useToast";
 import { ROUTES } from "../constants/paths";
@@ -23,6 +24,10 @@ export default function MyCauses() {
 
   const opportunitiesQuery = useMyOpportunitiesQuery(organizationId);
   const deleteMutation = useDeleteOpportunityMutation(organizationId);
+  // كانت هاي الميوتيشن معرّفة أصلًا (useToggleOpportunityStatusMutation)
+  // بس ما بينمررش onToggleStatus إطلاقًا لـ MyCauseCard — فزر القفل/الفتح
+  // كان يشتغل ظاهريًا (confirm + spinner) بدون أي تأثير فعلي على البيانات
+  const toggleStatusMutation = useToggleOpportunityStatusMutation(organizationId);
 
   const opportunities = opportunitiesQuery.data ?? [];
   const loading = opportunitiesQuery.isPending;
@@ -37,6 +42,13 @@ export default function MyCauses() {
     // أول مرة هالفعل بيعطي تأكيد واضح — قبلها كان الكارد يختفي بصمت
     // بدون أي إشارة للمستخدم إنه الحذف نجح فعلًا
     showSuccess("Cause deleted successfully.");
+  };
+
+  const handleToggleStatus = async (id, status) => {
+    const result = await toggleStatusMutation.mutateAsync({ id, status });
+    if (!result?.success) {
+      showError(result?.error || "Failed to update this cause's status");
+    }
   };
 
   return (
@@ -99,6 +111,7 @@ export default function MyCauses() {
               key={opportunity.id}
               opportunity={opportunity}
               onDelete={handleDelete}
+              onToggleStatus={handleToggleStatus}
               isVerified={isVerified}
             />
           ))}

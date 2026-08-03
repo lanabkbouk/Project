@@ -38,7 +38,7 @@ export const HOME_FAQS = [
   {
     question: "How are opportunities matched to me?",
     answer:
-      "Once your profile is complete (skills, city, and other details), you can see opportunities suggested specifically for you based on that information.",
+      "Once your profile is complete (skills, city, and age), you can see opportunities suggested specifically for you based on that information.",
   },
   {
     question: "Do I need to complete my profile before I can participate?",

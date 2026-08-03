@@ -16,7 +16,7 @@ export default function OpportunityTabs({ activeTab, onChange }) {
     // LayoutGrid لتبويب التصفح العادي، Sparkles لتبويب المقترح — نفس
     // مستوى التفصيل البصري بين التبويبين، ما في وحدة "ناقصة" أيقونة
     { id: OPPORTUNITY_TABS.ALL, label: 'All Opportunities', icon: LayoutGrid },
-    { id: OPPORTUNITY_TABS.SUGGESTED, label: 'Suggested for You', icon: Sparkles },
+    { id: OPPORTUNITY_TABS.SUGGESTED, label: 'Recommended for You', icon: Sparkles },
   ]
 
   return (

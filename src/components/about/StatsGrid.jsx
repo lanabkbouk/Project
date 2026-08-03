@@ -7,10 +7,14 @@ import StatCard from "../common/StatCard";
 import Skeleton from "../ui/Skeleton";
 import { CARD_SURFACE } from "../../utils/surfaceStyles";
 
-export default function StatsGrid({ stats = [], loading = false }) {
+export default function StatsGrid({ stats = [], loading = false, className = "" }) {
+  const gridClasses = [`grid grid-cols-2 md:grid-cols-4 gap-6`, className]
+    .filter(Boolean)
+    .join(" ");
+
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-24">
+      <div className={gridClasses}>
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={index}
@@ -30,7 +34,7 @@ export default function StatsGrid({ stats = [], loading = false }) {
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
       viewport={{ once: true }}
-      className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-24"
+      className={gridClasses}
     >
       {(stats || []).map((stat) => (
         <StatCard key={stat.label} number={stat.number} label={stat.label} />

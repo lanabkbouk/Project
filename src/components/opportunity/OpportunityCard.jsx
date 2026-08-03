@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Card from "../ui/Card";
 import Chip from "../ui/Chip";
 import Button from "../ui/Button";
+import OpportunityStatusBadge from "./OpportunityStatusBadge";
 import { CATEGORY_COLORS, CATEGORY_ICONS } from "../../utils/categoryStyles";
 import { ROUTES } from "../../constants/paths";
 
@@ -36,6 +37,7 @@ export default function OpportunityCard({ opportunity, recommended = false }) {
       imageFallback={imageFallback}
       badge={recommendedBadge}
       title={opportunity.title}
+      titleAdornment={<OpportunityStatusBadge status={opportunity.status} />}
       description={opportunity.description}
       onAction={() => navigate(`${ROUTES.OPPORTUNITIES}/${opportunity.id}`)}
     >

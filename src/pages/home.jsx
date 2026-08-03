@@ -4,7 +4,6 @@
 // وتمريرها للكومبوننتات بمجلد components/home/. كل سكشن Component
 // منفصل ومسؤول عن عرضه هو بس — هالملف ما فيه أي JSX تصميمي مباشر.
 
-import GeometricDivider from "../components/common/GeometricDivider";
 import HomeHero from "../components/home/HomeHero";
 import HomeStatsSection from "../components/home/HomeStatsSection";
 import HomePartners from "../components/home/HomePartners";
@@ -29,23 +28,21 @@ export default function Home() {
       <HomeHero volunteersCount={stats?.volunteersCount} loading={loading} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-24">
-        <HomeStatsSection stats={stats} loading={loading} />
+        <div className="space-y-24 sm:space-y-28">
+          <HomeStatsSection stats={stats} loading={loading} />
 
-        <GeometricDivider />
+          <HomeSuccessStories
+            opportunities={completedOpportunities}
+            loading={loading}
+            className="pt-4 sm:pt-6"
+          />
 
-        <HomeSuccessStories opportunities={completedOpportunities} loading={loading} />
+          {!loading ? <HomePartners opportunities={completedOpportunities} /> : null}
 
-        <GeometricDivider />
+          <HomeHowToJoin />
 
-        {!loading ? <HomePartners opportunities={completedOpportunities} /> : null}
-
-        <GeometricDivider />
-
-        <HomeHowToJoin />
-
-        <GeometricDivider />
-
-        <HomeFaqSection />
+          <HomeFaqSection />
+        </div>
       </div>
     </div>
   );

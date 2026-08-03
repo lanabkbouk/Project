@@ -15,8 +15,19 @@ import { apiClient, getApiErrorMessage } from './api/client'
 import { isMockMode } from './api/mockMode'
 import { wait } from './api/delay'
 import { OPPORTUNITY_STATUS } from '../constants/opportunityStatus'
+import { getEffectiveOpportunityStatus, isVolunteerAgeEligible } from '../utils/opportunityStatus'
+import { getCategoryIdsForSkillIds } from './skills'
 
 const MOCK_MODE = isMockMode()
+
+// يستبدل status المخزّنة بالحالة "الفعلية" المحسوبة لحظيًا (راجع
+// utils/opportunityStatus.js) — بهيك أي Component بيقرأ opportunity.status
+// بيشوف دايمًا القيمة الصحيحة (تسجيل مفتوح/منتهي/قيد العمل/منتهية) بدون
+// أي تعديل إضافي على مكوّنات العرض نفسها
+function attachComputedStatus(opportunity) {
+  if (!opportunity) return opportunity
+  return { ...opportunity, status: getEffectiveOpportunityStatus(opportunity) }
+}
 
 // مُعرّف حساب المنظمة الوهمي الوحيد المتاح حاليًا للتجربة — يُستخدم فقط
 // لفلترة "My Causes" من نفس المصدر الموحّد أدناه (بدل جلبها من مصفوفة منفصلة)
@@ -27,21 +38,29 @@ const MOCK_MY_ORGANIZATION_ID = 'org-mock'
 // بصفحة تصفح الفرص العامة للمتطوعين، تمامًا كما ستتصرف مع Laravel لاحقًا.
 // "My Causes" (fetchMyOpportunities) و"Opportunities" العامة (fetchOpportunities)
 // كلاهما يقرأ من نفس المصفوفة، ويختلفان فقط بالفلترة المطبّقة.
+// registrationClosedManually: علم داخلي بس (مش status) بيمثّل إغلاق
+// التسجيل المبكر من طرف المنظمة — الحالة المعروضة فعليًا دايمًا محسوبة
+// عبر attachComputedStatus/getEffectiveOpportunityStatus أدناه
 let MOCK_OPPORTUNITIES = [
   {
     id: 'o1',
     title: 'Clean Water for All',
     description:
       'Help install and maintain clean water access points for underserved communities. No prior experience required — training is provided on site.',
-    status: 'open',
+    registrationClosedManually: false,
     startDate: '2026-08-05',
     endDate: '2026-08-20',
     location: 'Rotterdam, Netherlands',
+    registerStartAt: '2026-07-15',
+    registerEndAt: '2026-08-04',
     minHours: 2,
     maxHours: 6,
     totalHours: 120,
     currentVolunteers: 14,
+    minVolunteers: 5,
     maxVolunteers: 30,
+    minAge: 18,
+    maxAge: 60,
     category: { id: 'c1', name: 'Health' },
     skills: [{ id: 's1', name: 'First Aid' }, { id: 's7', name: 'Communication' }],
     organization: { id: 'org1', name: 'Blue Drop Foundation', phone: '+31611111111', imageUrl: null },
@@ -52,15 +71,20 @@ let MOCK_OPPORTUNITIES = [
     title: 'After-School Tutoring Program',
     description:
       'Support local students with homework help and basic literacy skills, twice a week in the afternoon.',
-    status: 'open',
+    registrationClosedManually: false,
     startDate: '2026-09-01',
     endDate: '2026-12-15',
     location: 'The Hague, Netherlands',
+    registerStartAt: '2026-07-10',
+    registerEndAt: '2026-08-25',
     minHours: 2,
     maxHours: 4,
     totalHours: 80,
     currentVolunteers: 9,
+    minVolunteers: 5,
     maxVolunteers: 15,
+    minAge: 16,
+    maxAge: 50,
     category: { id: 'c2', name: 'Education' },
     skills: [{ id: 's4', name: 'Teaching' }, { id: 's5', name: 'Tutoring' }],
     organization: { id: 'org2', name: 'Bright Minds NGO', phone: '+31622222222', imageUrl: null },
@@ -71,15 +95,20 @@ let MOCK_OPPORTUNITIES = [
     title: 'Coastal Cleanup Day',
     description:
       'Join a one-day beach and coastal cleanup effort to protect local marine ecosystems.',
-    status: 'open',
+    registrationClosedManually: false,
     startDate: '2026-08-12',
     endDate: '2026-08-12',
     location: 'Scheveningen Beach, NL',
+    registerStartAt: '2026-07-20',
+    registerEndAt: '2026-08-10',
     minHours: 3,
     maxHours: 5,
     totalHours: 40,
     currentVolunteers: 22,
+    minVolunteers: 10,
     maxVolunteers: 40,
+    minAge: 14,
+    maxAge: null,
     category: { id: 'c5', name: 'Environment' },
     skills: [{ id: 's12', name: 'Environmental Awareness' }],
     organization: { id: 'org3', name: 'Green Coast Initiative', phone: '+31633333333', imageUrl: null },
@@ -90,15 +119,22 @@ let MOCK_OPPORTUNITIES = [
     title: 'Community Food Bank Support',
     description:
       'Sort, pack, and distribute food donations to families in need across the city.',
-    status: 'open',
+    registrationClosedManually: false,
+    // تاريخ البدء ماضٍ فعليًا (قبل تاريخ اليوم) — تُعرض تلقائيًا كـ "قيد
+    // العمل" (in_progress) بدون أي تدخل يدوي، مثال حي على الحساب التلقائي
     startDate: '2026-07-25',
     endDate: '2026-10-01',
     location: 'Rotterdam, Netherlands',
+    registerStartAt: '2026-06-01',
+    registerEndAt: '2026-07-20',
     minHours: 3,
     maxHours: 6,
     totalHours: 150,
     currentVolunteers: 30,
+    minVolunteers: 15,
     maxVolunteers: 50,
+    minAge: 18,
+    maxAge: 65,
     category: { id: 'c3', name: 'Social' },
     skills: [{ id: 's8', name: 'Event Management' }],
     organization: { id: 'org4', name: 'City Food Bank', phone: '+31644444444', imageUrl: null },
@@ -109,15 +145,20 @@ let MOCK_OPPORTUNITIES = [
     title: 'Winter Clothes Drive',
     description:
       'Collected and distributed warm clothing to families ahead of the winter season.',
-    status: 'closed',
+    registrationClosedManually: false,
     startDate: '2025-11-01',
     endDate: '2025-12-20',
     location: 'Rotterdam, Netherlands',
+    registerStartAt: '2025-10-01',
+    registerEndAt: '2025-10-25',
     minHours: 2,
     maxHours: 4,
     totalHours: 200,
     currentVolunteers: 25,
+    minVolunteers: 10,
     maxVolunteers: 25,
+    minAge: null,
+    maxAge: null,
     category: { id: 'c3', name: 'Social' },
     skills: [{ id: 's8', name: 'Event Management' }],
     organization: { id: 'org4', name: 'City Food Bank', phone: '+31644444444', imageUrl: null },
@@ -128,27 +169,26 @@ let MOCK_OPPORTUNITIES = [
     title: 'Summer Reading Camp',
     description:
       'A two-week reading and literacy camp for children in underserved neighborhoods.',
-    status: 'closed',
+    registrationClosedManually: false,
     startDate: '2025-07-01',
     endDate: '2025-07-14',
     location: 'The Hague, Netherlands',
+    registerStartAt: '2025-05-01',
+    registerEndAt: '2025-06-20',
     minHours: 3,
     maxHours: 5,
     totalHours: 180,
     currentVolunteers: 18,
+    minVolunteers: 8,
     maxVolunteers: 18,
+    minAge: 16,
+    maxAge: 30,
     category: { id: 'c2', name: 'Education' },
     skills: [{ id: 's4', name: 'Teaching' }],
     organization: { id: 'org2', name: 'Bright Minds NGO', phone: '+31622222222', imageUrl: null },
     image: null,
   },
 ]
-
-// تتحقق إذا وصل عدد المتطوعين الحاليين للحد الأقصى — تُستخدم لتفعيل
-// الإغلاق التلقائي فور انضمام آخر متطوع، بمعزل عن أي إغلاق يدوي من المنظمة
-function isOpportunityFull(currentVolunteers, maxVolunteers) {
-  return maxVolunteers != null && currentVolunteers >= maxVolunteers
-}
 
 // يبني FormData لطلب إنشاء/تعديل فرصة، مع إرفاق الصورة إن وُجدت
 function buildOpportunityFormData(payload, imageFile) {
@@ -165,19 +205,44 @@ function buildOpportunityFormData(payload, imageFile) {
 }
 
 function matchesFilters(opportunity, filters = {}) {
-  const { search = '', categoryId = '', skillId = '', location = '' } = filters
+  const {
+    search = '',
+    categoryId = '',
+    categoryIds = [],
+    skillId = '',
+    skillIds = [],
+    location = '',
+    age = null,
+  } = filters
+
+  const normalizedOpportunity = opportunity || {}
+  const opportunityTitle = normalizedOpportunity.title || ''
+  const opportunityLocation = normalizedOpportunity.location || ''
+  const opportunityCategoryId = normalizedOpportunity.category?.id || ''
+  const opportunitySkills = Array.isArray(normalizedOpportunity.skills)
+    ? normalizedOpportunity.skills
+    : []
+  const normalizedCategoryIds = Array.isArray(categoryIds) ? categoryIds.filter(Boolean) : []
+  const normalizedSkillIds = Array.isArray(skillIds) ? skillIds.filter(Boolean) : []
 
   const matchesSearch =
-    !search || opportunity.title.toLowerCase().includes(search.trim().toLowerCase())
+    !search || opportunityTitle.toLowerCase().includes(search.trim().toLowerCase())
 
-  const matchesCategory = !categoryId || opportunity.category?.id === categoryId
+  const matchesCategory =
+    (!categoryId && normalizedCategoryIds.length === 0) ||
+    opportunityCategoryId === categoryId ||
+    normalizedCategoryIds.includes(opportunityCategoryId)
 
-  const matchesSkill = !skillId || opportunity.skills.some((skill) => skill.id === skillId)
+  const matchesSkill =
+    (!skillId && normalizedSkillIds.length === 0) ||
+    opportunitySkills.some((skill) => skill.id === skillId || normalizedSkillIds.includes(skill.id))
 
   const matchesLocation =
-    !location || opportunity.location.toLowerCase().includes(location.trim().toLowerCase())
+    !location || opportunityLocation.toLowerCase().includes(location.trim().toLowerCase())
 
-  return matchesSearch && matchesCategory && matchesSkill && matchesLocation
+  const matchesAge = age == null || isVolunteerAgeEligible(age, normalizedOpportunity)
+
+  return matchesSearch && matchesCategory && matchesSkill && matchesLocation && matchesAge
 }
 
 /**
@@ -190,11 +255,15 @@ function matchesFilters(opportunity, filters = {}) {
 export async function fetchCompletedOpportunities() {
   if (MOCK_MODE) {
     await wait()
-    return MOCK_OPPORTUNITIES.filter((opportunity) => opportunity.status === 'closed')
+    return MOCK_OPPORTUNITIES.map(attachComputedStatus).filter(
+      (opportunity) => opportunity.status === OPPORTUNITY_STATUS.COMPLETED,
+    )
   }
 
   try {
-    const response = await apiClient.get('/opportunities', { params: { status: 'closed' } })
+    const response = await apiClient.get('/opportunities', {
+      params: { status: OPPORTUNITY_STATUS.COMPLETED },
+    })
     return response.data || []
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load completed opportunities'))
@@ -208,7 +277,9 @@ export async function fetchCompletedOpportunities() {
 export async function fetchOpportunities(filters = {}) {
   if (MOCK_MODE) {
     await wait()
-    return MOCK_OPPORTUNITIES.filter((opportunity) => matchesFilters(opportunity, filters))
+    return MOCK_OPPORTUNITIES.filter((opportunity) => matchesFilters(opportunity, filters)).map(
+      attachComputedStatus,
+    )
   }
 
   try {
@@ -217,17 +288,6 @@ export async function fetchOpportunities(filters = {}) {
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load opportunities'))
   }
-}
-
-// يتحقق إذا كان عمر المتطوع ضمن نطاق [minAge, maxAge] تبع الفرصة —
-// معلّق التفعيل حاليًا: الفرصة ما فيها minAge/maxAge لسا (بانتظار
-// موافقة المشرفة على الفكرة أصلًا)، فهاي الدالة برجع true دايمًا هلق
-// ولا تأثير فعلي إلها. لما توافق المشرفة ونضيف الحقلين لبيانات الفرصة،
-// بتشتغل تلقائيًا بدون أي تعديل إضافي هون.
-function isWithinAgeRange(volunteerAge, opportunity) {
-  if (volunteerAge == null) return true
-  if (!opportunity.minAge || !opportunity.maxAge) return true
-  return volunteerAge >= opportunity.minAge && volunteerAge <= opportunity.maxAge
 }
 
 /**
@@ -249,16 +309,18 @@ function isWithinAgeRange(volunteerAge, opportunity) {
 export async function fetchSuggestedOpportunities({ skillIds = [], age = null, city = '' } = {}) {
   if (MOCK_MODE) {
     await wait()
-    return MOCK_OPPORTUNITIES.filter((opportunity) => {
-      const matchesAge = isWithinAgeRange(age, opportunity)
-      const matchesSkill =
-        skillIds.length === 0 || opportunity.skills.some((skill) => skillIds.includes(skill.id))
-      const matchesCity = !city || opportunity.location.toLowerCase().includes(city.toLowerCase())
+    const categoryIds = getCategoryIdsForSkillIds(skillIds)
 
-      // نطاق العمر شرط أساسي (لأسباب تتعلق بمناسبة الفرصة فعليًا)، أما
-      // تطابق المهارة أو المدينة فيكفي واحد منهم ليُعتبر "مناسب"
-      return matchesAge && (matchesSkill || matchesCity)
-    })
+    return MOCK_OPPORTUNITIES.filter((opportunity) => {
+      // الفئة تُشتق من مهارات المتطوع المتاحة، وباقي المعايير تستخدم نفس
+      // دالة المطابقة المشتركة حتى يظل السلوك موحّدًا بين التصفية والتوصية.
+      return matchesFilters(opportunity, {
+        skillIds,
+        categoryIds,
+        location: city,
+        age,
+      })
+    }).map(attachComputedStatus)
   }
 
   try {
@@ -283,7 +345,10 @@ export async function fetchOpportunityById(id) {
         ).slice(0, 3)
       : []
 
-    return { opportunity, similar }
+    return {
+      opportunity: attachComputedStatus(opportunity),
+      similar: similar.map(attachComputedStatus),
+    }
   }
 
   try {
@@ -305,7 +370,7 @@ export async function fetchMyOpportunities() {
     await wait()
     return MOCK_OPPORTUNITIES.filter(
       (opportunity) => opportunity.organization?.id === MOCK_MY_ORGANIZATION_ID,
-    )
+    ).map(attachComputedStatus)
   }
 
   try {
@@ -328,15 +393,16 @@ export async function fetchMyOpportunities() {
 export async function fetchOpportunitiesByOrganization(organizationId) {
   if (MOCK_MODE) {
     await wait()
-    return MOCK_OPPORTUNITIES.filter(
+    return MOCK_OPPORTUNITIES.map(attachComputedStatus).filter(
       (opportunity) =>
-        opportunity.organization?.id === organizationId && opportunity.status === 'open',
+        opportunity.organization?.id === organizationId &&
+        opportunity.status === OPPORTUNITY_STATUS.REGISTRATION_OPEN,
     )
   }
 
   try {
     const response = await apiClient.get('/opportunities', {
-      params: { organization_id: organizationId, status: 'open' },
+      params: { organization_id: organizationId, status: OPPORTUNITY_STATUS.REGISTRATION_OPEN },
     })
     return response.data || []
   } catch (error) {
@@ -370,7 +436,7 @@ export async function createOpportunity({ imageFile, ...payload }) {
     const newOpportunity = {
       ...payload,
       id: `o${Date.now()}`,
-      status: OPPORTUNITY_STATUS.OPEN,
+      registrationClosedManually: false,
       currentVolunteers: 0,
       organization: { id: MOCK_MY_ORGANIZATION_ID, name: 'My Organization', phone: '+31600000000', imageUrl: null },
       image: imageFile ? URL.createObjectURL(imageFile) : null,
@@ -378,7 +444,7 @@ export async function createOpportunity({ imageFile, ...payload }) {
     // تُضاف مباشرة لنفس المصدر الموحّد، فتظهر فورًا بصفحة التصفح العامة
     // للمتطوعين تمامًا كما ستظهر بـ "My Causes" — بلا أي فرق بينهما
     MOCK_OPPORTUNITIES.unshift(newOpportunity)
-    return { success: true, data: newOpportunity }
+    return { success: true, data: attachComputedStatus(newOpportunity) }
   }
 
   try {
@@ -404,7 +470,7 @@ export async function updateOpportunity(id, { imageFile, ...payload }) {
         image: imageFile ? URL.createObjectURL(imageFile) : MOCK_OPPORTUNITIES[index].image,
       }
     }
-    return { success: true, data: MOCK_OPPORTUNITIES[index] }
+    return { success: true, data: attachComputedStatus(MOCK_OPPORTUNITIES[index]) }
   }
 
   try {
@@ -420,26 +486,42 @@ export async function updateOpportunity(id, { imageFile, ...payload }) {
 /**
  * Registers the current volunteer's participation in an opportunity.
  * Maps to the "participates" relation (volunteer <-> opportunity).
+ * @param {string} id
+ * @param {number} committedHours - أقل عدد ساعات حدّده المتطوع بنفسه
+ *   وقت التسجيل، لازم يكون على الأقل minHours تبع هاي الفرصة بالذات
+ *   (بدون سقف أعلى مفروض بهاي الخطوة)
  */
-export async function participateInOpportunity(id) {
+export async function participateInOpportunity(id, committedHours) {
   if (MOCK_MODE) {
     await wait()
 
     const opportunity = MOCK_OPPORTUNITIES.find((item) => item.id === id)
     if (!opportunity) return { success: false, error: 'Opportunity not found' }
 
-    opportunity.currentVolunteers = (opportunity.currentVolunteers || 0) + 1
-
-    // إغلاق تلقائي فور اكتمال العدد — لا علاقة له بالإغلاق اليدوي أدناه
-    if (isOpportunityFull(opportunity.currentVolunteers, opportunity.maxVolunteers)) {
-      opportunity.status = OPPORTUNITY_STATUS.CLOSED
+    // ما منسمح بالانضمام إلا لما التسجيل فعليًا مفتوح (مو ممتلئة، ومو
+    // متجاوزة نافذة التسجيل، ومو مغلقة يدويًا) — الحالة محسوبة تلقائيًا
+    if (getEffectiveOpportunityStatus(opportunity) !== OPPORTUNITY_STATUS.REGISTRATION_OPEN) {
+      return { success: false, error: 'Registration is no longer open for this opportunity' }
     }
+
+    // تحقق من عدد الساعات — حقل "حد أدنى" بس (مو نطاق مغلق)، فبنتحقق إنه
+    // على الأقل minHours تبع الفرصة بدون أي سقف أعلى نفرضه هون. نفس
+    // القاعدة لازم تتأكد بالباك اند الحقيقي كمان (الفرونت خط دفاع أول بس)
+    const hours = Number(committedHours)
+    if (!Number.isFinite(hours) || hours < opportunity.minHours) {
+      return {
+        success: false,
+        error: `Please commit to at least ${opportunity.minHours} hours.`,
+      }
+    }
+
+    opportunity.currentVolunteers = (opportunity.currentVolunteers || 0) + 1
 
     return { success: true }
   }
 
   try {
-    await apiClient.post(`/opportunities/${id}/participate`)
+    await apiClient.post(`/opportunities/${id}/participate`, { committed_hours: committedHours })
     return { success: true }
   } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Failed to join opportunity') }
@@ -458,8 +540,14 @@ export async function setOpportunityStatus(id, status) {
     const index = MOCK_OPPORTUNITIES.findIndex((item) => item.id === id)
     if (index === -1) return { success: false, error: 'Opportunity not found' }
 
-    MOCK_OPPORTUNITIES[index] = { ...MOCK_OPPORTUNITIES[index], status }
-    return { success: true, data: MOCK_OPPORTUNITIES[index] }
+    // هالتبديل اليدوي مسموح بس بين "تسجيل مفتوح" و"تسجيل منتهي" (قبل ما
+    // تبدأ الفرصة) — بنضبط علم registrationClosedManually فقط، والحالة
+    // النهائية المعروضة بتنحسب دايمًا عبر attachComputedStatus
+    MOCK_OPPORTUNITIES[index] = {
+      ...MOCK_OPPORTUNITIES[index],
+      registrationClosedManually: status === OPPORTUNITY_STATUS.REGISTRATION_CLOSED,
+    }
+    return { success: true, data: attachComputedStatus(MOCK_OPPORTUNITIES[index]) }
   }
 
   try {

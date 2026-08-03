@@ -17,5 +17,5 @@ export default function HomeStatsSection({ stats, loading }) {
       ]
     : [];
 
-  return <StatsGrid stats={statsArray} loading={loading} />;
+  return <StatsGrid stats={statsArray} loading={loading} className="mb-0" />;
 }

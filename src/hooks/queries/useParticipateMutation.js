@@ -13,7 +13,7 @@ export function useParticipateMutation(id) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: () => participateInOpportunity(id),
+    mutationFn: (committedHours) => participateInOpportunity(id, committedHours),
     onSuccess: (result) => {
       if (!result?.success) return
 

@@ -12,6 +12,7 @@ import { useOpportunitiesQuery } from "../../hooks/queries/useOpportunitiesQuery
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { useAuth } from "../../context/AuthContext";
 import { ACCOUNT_TYPES } from "../../constants/auth/accountTypes";
+import { OPPORTUNITY_STATUS } from "../../constants/opportunityStatus";
 
 export default function OpportunitiesListPage() {
   const { isAuthenticated, accountType, user } = useAuth();
@@ -43,7 +44,14 @@ export default function OpportunitiesListPage() {
   });
 
   const categories = categoriesQuery.data ?? [];
-  const opportunities = opportunitiesQuery.data ?? [];
+  const opportunities = opportunitiesQuery.data;
+  const visibleOpportunities = useMemo(
+    () =>
+      Array.isArray(opportunities)
+        ? opportunities.filter((opportunity) => opportunity.status !== OPPORTUNITY_STATUS.COMPLETED)
+        : [],
+    [opportunities],
+  );
 
   // isPending = ما في أي بيانات لسا (أول تحميل فعلي لهالفلتر بالذات) —
   // بيختلف عن isFetching اللي بيصير true حتى أثناء إعادة الجلب بالخلفية
@@ -55,9 +63,9 @@ export default function OpportunitiesListPage() {
     : "";
 
   const resultsLabel = useMemo(() => {
-    const count = opportunities.length;
+    const count = visibleOpportunities.length;
     return `${count} opportunit${count === 1 ? "y" : "ies"} found`;
-  }, [opportunities.length]);
+  }, [visibleOpportunities.length]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -101,8 +109,8 @@ export default function OpportunitiesListPage() {
             <div className="flex items-start gap-3 rounded-3xl bg-primary/5 border border-primary/15 p-4 mb-6">
               <Sparkles size={18} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
               <p className="text-sm text-heading/70">
-                Picked for you based on your skills and location — this list updates
-                automatically as your profile changes.
+                Picked for you based on your category, skills, location, and age — this list
+                updates automatically as your profile changes.
               </p>
             </div>
           ) : null}
@@ -115,19 +123,19 @@ export default function OpportunitiesListPage() {
             </div>
           ) : error ? (
             <p className="text-sm text-danger">{error}</p>
-          ) : opportunities.length === 0 ? (
+          ) : visibleOpportunities.length === 0 ? (
             <EmptyState
               icon={isSuggestedTab ? Sparkles : SearchX}
-              title={isSuggestedTab ? "No suggested opportunities yet" : "No opportunities found"}
+              title={isSuggestedTab ? "No recommended opportunities yet" : "No opportunities found"}
               description={
                 isSuggestedTab
-                  ? "Add more skills to your profile to get better matches."
+                  ? "Update your profile details to get better matches."
                   : "Try a different search term or category."
               }
             />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 transition-opacity">
-              {opportunities.map((opportunity) => (
+              {visibleOpportunities.map((opportunity) => (
                 <OpportunityCard
                   key={opportunity.id}
                   opportunity={opportunity}

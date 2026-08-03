@@ -44,24 +44,37 @@ const MOCK_SKILLS = [
   { id: "s16", name: "Photography", categoryId: "c6" },
 ];
 
+const MOCK_SKILL_CATEGORY_MAP = Object.fromEntries(
+  MOCK_SKILLS.map((skill) => [skill.id, skill.categoryId]),
+);
+
+export function getCategoryIdsForSkillIds(skillIds = []) {
+  if (!Array.isArray(skillIds) || skillIds.length === 0) return [];
+
+  return [...new Set(skillIds.map((skillId) => MOCK_SKILL_CATEGORY_MAP[skillId]).filter(Boolean))];
+}
+
 /**
  * Fetches all available skills and attaches category info dynamically.
  */
 export async function fetchAvailableSkills() {
   const categories = await fetchCategories(); // ← جلب التصنيفات
 
-  let skills = [];
-
   if (MOCK_MODE) {
     await wait();
-    skills = MOCK_SKILLS;
-  } else {
-    try {
-      const response = await apiClient.get("/skills");
-      skills = response.data || [];
-    } catch (error) {
-      throw new Error(getApiErrorMessage(error, "Failed to load skills"));
-    }
+    return MOCK_SKILLS.map((skill) => ({
+      ...skill,
+      category: categories.find((c) => c.id === skill.categoryId) || null,
+    }));
+  }
+
+  let skills;
+
+  try {
+    const response = await apiClient.get("/skills");
+    skills = response.data || [];
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, "Failed to load skills"));
   }
 
   // 🔥 الربط الديناميكي هنا

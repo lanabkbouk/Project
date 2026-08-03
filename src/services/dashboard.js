@@ -54,10 +54,14 @@ export async function fetchOrganizationDashboard(organizationId) {
     )
 
     const totalOpportunities = opportunities.length
+    // "مفتوحة" هلق تعني فعليًا registration_open بس (لسا تقبل متطوعين
+    // جدد) — قيد العمل ما بتُحسب هون لأنها ما عادت تقبل تسجيل جديد
     const openOpportunities = opportunities.filter(
-      (item) => item.status === OPPORTUNITY_STATUS.OPEN,
+      (item) => item.status === OPPORTUNITY_STATUS.REGISTRATION_OPEN,
     ).length
-    const closedOpportunities = totalOpportunities - openOpportunities
+    const completedOpportunities = opportunities.filter(
+      (item) => item.status === OPPORTUNITY_STATUS.COMPLETED,
+    ).length
 
     const totalVolunteers = opportunities.reduce(
       (sum, item) => sum + (Number(item.currentVolunteers) || 0),
@@ -69,8 +73,10 @@ export async function fetchOrganizationDashboard(organizationId) {
       (applicant) => applicant.status === PARTICIPATION_STATUS.PENDING,
     ).length
 
-    // معدل اكتمال الفرص: نسبة الفرص المغلقة (المكتملة) من إجمالي الفرص المنشورة
-    const completionRate = Math.round((closedOpportunities / totalOpportunities) * 100)
+    // معدل اكتمال الفرص: نسبة الفرص "المنتهية فعليًا" (completed) من
+    // إجمالي الفرص المنشورة — بدل نسبة "غير المفتوحة" سابقًا، يلي كانت
+    // بتحسب الفرص "قيد العمل" خطأً كـ "منتهية"
+    const completionRate = Math.round((completedOpportunities / totalOpportunities) * 100)
 
     const opportunitiesBreakdown = opportunities.map((opportunity) => ({
       id: opportunity.id,

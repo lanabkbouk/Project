@@ -5,6 +5,7 @@ import Dropdown from "../ui/Dropdown";
 import Textarea from "../ui/Textarea";
 import Button from "../ui/Button";
 import Typography from "../ui/Typography";
+import SkillsSelector from "../common/SkillsSelector";
 import { SYRIAN_GOVERNORATES } from "../../services/syrianGovernorates";
 
 const GOVERNORATE_ITEMS = SYRIAN_GOVERNORATES.map(({ nameEn }) => ({
@@ -14,12 +15,19 @@ const GOVERNORATE_ITEMS = SYRIAN_GOVERNORATES.map(({ nameEn }) => ({
 
 // عنوان قسم فرعي موحّد داخل الفورم — بدل تكرار نفس كلاسات Typography
 // بكل قسم على حدة (نفس مبدأ DRY المتبع بباقي المشروع)
-function FormSection({ title, children }) {
+function FormSection({ title, description, children }) {
   return (
     <div className="flex flex-col gap-6">
-      <Typography variant="h5" className="pb-2 border-b border-heading/10">
-        {title}
-      </Typography>
+      <div>
+        <Typography variant="h5" className="pb-2 border-b border-heading/10">
+          {title}
+        </Typography>
+        {description && (
+          <Typography variant="caption" color="muted" className="mt-2 block">
+            {description}
+          </Typography>
+        )}
+      </div>
       {children}
     </div>
   );
@@ -27,6 +35,8 @@ function FormSection({ title, children }) {
 
 export default function CauseForm({
   categories,
+  availableSkills = [],
+  skillsLoading = false,
   submitting,
   submitDisabled = false,
   submitLabel = "Publish Cause",
@@ -140,9 +150,27 @@ export default function CauseForm({
         </div>
       </FormSection>
 
-      {/* القسم الثالث: الجدول الزمني والسعة — تفاصيل تنظيمية بحتة،
-          آخر شي بالأولوية المنطقية للمنظمة وهي عم تكتب الفرصة */}
-      <FormSection title="Schedule & Capacity">
+      {/* القسم الثالث: المهارات المطلوبة — تُستخدم بخوارزمية اقتراح
+          الفرص للمتطوعين المناسبين (مع العمر والمدينة) */}
+      <FormSection
+        title="Required Skills"
+        description="Volunteers whose profile matches these skills will see this cause recommended to them."
+      >
+        <SkillsSelector
+          control={control}
+          name="skills"
+          availableSkills={availableSkills}
+          loading={skillsLoading}
+          error={errors.skills?.message}
+          helperText="Select at least one skill volunteers should have"
+        />
+      </FormSection>
+
+      {/* القسم الرابع: الجدول الزمني ونافذة التسجيل */}
+      <FormSection
+        title="Schedule & Registration Window"
+        description="The registration window must close on or before the opportunity's start date."
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <Input
             label="Start Date"
@@ -162,9 +190,31 @@ export default function CauseForm({
           />
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <Input
+            label="Registration Start Date"
+            name="registerStartAt"
+            type="date"
+            register={register}
+            error={errors.registerStartAt?.message}
+            required
+          />
+          <Input
+            label="Registration End Date"
+            name="registerEndAt"
+            type="date"
+            register={register}
+            error={errors.registerEndAt?.message}
+            required
+          />
+        </div>
+      </FormSection>
+
+      {/* القسم الخامس: ساعات التطوع والسعة */}
+      <FormSection title="Hours & Capacity">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <Input
-            label="Min Hours"
+            label="Min Hours (per volunteer)"
             name="minHours"
             type="number"
             min="1"
@@ -173,7 +223,7 @@ export default function CauseForm({
             required
           />
           <Input
-            label="Max Hours"
+            label="Max Hours (per volunteer)"
             name="maxHours"
             type="number"
             min="1"
@@ -182,12 +232,61 @@ export default function CauseForm({
             required
           />
           <Input
-            label="Volunteers Needed"
+            label="Total Hours (whole cause)"
+            name="totalHours"
+            type="number"
+            min="1"
+            register={register}
+            error={errors.totalHours?.message}
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <Input
+            label="Min Volunteers"
+            name="minVolunteers"
+            type="number"
+            min="1"
+            register={register}
+            error={errors.minVolunteers?.message}
+            required
+          />
+          <Input
+            label="Max Volunteers"
             name="maxVolunteers"
             type="number"
             min="1"
             register={register}
             error={errors.maxVolunteers?.message}
+            required
+          />
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Age Range (optional)"
+        description="Leave a field empty if there's no age restriction on that side."
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <Input
+            label="Min Age"
+            name="minAge"
+            type="number"
+            min="14"
+            register={register}
+            error={errors.minAge?.message}
+            placeholder="No minimum"
+            required
+          />
+          <Input
+            label="Max Age"
+            name="maxAge"
+            type="number"
+            max="100"
+            register={register}
+            error={errors.maxAge?.message}
+            placeholder="No maximum"
             required
           />
         </div>
