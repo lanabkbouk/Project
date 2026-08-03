@@ -1,9 +1,10 @@
 import { useEffect } from "react";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 import Typography from "../components/ui/Typography";
 import CauseForm from "../components/organization/CauseForm";
+import OpportunityPreviewCard from "../components/opportunity/OpportunityPreviewCard";
 import Skeleton from "../components/ui/Skeleton";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
 import Toast from "../components/common/Toast";
@@ -17,6 +18,36 @@ import { useToast } from "../hooks/useToast";
 import { opportunitySchema } from "../utils/opportunityValidation";
 import { ROUTES } from "../constants/paths";
 import { getOrganizationId } from "../utils/auth/getOrganizationId";
+import { PANEL_SURFACE } from "../utils/surfaceStyles";
+
+// لوحة المعاينة الحية: تقرأ قيم الفورم لحظة بلحظة عبر useWatch وتعرضها
+// بنفس شكل OpportunityCard الحقيقي يلي المتطوع رح يشوفه بقائمة الفرص.
+// مكوّن منفصل صغير (مو منطق جوا CreateEditCause نفسه) عشان useWatch
+// يعيد رندر بس هالجزء لحظة كتابة أي حرف، بدل الصفحة كلها
+function CausePreviewPanel({ categories, imagePreview }) {
+  const values = useWatch();
+  const selectedCategory = categories.find((category) => category.id === values.categoryId);
+
+  return (
+    <div className="lg:col-span-1">
+      <div className="sticky top-20 flex flex-col gap-3">
+        <Typography variant="overline" className="px-1">
+          Live Preview — how volunteers will see this cause
+        </Typography>
+        <OpportunityPreviewCard
+          title={values.title}
+          description={values.description}
+          imagePreview={imagePreview}
+          categoryName={selectedCategory?.name}
+          location={values.city}
+          minHours={values.minHours}
+          maxHours={values.maxHours}
+          maxVolunteers={values.maxVolunteers}
+        />
+      </div>
+    </div>
+  );
+}
 
 const DEFAULT_VALUES = {
   title: "",
@@ -120,24 +151,27 @@ export default function CreateEditCause() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <Skeleton className="h-9 w-64 mb-2" />
         <Skeleton className="h-4 w-80 mb-8" />
-        <div className="flex flex-col gap-6">
-          <Skeleton className="h-12 w-full rounded-xl" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 flex flex-col gap-6">
             <Skeleton className="h-12 w-full rounded-xl" />
-            <Skeleton className="h-12 w-full rounded-xl" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+            </div>
+            <Skeleton className="h-32 w-full rounded-xl" />
+            <Skeleton className="h-12 w-40 rounded-xl" />
           </div>
-          <Skeleton className="h-32 w-full rounded-xl" />
-          <Skeleton className="h-12 w-40 rounded-xl" />
+          <Skeleton className="h-80 w-full rounded-2xl" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <VerificationStatusBanner status={status} hasLoadError={hasLoadError} />
 
       <Typography variant="sectionTitle" className="mb-2">
@@ -149,24 +183,35 @@ export default function CreateEditCause() {
           : "Publish a new volunteering opportunity for people to join."}
       </Typography>
 
-
       <FormProvider {...methods}>
-        <form onSubmit={methods.handleSubmit(onSubmit)}>
-          <CauseForm
-            categories={categories}
-            submitting={saveMutation.isPending}
-            submitDisabled={!isVerified}
-            submitLabel={isEditMode ? "Save Changes" : "Publish Cause"}
-            imagePreview={imagePreview}
-            imageError={imageError}
-            onImageChange={handleFileChange}
-          />
-          {!isVerified && (
-            <p className="text-sm text-heading/50 mt-2">
-              You can prepare this cause now, but publishing requires your organization to be
-              verified first.
-            </p>
-          )}
+        <form
+          onSubmit={methods.handleSubmit(onSubmit)}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start"
+        >
+          {/* عمودا الفورم: نفس نمط PANEL_SURFACE المستخدم بصفحة بروفايل
+              المتطوع، عشان الصفحتين تعطيا نفس الإحساس البصري بمكان
+              التعديل الفعلي */}
+          <div className={`lg:col-span-2 ${PANEL_SURFACE} p-6 md:p-8`}>
+            <CauseForm
+              categories={categories}
+              submitting={saveMutation.isPending}
+              submitDisabled={!isVerified}
+              submitLabel={isEditMode ? "Save Changes" : "Publish Cause"}
+              imagePreview={imagePreview}
+              imageError={imageError}
+              onImageChange={handleFileChange}
+            />
+            {!isVerified && (
+              <p className="text-sm text-heading/50 mt-4">
+                You can prepare this cause now, but publishing requires your organization to be
+                verified first.
+              </p>
+            )}
+          </div>
+
+          {/* العمود الثالث: معاينة حية لكارد الفرصة بالضبط متل ما رح
+              يظهر للمتطوعين */}
+          <CausePreviewPanel categories={categories} imagePreview={imagePreview} />
         </form>
       </FormProvider>
 

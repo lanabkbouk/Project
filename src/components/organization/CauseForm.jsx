@@ -4,12 +4,26 @@ import Input from "../ui/Input";
 import Dropdown from "../ui/Dropdown";
 import Textarea from "../ui/Textarea";
 import Button from "../ui/Button";
+import Typography from "../ui/Typography";
 import { SYRIAN_GOVERNORATES } from "../../services/syrianGovernorates";
 
 const GOVERNORATE_ITEMS = SYRIAN_GOVERNORATES.map(({ nameEn }) => ({
   name: nameEn,
   value: nameEn === "Rural Damascus" ? "Rif Dimashq" : nameEn,
 }));
+
+// عنوان قسم فرعي موحّد داخل الفورم — بدل تكرار نفس كلاسات Typography
+// بكل قسم على حدة (نفس مبدأ DRY المتبع بباقي المشروع)
+function FormSection({ title, children }) {
+  return (
+    <div className="flex flex-col gap-6">
+      <Typography variant="h5" className="pb-2 border-b border-heading/10">
+        {title}
+      </Typography>
+      {children}
+    </div>
+  );
+}
 
 export default function CauseForm({
   categories,
@@ -32,134 +46,152 @@ export default function CauseForm({
   }));
 
   return (
-    <div className="flex flex-col gap-6 max-w-2xl">
-      {/* صورة الفرصة — اختيارية، تُعرض بكارد الفرصة والقائمة إن وُجدت */}
-      <div className="flex flex-col gap-1">
-        <label className="mb-1 text-sm font-medium text-heading">Cover Image (optional)</label>
-        <label
-          htmlFor="cause-image"
-          className="flex items-center gap-3 rounded-xl border border-dashed border-heading/20 bg-heading/5 px-4 py-3 cursor-pointer hover:border-primary/40 transition"
-        >
-          {imagePreview ? (
-            <img src={imagePreview} alt="Cover preview" className="h-14 w-14 rounded-lg object-cover" />
-          ) : (
-            <div className="h-14 w-14 rounded-lg bg-heading/10 flex items-center justify-center text-heading/40">
-              <ImagePlus size={22} />
-            </div>
-          )}
-          <span className="text-sm text-body">
-            {imagePreview ? "Change image" : "Click to upload a cover image (JPG or PNG)"}
-          </span>
-        </label>
-        <input id="cause-image" type="file" accept="image/*" className="hidden" onChange={onImageChange} />
-        {imageError && <p className="text-xs text-danger">{imageError}</p>}
-      </div>
+    <div className="flex flex-col gap-8">
+      {/* القسم الأول: المعلومات الأساسية — العنوان والوصف وصورة الغلاف،
+          أول شي بيشوفه المتطوع بالكارد، فمنطقيًا أول شي نطلبه هون */}
+      <FormSection title="Basic Information">
+        {/* صورة الفرصة — اختيارية، تُعرض بكارد الفرصة والقائمة إن وُجدت.
+            دروب-زون أكبر وأوضح من مجرد أيقونة صغيرة، لأنها أهم عنصر
+            بصري بالفرصة (أول شي يجذب نظر المتطوع بقائمة الفرص) */}
+        <div className="flex flex-col gap-1">
+          <label className="mb-1 text-sm font-medium text-heading">Cover Image (optional)</label>
+          <label
+            htmlFor="cause-image"
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-heading/20 bg-heading/5 px-4 py-8 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition text-center"
+          >
+            {imagePreview ? (
+              <img
+                src={imagePreview}
+                alt="Cover preview"
+                className="h-32 w-full max-w-md rounded-xl object-cover"
+              />
+            ) : (
+              <div className="h-14 w-14 rounded-full bg-heading/10 flex items-center justify-center text-heading/40">
+                <ImagePlus size={26} />
+              </div>
+            )}
+            <span className="text-sm text-body">
+              {imagePreview ? "Click to change image" : "Click to upload a cover image (JPG or PNG)"}
+            </span>
+          </label>
+          <input id="cause-image" type="file" accept="image/*" className="hidden" onChange={onImageChange} />
+          {imageError && <p className="text-xs text-danger">{imageError}</p>}
+        </div>
 
-      <Input
-        label="Title"
-        name="title"
-        register={register}
-        error={errors.title?.message}
-        placeholder="e.g. Clean Water for All"
-        required
-      />
-
-      <Textarea
-        label="Description"
-        name="description"
-        register={register}
-        placeholder="Describe what volunteers will do, and why it matters..."
-        error={errors.description?.message}
-        className="min-h-[140px]"
-        required
-      />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <Controller
-          name="categoryId"
-          control={control}
-          defaultValue=""
-          render={({ field: { value, onChange } }) => (
-            <Dropdown
-              label="Category"
-              items={categoryItems}
-              value={value}
-              onChange={onChange}
-              placeholder="Select a category"
-              icon={Tag}
-              error={errors.categoryId?.message}
-              required
-            />
-          )}
-        />
-
-        <Controller
-          name="city"
-          control={control}
-          defaultValue=""
-          render={({ field: { value, onChange } }) => (
-            <Dropdown
-              label="Governorate"
-              items={GOVERNORATE_ITEMS}
-              value={value}
-              onChange={onChange}
-              placeholder="Select a governorate"
-              icon={MapPin}
-              error={errors.city?.message}
-              required
-            />
-          )}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <Input
-          label="Start Date"
-          name="startDate"
-          type="date"
+          label="Title"
+          name="title"
           register={register}
-          error={errors.startDate?.message}
+          error={errors.title?.message}
+          placeholder="e.g. Clean Water for All"
           required
         />
-        <Input
-          label="End Date"
-          name="endDate"
-          type="date"
-          register={register}
-          error={errors.endDate?.message}
-          required
-        />
-      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <Input
-          label="Min Hours"
-          name="minHours"
-          type="number"
-          min="1"
+        <Textarea
+          label="Description"
+          name="description"
           register={register}
-          error={errors.minHours?.message}
+          placeholder="Describe what volunteers will do, and why it matters..."
+          error={errors.description?.message}
+          className="min-h-[140px]"
           required
         />
-        <Input
-          label="Max Hours"
-          name="maxHours"
-          type="number"
-          min="1"
-          register={register}
-          error={errors.maxHours?.message}
-          required
-        />
-        <Input
-          label="Volunteers Needed"
-          name="maxVolunteers"
-          type="number"
-          min="1"
-          register={register}
-          error={errors.maxVolunteers?.message}
-          required
-        />
-      </div>
+      </FormSection>
+
+      {/* القسم الثاني: الموقع والتصنيف — يحددان وين ولمين بتظهر الفرصة
+          (فلاتر البحث بقائمة الفرص تعتمد عليهم مباشرة) */}
+      <FormSection title="Location & Category">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <Controller
+            name="categoryId"
+            control={control}
+            defaultValue=""
+            render={({ field: { value, onChange } }) => (
+              <Dropdown
+                label="Category"
+                items={categoryItems}
+                value={value}
+                onChange={onChange}
+                placeholder="Select a category"
+                icon={Tag}
+                error={errors.categoryId?.message}
+                required
+              />
+            )}
+          />
+
+          <Controller
+            name="city"
+            control={control}
+            defaultValue=""
+            render={({ field: { value, onChange } }) => (
+              <Dropdown
+                label="Governorate"
+                items={GOVERNORATE_ITEMS}
+                value={value}
+                onChange={onChange}
+                placeholder="Select a governorate"
+                icon={MapPin}
+                error={errors.city?.message}
+                required
+              />
+            )}
+          />
+        </div>
+      </FormSection>
+
+      {/* القسم الثالث: الجدول الزمني والسعة — تفاصيل تنظيمية بحتة،
+          آخر شي بالأولوية المنطقية للمنظمة وهي عم تكتب الفرصة */}
+      <FormSection title="Schedule & Capacity">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <Input
+            label="Start Date"
+            name="startDate"
+            type="date"
+            register={register}
+            error={errors.startDate?.message}
+            required
+          />
+          <Input
+            label="End Date"
+            name="endDate"
+            type="date"
+            register={register}
+            error={errors.endDate?.message}
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <Input
+            label="Min Hours"
+            name="minHours"
+            type="number"
+            min="1"
+            register={register}
+            error={errors.minHours?.message}
+            required
+          />
+          <Input
+            label="Max Hours"
+            name="maxHours"
+            type="number"
+            min="1"
+            register={register}
+            error={errors.maxHours?.message}
+            required
+          />
+          <Input
+            label="Volunteers Needed"
+            name="maxVolunteers"
+            type="number"
+            min="1"
+            register={register}
+            error={errors.maxVolunteers?.message}
+            required
+          />
+        </div>
+      </FormSection>
 
       <Button
         type="submit"
@@ -167,7 +199,7 @@ export default function CauseForm({
         isLoading={submitting}
         loadingText="Saving..."
         disabled={submitDisabled}
-        className="self-start mt-2"
+        className="self-start"
       >
         {submitLabel}
       </Button>

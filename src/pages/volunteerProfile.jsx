@@ -99,14 +99,14 @@ export default function VolunteerProfile() {
       // (useUnsavedChangesGuard) رح يضل يحذّر المستخدم حتى بعد ما حفظ فعليًا
       methods.reset(data);
 
-      // بيتفعّل بس هون: نجاح استدعاء الحفظ دليل كافي إنو Zod schema
-      // (جوا ProfileForm) قبلت كل الحقول الإجبارية، فما في داعي نعيد
-      // فحصها. هاد العلم هو يلي بيقرأه RequireCompleteProfile لاحقًا.
+      // نحدّث الجلسة بالحقول المحفوظة فعليًا. RequireCompleteProfile
+      // رح يفحص هالحقول نفسها مباشرة (مو علم منفصل) عبر
+      // isVolunteerProfileComplete، فبمجرد ما تتحدث هون بيتحدث قرار
+      // الاكتمال تلقائيًا بدون أي خطوة إضافية
       updateUser({
         ...data,
         skillIds: data.skills,
         imageUrl: result.data?.imageUrl || imageUpload.previewUrl,
-        profileCompleted: true,
       });
     } catch (err) {
       showError(err.message || "Failed to save profile");

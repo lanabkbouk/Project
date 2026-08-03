@@ -66,11 +66,9 @@ export async function updateVolunteerProfile({ values, photoFile } = {}) {
         about: values?.about || '',
         skillIds: values?.skills || [],
         interests: values?.interests || '',
-        // ⚠️ نفس مشكلة التعليق فوق بالضبط، بس لحقل profileCompleted تحديدًا:
-        // كان بينحفظ بالجلسة الحالية بس (عبر updateUser بـ AuthContext)
-        // وليس هون بالمخزن الدائم، فكان يضيع بعد تسجيل خروج/دخول رغم
-        // إنه كل حقول البروفايل التانية كانت محفوظة صح
-        profileCompleted: true,
+        // ما عاد في داعي لعلم profileCompleted هون: اكتمال البروفايل
+        // بيتحدد الآن من فحص هالحقول نفسها مباشرة (utils/auth/profileCompletion.js)،
+        // بنفس الطريقة بوضعي mock وreal معًا
         ...(imageUrl ? { imageUrl } : {}),
       })
     }

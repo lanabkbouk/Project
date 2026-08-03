@@ -6,7 +6,6 @@
 - [x] Update Login.jsx: after successful login, redirect to Home when logged in (instead of profile).
 
 
-- [ ] Implement Home rendering for volunteer/organization using existing Profile files in src/pages/.
 - [ ] Ensure routes/ProtectedRoute still work.
 - [ ] Run project (vite) and manually test: register -> profile, login -> home with correct content.
 
