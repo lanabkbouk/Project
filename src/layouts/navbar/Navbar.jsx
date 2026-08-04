@@ -55,7 +55,7 @@ export default function Navbar({ role = "guest" }) {
     }`;
 
   return (
-    <nav className="top-0 z-50 w-full bg-black border-b border-white/10">
+    <nav className="sticky top-0 z-50 w-full bg-black border-b border-white/10">
       <div className="mx-auto max-w-7xl px-6 py-4">
         <div className="flex items-center justify-between">
 
@@ -251,7 +251,7 @@ export default function Navbar({ role = "guest" }) {
                 }}
                 variant="ghost"
                 fullWidth
-                className="flex items-center justify-center gap-2 !bg-black !text-white !border-primary"
+                className="flex items-center justify-center gap-2 bg-black! text-white! border-primary!"
               >
                 <LogIn className="h-4 w-4" />
                 <span>Sign In</span>

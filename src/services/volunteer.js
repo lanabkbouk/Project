@@ -84,7 +84,7 @@ export async function updateVolunteerProfile({ values, photoFile } = {}) {
     // So we send POST + _method: PUT to allow Laravel to process the file.
     formData.append('_method', 'PUT')
 
-    const response = await apiClient.post('/volunteers/me', formData, {
+    const response = await apiClient.post(`/volunteers/${volunteerId}`, formData, {
       headers: { 'Content-Type': undefined }, // allow browser to set boundary
     })
 
