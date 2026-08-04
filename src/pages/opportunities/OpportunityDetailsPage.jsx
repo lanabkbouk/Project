@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { MapPin, Calendar, Clock, Phone, Users } from "lucide-react";
+import { MapPin, Calendar, Clock, Phone } from "lucide-react";
 import Typography from "../../components/ui/Typography";
 import Chip from "../../components/ui/Chip";
 import Button from "../../components/ui/Button";
@@ -19,8 +19,6 @@ import { ACCOUNT_TYPES } from "../../constants/auth/accountTypes";
 import { ROUTES } from "../../constants/paths";
 import { CATEGORY_COLORS, CATEGORY_ICONS } from "../../utils/categoryStyles";
 import { OPPORTUNITY_STATUS } from "../../constants/opportunityStatus";
-import { isVolunteerAgeEligible } from "../../utils/opportunityStatus";
-import { calculateAge } from "../../utils/validators";
 
 function formatDate(dateString) {
   if (!dateString) return "";
@@ -31,18 +29,10 @@ function formatDate(dateString) {
   });
 }
 
-// يبني نص نطاق العمر للعرض — null لو ما في أي قيد عمر إطلاقًا
-function formatAgeRange(minAge, maxAge) {
-  if (minAge == null && maxAge == null) return null;
-  if (minAge != null && maxAge != null) return `Ages ${minAge}-${maxAge}`;
-  if (minAge != null) return `Ages ${minAge}+`;
-  return `Up to age ${maxAge}`;
-}
-
 export default function OpportunityDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, accountType, user } = useAuth();
+  const { isAuthenticated, accountType } = useAuth();
 
   const [hasJoined, setHasJoined] = useState(false);
   const [joinError, setJoinError] = useState("");
@@ -136,8 +126,6 @@ export default function OpportunityDetailsPage() {
   // التسجيل مفتوح فعليًا (محسوب تلقائيًا حسب التاريخ وعدد المتطوعين —
   // راجع utils/opportunityStatus.js) — أي حالة تانية تمنع الانضمام
   const isRegistrationOpen = opportunity.status === OPPORTUNITY_STATUS.REGISTRATION_OPEN;
-  const volunteerAge = calculateAge(user?.dateOfBirth);
-  const isAgeEligible = isVolunteer ? isVolunteerAgeEligible(volunteerAge, opportunity) : true;
 
   const registrationClosedReason =
     opportunity.status === OPPORTUNITY_STATUS.IN_PROGRESS ||
@@ -155,9 +143,7 @@ export default function OpportunityDetailsPage() {
         ? spotsLeft === 0
           ? "Fully Booked"
           : "Registration Closed"
-        : isVolunteer && !isAgeEligible
-          ? "Age Requirement Not Met"
-          : "Participate";
+        : "Participate";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -212,12 +198,6 @@ export default function OpportunityDetailsPage() {
               <Clock size={16} className="text-primary" aria-hidden="true" />
               {opportunity.minHours}-{opportunity.maxHours} hrs / session
             </span>
-            {formatAgeRange(opportunity.minAge, opportunity.maxAge) ? (
-              <span className="flex items-center gap-1">
-                <Users size={16} className="text-primary" aria-hidden="true" />
-                {formatAgeRange(opportunity.minAge, opportunity.maxAge)}
-              </span>
-            ) : null}
           </div>
 
           {/* نافذة التسجيل — تُعرض بس أثناء مراحل التسجيل، وما إلها معنى
@@ -287,13 +267,12 @@ export default function OpportunityDetailsPage() {
             }
             isLoading={false}
             // الزر يتعطل بحالات: انضم فعلاً / التسجيل مو مفتوح فعليًا /
-            // حساب منظمة مسجّل دخوله / عمر المتطوع خارج نطاق الفرصة.
-            // الزائر ما بينعطل الزر عندو، بينقله للتسجيل بدل ما يمنعه
+            // حساب منظمة مسجّل دخوله. الزائر ما بينعطل الزر عندو،
+            // بينقله للتسجيل بدل ما يمنعه
             disabled={
               isNonVolunteerAccount ||
               hasJoined ||
-              (!isGuest && !isRegistrationOpen) ||
-              (isVolunteer && !isAgeEligible)
+              (!isGuest && !isRegistrationOpen)
             }
             loadingText="Joining..."
           >
@@ -317,15 +296,10 @@ export default function OpportunityDetailsPage() {
           </Button>
 
           {/* رسالة توضيحية واحدة بحسب سبب التعطيل — أولوية حساب المنظمة
-              أولًا (أوضح سبب)، ثم نطاق العمر، ثم إغلاق التسجيل عمومًا */}
+              أولًا (أوضح سبب)، ثم إغلاق التسجيل عمومًا */}
           {isNonVolunteerAccount ? (
             <p className="mt-2 text-sm text-heading/50">
               Only volunteer accounts can join opportunities.
-            </p>
-          ) : isVolunteer && !hasJoined && !isAgeEligible ? (
-            <p className="mt-2 text-sm text-heading/50">
-              {formatAgeRange(opportunity.minAge, opportunity.maxAge)} — this opportunity isn't
-              open to your age group.
             </p>
           ) : !isGuest && !hasJoined && !isRegistrationOpen ? (
             <p className="mt-2 text-sm text-heading/50">{registrationClosedReason}</p>
@@ -342,6 +316,7 @@ export default function OpportunityDetailsPage() {
             onClose={() => setIsHoursModalOpen(false)}
             onConfirm={handleParticipate}
             minHours={opportunity.minHours}
+            maxHours={opportunity.maxHours}
             submitting={participateMutation.isPending}
             serverError={joinError}
           />

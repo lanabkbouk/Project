@@ -1,11 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchOpportunities, fetchSuggestedOpportunities } from '../../services/opportunities'
-import { calculateAge } from '../../utils/validators'
 import { queryKeys } from '../../app/queryKeys'
 
 /**
  * هوك موحّد لجلب الفرص، بيقرر لحاله أي endpoint يستخدم حسب isSuggestedTab:
- * - التبويب المقترح: fetchSuggestedOpportunities (حسب مهارات/عمر/مدينة المتطوع)
+ * - التبويب المقترح: fetchSuggestedOpportunities (حسب مهارات/مدينة المتطوع)
  * - غير هيك: fetchOpportunities (حسب البحث والتصنيف)
  *
  * كل حالة إلها queryKey مختلف، فـ React Query بيفصل الـ cache تلقائيًا
@@ -16,7 +15,6 @@ import { queryKeys } from '../../app/queryKeys'
 export function useOpportunitiesQuery({ isSuggestedTab, search = '', categoryId = '', user } = {}) {
   const suggestedParams = {
     skillIds: Array.isArray(user?.skillIds) ? user.skillIds : [],
-    age: calculateAge(user?.dateOfBirth),
     city: user?.city || '',
   }
 

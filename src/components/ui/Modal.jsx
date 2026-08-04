@@ -10,12 +10,14 @@
 // بمكان غلط) بدل الشاشة كاملة. الـ Portal بيطلع الـ Modal برّا هالشجرة
 // تمامًا، فـ position:fixed بيرجع يشتغل نسبة للـ viewport متل ما لازم.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import Typography from "./Typography";
 
-export default function Modal({ open, onClose, title, children, footer }) {
+export default function Modal({ open, onClose, title, children, footer, dialogClassName = "max-w-md" }) {
   const dialogRef = useRef(null);
+  const generatedTitleId = useId();
+  const titleId = title ? generatedTitleId : undefined;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -40,12 +42,12 @@ export default function Modal({ open, onClose, title, children, footer }) {
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={title ? "modal-title" : undefined}
+        aria-labelledby={titleId}
         tabIndex={-1}
-        className="animate-shell-in relative w-full max-w-md rounded-2xl border border-heading/10 bg-field p-6 shadow-2xl focus:outline-none"
+        className={`animate-shell-in relative w-full rounded-2xl border border-heading/10 bg-field p-6 shadow-2xl focus:outline-none ${dialogClassName}`}
       >
         {title && (
-          <Typography id="modal-title" variant="h4" gutterBottom>
+          <Typography id={titleId} variant="h4" gutterBottom>
             {title}
           </Typography>
         )}

@@ -12,6 +12,7 @@ import Input from '../../components/ui/Input'
 import Skeleton from '../../components/ui/Skeleton'
 import Typography from '../../components/ui/Typography'
 import Button from '../../components/ui/Button'
+import Modal from '../../components/ui/Modal'
 import { useAdminOrganizationsQuery } from '../../hooks/queries/useAdminOrganizationsQuery'
 import { useReviewOrganizationMutation } from '../../hooks/queries/useReviewOrganizationMutation'
 import { useToast } from '../../hooks/useToast'
@@ -49,6 +50,7 @@ export default function AdminOrganizationsReview() {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedOrganization, setSelectedOrganization] = useState(null)
+  const [organizationToApprove, setOrganizationToApprove] = useState(null)
   const [organizationToReject, setOrganizationToReject] = useState(null)
 
   const filteredOrganizations = useMemo(() => {
@@ -76,7 +78,7 @@ export default function AdminOrganizationsReview() {
   const totals = {
     all: organizations.length,
     pending: organizations.filter((organization) => organization.status === ORGANIZATION_STATUS.PENDING).length,
-    verified: organizations.filter((organization) => organization.status === ORGANIZATION_STATUS.VERIFIED).length,
+    approved: organizations.filter((organization) => organization.status === ORGANIZATION_STATUS.VERIFIED).length,
     rejected: organizations.filter((organization) => organization.status === ORGANIZATION_STATUS.REJECTED).length,
   }
 
@@ -90,18 +92,30 @@ export default function AdminOrganizationsReview() {
       return false
     }
 
-    showSuccess(status === ORGANIZATION_STATUS.VERIFIED ? 'Organization verified.' : 'Organization rejected.')
+    showSuccess(status === ORGANIZATION_STATUS.VERIFIED ? 'Organization approved.' : 'Organization rejected.')
     setSelectedOrganization(null)
     return true
   }
 
   const handleApprove = (organization) => {
-    submitDecision({ organizationId: organization.id, status: ORGANIZATION_STATUS.VERIFIED })
+    setSelectedOrganization(null)
+    setOrganizationToApprove(organization)
   }
 
   const handleReject = (organization) => {
     setSelectedOrganization(null)
     setOrganizationToReject(organization)
+  }
+
+  const handleConfirmApproval = async () => {
+    if (!organizationToApprove) return
+
+    const success = await submitDecision({
+      organizationId: organizationToApprove.id,
+      status: ORGANIZATION_STATUS.VERIFIED,
+    })
+
+    if (success) setOrganizationToApprove(null)
   }
 
   const handleConfirmRejection = async (reason) => {
@@ -144,7 +158,7 @@ export default function AdminOrganizationsReview() {
           <div className="grid gap-2 sm:grid-cols-4">
             <Badge label={`All ${totals.all}`} tone="neutral" />
             <Badge label={`Pending ${totals.pending}`} tone="warning" />
-            <Badge label={`Verified ${totals.verified}`} tone="success" />
+            <Badge label={`Approved ${totals.approved}`} tone="success" />
             <Badge label={`Rejected ${totals.rejected}`} tone="danger" />
           </div>
         </div>
@@ -204,6 +218,32 @@ export default function AdminOrganizationsReview() {
         onConfirm={handleConfirmRejection}
         isSubmitting={reviewMutation.isPending}
       />
+
+      <Modal
+        open={Boolean(organizationToApprove)}
+        onClose={() => setOrganizationToApprove(null)}
+        title={`Approve ${organizationToApprove?.name || 'organization'}?`}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setOrganizationToApprove(null)} disabled={reviewMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              variant="success"
+              onClick={handleConfirmApproval}
+              isLoading={reviewMutation.isPending}
+              loadingText="Approving..."
+            >
+              Confirm approval
+            </Button>
+          </>
+        }
+      >
+        <Typography variant="bodySm" className="text-body">
+          This will mark the organization as approved immediately. The status will update in the review list and the
+          organization profile.
+        </Typography>
+      </Modal>
 
       <Toast message={toast.message} variant={toast.variant} duration={7000} onClose={closeToast} />
     </AdminLayout>

@@ -14,9 +14,9 @@ function getStatusTone(status) {
 }
 
 function getStatusLabel(status) {
-  if (status === ORGANIZATION_STATUS.VERIFIED) return 'Verified'
+  if (status === ORGANIZATION_STATUS.VERIFIED) return 'Approved'
   if (status === ORGANIZATION_STATUS.REJECTED) return 'Rejected'
-  return 'Pending review'
+  return 'Pending'
 }
 
 export default function OrganizationReviewCard({

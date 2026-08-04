@@ -1,5 +1,4 @@
-// utils/opportunityStatus.js
-//
+
 // يحسب الحالة "الفعلية" للفرصة اعتمادًا على التاريخ الحالي وعدد المتطوعين،
 // بدل الاعتماد بس على قيمة status مخزّنة يدويًا — هيك الفرصة بتنتقل تلقائيًا
 // عبر مراحلها الأربع (تسجيل مفتوح ← تسجيل منتهي ← قيد العمل ← منتهية) بمجرد
@@ -43,15 +42,4 @@ export function getEffectiveOpportunityStatus(opportunity, now = new Date()) {
 /** اختصار شائع الاستخدام: هل المتطوع لسا يقدر يسجّل بهاي الفرصة؟ */
 export function isRegistrationOpen(opportunity, now = new Date()) {
   return getEffectiveOpportunityStatus(opportunity, now) === OPPORTUNITY_STATUS.REGISTRATION_OPEN;
-}
-
-/**
- * يتحقق إذا كان عمر المتطوع ضمن نطاق [minAge, maxAge] تبع الفرصة.
- * أي من الحدين غير محدد (null/undefined) يعني ما في قيد من هالجهة.
- */
-export function isVolunteerAgeEligible(volunteerAge, opportunity) {
-  if (volunteerAge == null) return true;
-  if (opportunity.minAge != null && volunteerAge < opportunity.minAge) return false;
-  if (opportunity.maxAge != null && volunteerAge > opportunity.maxAge) return false;
-  return true;
 }

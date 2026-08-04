@@ -13,6 +13,7 @@ import Typography from "../components/ui/Typography";
 import ApplicantCard from "../components/organization/ApplicantCard";
 import ApplicantsSummaryStats from "../components/organization/ApplicantsSummaryStats";
 import ApplicantsToolbar from "../components/organization/ApplicantsToolbar";
+import ManageHoursModal from "../components/organization/ManageHoursModal";
 import Skeleton from "../components/ui/Skeleton";
 import EmptyState from "../components/common/EmptyState";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
@@ -21,6 +22,7 @@ import { useOrganizationVerification } from "../hooks/useOrganizationVerificatio
 import { useOpportunityDetailsQuery } from "../hooks/queries/useOpportunityDetailsQuery";
 import { useApplicantsQuery } from "../hooks/queries/useApplicantsQuery";
 import { useUpdateParticipationStatusMutation } from "../hooks/queries/useUpdateParticipationStatusMutation";
+import { useUpdateParticipationHoursMutation } from "../hooks/queries/useUpdateParticipationHoursMutation";
 import { useToast } from "../hooks/useToast";
 import { PARTICIPATION_STATUS } from "../constants/participationStatus";
 import { CARD_SURFACE } from "../utils/surfaceStyles";
@@ -33,18 +35,20 @@ export default function ApplicantsList() {
   const opportunityQuery = useOpportunityDetailsQuery(id);
   const applicantsQuery = useApplicantsQuery(id);
   const updateStatusMutation = useUpdateParticipationStatusMutation(id);
+  const updateHoursMutation = useUpdateParticipationHoursMutation(id);
 
   const opportunity = opportunityQuery.data?.opportunity ?? null;
   const applicants = useMemo(() => applicantsQuery.data ?? [], [applicantsQuery.data]);
   const loading = opportunityQuery.isPending || applicantsQuery.isPending;
   const { toast, showSuccess, showError, closeToast } = useToast();
 
-  // حجز مستقبلي لميزة "إدارة ساعات التطوع" — راجع التعليق التفصيلي
-  // بأسفل ApplicantCard.jsx. محسوبة هون من تاريخ انتهاء الفرصة الحقيقي
-  // (opportunity.endDate) فقط لما يوصل، بدون أي استخدام فعلي بعد.
+  // "إدارة الساعات" ما بتظهر إلا بعد ما تاريخ انتهاء الفرصة الحقيقي يفوت
   const opportunityHasEnded = Boolean(
     opportunity?.endDate && new Date(opportunity.endDate) < new Date(),
   );
+
+  // null = المودال مقفل، كائن applicant = مفتوح على هالمتقدّم بالذات
+  const [hoursModalApplicant, setHoursModalApplicant] = useState(null);
 
   // بفضل mutation.variables: نعرف بالضبط أي متقدّم قيد التحديث حاليًا
   // بدون الحاجة لـ useState منفصلة (updatingId) نديرها يدويًا
@@ -67,6 +71,23 @@ export default function ApplicantsList() {
         ? "Applicant accepted."
         : "Applicant rejected.",
     );
+  };
+
+  const handleConfirmHours = async (hours) => {
+    if (!hoursModalApplicant) return;
+
+    const result = await updateHoursMutation.mutateAsync({
+      applicantId: hoursModalApplicant.id,
+      hours,
+    });
+
+    if (!result.success) {
+      showError(result.error || "Failed to update hours");
+      return;
+    }
+
+    showSuccess("Hours confirmed.");
+    setHoursModalApplicant(null);
   };
 
   // ————— بحث / فلترة / فرز (Client-side بالكامل) —————
@@ -182,12 +203,23 @@ export default function ApplicantsList() {
                   onReject={(applicantId) =>
                     handleStatusChange(applicantId, PARTICIPATION_STATUS.REJECTED)
                   }
+                  onManageHours={setHoursModalApplicant}
                 />
               ))}
             </div>
           )}
         </>
       )}
+
+      <ManageHoursModal
+        open={Boolean(hoursModalApplicant)}
+        onClose={() => setHoursModalApplicant(null)}
+        onConfirm={handleConfirmHours}
+        volunteerName={hoursModalApplicant?.volunteer?.name}
+        committedHours={hoursModalApplicant?.committedHours}
+        currentHoursLogged={hoursModalApplicant?.hoursLogged}
+        isSubmitting={updateHoursMutation.isPending}
+      />
 
       <Toast
         message={toast.message}

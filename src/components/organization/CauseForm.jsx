@@ -264,34 +264,6 @@ export default function CauseForm({
         </div>
       </FormSection>
 
-      <FormSection
-        title="Age Range (optional)"
-        description="Leave a field empty if there's no age restriction on that side."
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <Input
-            label="Min Age"
-            name="minAge"
-            type="number"
-            min="14"
-            register={register}
-            error={errors.minAge?.message}
-            placeholder="No minimum"
-            required
-          />
-          <Input
-            label="Max Age"
-            name="maxAge"
-            type="number"
-            max="100"
-            register={register}
-            error={errors.maxAge?.message}
-            placeholder="No maximum"
-            required
-          />
-        </div>
-      </FormSection>
-
       <Button
         type="submit"
         size="large"

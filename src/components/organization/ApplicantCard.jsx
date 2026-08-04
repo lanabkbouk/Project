@@ -1,8 +1,7 @@
-// بطاقة متقدّم واحد بقائمة "المتقدمين" عند المنظمة. مُعاد تصميمها بمحاذاة
-// وتسلسل هرمي أوضح: أفاتار + معلومات على اليسار، شارة الحالة والإجراء
-// على اليمين، مع سطر مهارات مستقل تحته لتجنّب ازدحام السطر الأول.
+// بطاقة متقدّم واحد بقائمة "المتقدمين" عند المنظمة. أفاتار + معلومات على
+// اليسار، شارة الحالة والإجراء على اليمين، مع سطر مهارات مستقل تحته.
 
-import { MapPin, Phone, Check, X, CheckCircle2 } from "lucide-react";
+import { MapPin, Phone, Check, X, CheckCircle2, Clock3 } from "lucide-react";
 import Button from "../ui/Button";
 import SkillChipsPreview from "../common/SkillChipsPreview";
 import ParticipationStatusBadge from "../opportunity/ParticipationStatusBadge";
@@ -13,26 +12,25 @@ export default function ApplicantCard({
   applicant,
   onAccept,
   onReject,
+  onManageHours,
   isUpdating,
   isVerified = true,
-  // ⚠️ حجز مستقبلي — "إدارة ساعات التطوع" (راجع التعليق أسفل الملف):
-  // opportunityHasEnded لازم توصل من الصفحة الأم (applicantsList.jsx)
-  // عبر مقارنة تاريخ انتهاء الفرصة بالتاريخ الحالي. غير مستخدمة بعد.
+  // فقط لما الفرصة انتهت فعليًا (تاريخ) — محسوبة بالصفحة الأم
+  // (applicantsList.jsx) من opportunity.endDate الحقيقي
   opportunityHasEnded = false,
 }) {
-  const { volunteer, status, participatedAt } = applicant;
+  const { volunteer, status, participatedAt, committedHours, hoursLogged } = applicant;
   const isPending = status === PARTICIPATION_STATUS.PENDING;
   const isAccepted = status === PARTICIPATION_STATUS.ACCEPTED;
+  // "إدارة الساعات" تظهر فقط لمتطوع مقبول بعد ما الفرصة تخلص فعليًا —
+  // المرفوض والمعلّق ما التزموا فعليًا فما في داعي نسألهم عن ساعات
+  const canManageHours = isAccepted && opportunityHasEnded;
+  const hasConfirmedHours = hoursLogged !== null && hoursLogged !== undefined;
 
   if (!volunteer) return null;
 
   return (
-    <div
-      className={`${CARD_BASE} flex flex-col gap-4`}
-      // نقطة التقاط جاهزة لميزة "إدارة ساعات التطوع" المستقبلية — راجع
-      // التعليق التفصيلي أسفل الملف. ما إلها أي تأثير بصري حاليًا.
-      data-hours-management-eligible={opportunityHasEnded && isAccepted}
-    >
+    <div className={`${CARD_BASE} flex flex-col gap-4`}>
       <div className="flex flex-col sm:flex-row sm:items-start gap-4">
         {/* الصورة الرمزية */}
         <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0">
@@ -59,6 +57,12 @@ export default function ApplicantCard({
                   </span>
                 )}
                 <span className="text-heading/40">Applied {participatedAt}</span>
+                {committedHours != null && (
+                  <span className="flex items-center gap-1 text-heading/60">
+                    <Clock3 size={13} className="text-primary shrink-0" aria-hidden="true" />
+                    {hasConfirmedHours ? `${hoursLogged} hrs confirmed` : `${committedHours} hrs pledged`}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -74,8 +78,9 @@ export default function ApplicantCard({
         </div>
       </div>
 
-      {/* شريط الإجراء السفلي — إما أزرار قرار (pending)، أو مؤشر "تم
-          البتّ" (accepted/rejected) بدل ما نخلي المساحة فاضية بصمت */}
+      {/* شريط الإجراء السفلي — أزرار قرار (pending)، أو مؤشر "تم البتّ"
+          مع زر إدارة الساعات (accepted بعد انتهاء الفرصة)، أو المؤشر
+          وحده (rejected، أو accepted قبل ما الفرصة تخلص) */}
       <div className="flex items-center justify-end gap-2 pt-3 border-t border-heading/10">
         {isPending ? (
           <>
@@ -103,29 +108,25 @@ export default function ApplicantCard({
             </Button>
           </>
         ) : (
-          <span className="flex items-center gap-1.5 text-xs font-medium text-heading/50">
-            <CheckCircle2 size={14} aria-hidden="true" />
-            Decision completed
-          </span>
-        )}
+          <>
+            <span className="flex items-center gap-1.5 text-xs font-medium text-heading/50">
+              <CheckCircle2 size={14} aria-hidden="true" />
+              {hasConfirmedHours ? "Hours confirmed" : "Decision completed"}
+            </span>
 
-        {/*
-          حجز مستقبلي — "إدارة ساعات التطوع" (لا تُبنَى الواجهة الآن):
-          سيظهر هنا زر/قسم "Manage Hours" فقط عندما:
-            1) opportunityHasEnded === true (الفرصة انتهت فعليًا)، و
-            2) isAccepted === true (متطوع مقبول فقط، مو pending/rejected)
-          مثال الشرط المستقبلي:
-            {opportunityHasEnded && isAccepted && (
-              <Button variant="secondary" size="small" onClick={() => onManageHours(applicant.id)}>
-                Manage Hours
+            {canManageHours && (
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => onManageHours(applicant)}
+                className="flex items-center gap-1 !px-3 !py-1.5 !text-sm"
+              >
+                <Clock3 size={14} />
+                {hasConfirmedHours ? "Edit hours" : "Manage hours"}
               </Button>
             )}
-          الزر بيحتاج mutation جديدة (updateParticipationHours) بالضبط
-          متل updateParticipationStatus الموجودة، وendpoint خاص بالساعات
-          بالباك اند (راجع رد سابق: عمود hours_logged لسا مو موجود
-          بجدول opportunity_volunteer). isAccepted مُحسوبة أعلاه مسبقًا
-          لهذا الغرض بالضبط، فقط غير مستخدمة بعد.
-        */}
+          </>
+        )}
       </div>
     </div>
   );

@@ -42,6 +42,7 @@ function toOrganizationSummary(mockUser) {
     status: mockUser.status || ORGANIZATION_STATUS.PENDING,
     requestedAt: mockUser.createdAt || null,
     rejectionReason: mockUser.rejectionReason || '',
+    reviewedAt: mockUser.reviewedAt || null,
   }
 }
 
@@ -61,6 +62,7 @@ function mapApiOrganization(raw) {
     status: raw.status || ORGANIZATION_STATUS.PENDING,
     requestedAt: raw.created_at || raw.createdAt || raw.requested_at || null,
     rejectionReason: raw.rejection_reason || raw.rejectionReason || '',
+    reviewedAt: raw.reviewed_at || raw.reviewedAt || null,
   }
 }
 
@@ -108,27 +110,34 @@ export async function fetchPendingOrganizations() {
  * @param {{status: 'verified'|'rejected', reason?: string}} decision
  */
 export async function reviewOrganization(organizationId, decision) {
+  const trimmedReason = String(decision?.reason || '').trim()
+
+  if (decision?.status === ORGANIZATION_STATUS.REJECTED && !trimmedReason) {
+    return { success: false, error: 'Rejection reason is required' }
+  }
+
   if (MOCK_MODE) {
     await wait()
 
     const mockUser = loadMockUsers().find((user) => user.organizationId === organizationId)
     if (!mockUser) return { success: false, error: 'Organization not found' }
 
+    const reviewedAt = new Date().toISOString()
     updateMockUser(mockUser.email, {
       status: decision.status,
-      rejectionReason: decision.status === ORGANIZATION_STATUS.REJECTED ? decision.reason || '' : '',
-      reviewedAt: new Date().toISOString(),
+      rejectionReason: decision.status === ORGANIZATION_STATUS.REJECTED ? trimmedReason : '',
+      reviewedAt,
     })
 
-    return { success: true }
+    return { success: true, status: decision.status, reason: trimmedReason, reviewedAt }
   }
 
   try {
     await apiClient.patch(`/admin/organizations/${organizationId}/verify`, {
       status: decision.status,
-      reason: decision.reason,
+      reason: trimmedReason || undefined,
     })
-    return { success: true }
+    return { success: true, status: decision.status, reason: trimmedReason }
   } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Failed to submit this decision') }
   }

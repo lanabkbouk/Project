@@ -15,8 +15,25 @@ import { apiClient, getApiErrorMessage } from './api/client'
 import { isMockMode } from './api/mockMode'
 import { wait } from './api/delay'
 import { OPPORTUNITY_STATUS } from '../constants/opportunityStatus'
-import { getEffectiveOpportunityStatus, isVolunteerAgeEligible } from '../utils/opportunityStatus'
-import { getCategoryIdsForSkillIds } from './skills'
+import { getEffectiveOpportunityStatus } from '../utils/opportunityStatus'
+import { getCategoryIdsForSkillIds, fetchAvailableSkills } from './skills'
+import { loadMockUsers } from './mock/mockUserStore'
+import { addMockParticipation } from './mock/mockParticipationsStore'
+import { MOCK_OPPORTUNITIES, MOCK_MY_ORGANIZATION_ID } from './mock/mockOpportunitiesStore'
+import { AUTH_STORAGE_KEY } from '../constants/auth/storage'
+
+// إيميل الجلسة الحالية — نفس النمط المستخدم بـ services/organization.js
+// وservices/volunteer.js، لازم نعرف مين المتطوع الحالي لحظة الانضمام
+// حتى نبني له سجل مشاركة كامل (اسم/مدينة/مهارات) لا رقم مجرّد
+function getCurrentSessionEmail() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw)?.user?.email || null
+  } catch {
+    return null
+  }
+}
 
 const MOCK_MODE = isMockMode()
 
@@ -28,167 +45,6 @@ function attachComputedStatus(opportunity) {
   if (!opportunity) return opportunity
   return { ...opportunity, status: getEffectiveOpportunityStatus(opportunity) }
 }
-
-// مُعرّف حساب المنظمة الوهمي الوحيد المتاح حاليًا للتجربة — يُستخدم فقط
-// لفلترة "My Causes" من نفس المصدر الموحّد أدناه (بدل جلبها من مصفوفة منفصلة)
-const MOCK_MY_ORGANIZATION_ID = 'org-mock'
-
-// مصدر بيانات وهمي واحد لكل الفرص — يحاكي جدول "opportunity" الحقيقي بالباك.
-// أي فرصة تُنشئها منظمة (createOpportunity) تُضاف هنا مباشرة، فتظهر فورًا
-// بصفحة تصفح الفرص العامة للمتطوعين، تمامًا كما ستتصرف مع Laravel لاحقًا.
-// "My Causes" (fetchMyOpportunities) و"Opportunities" العامة (fetchOpportunities)
-// كلاهما يقرأ من نفس المصفوفة، ويختلفان فقط بالفلترة المطبّقة.
-// registrationClosedManually: علم داخلي بس (مش status) بيمثّل إغلاق
-// التسجيل المبكر من طرف المنظمة — الحالة المعروضة فعليًا دايمًا محسوبة
-// عبر attachComputedStatus/getEffectiveOpportunityStatus أدناه
-let MOCK_OPPORTUNITIES = [
-  {
-    id: 'o1',
-    title: 'Clean Water for All',
-    description:
-      'Help install and maintain clean water access points for underserved communities. No prior experience required — training is provided on site.',
-    registrationClosedManually: false,
-    startDate: '2026-08-05',
-    endDate: '2026-08-20',
-    location: 'Rotterdam, Netherlands',
-    registerStartAt: '2026-07-15',
-    registerEndAt: '2026-08-04',
-    minHours: 2,
-    maxHours: 6,
-    totalHours: 120,
-    currentVolunteers: 14,
-    minVolunteers: 5,
-    maxVolunteers: 30,
-    minAge: 18,
-    maxAge: 60,
-    category: { id: 'c1', name: 'Health' },
-    skills: [{ id: 's1', name: 'First Aid' }, { id: 's7', name: 'Communication' }],
-    organization: { id: 'org1', name: 'Blue Drop Foundation', phone: '+31611111111', imageUrl: null },
-    image: null,
-  },
-  {
-    id: 'o2',
-    title: 'After-School Tutoring Program',
-    description:
-      'Support local students with homework help and basic literacy skills, twice a week in the afternoon.',
-    registrationClosedManually: false,
-    startDate: '2026-09-01',
-    endDate: '2026-12-15',
-    location: 'The Hague, Netherlands',
-    registerStartAt: '2026-07-10',
-    registerEndAt: '2026-08-25',
-    minHours: 2,
-    maxHours: 4,
-    totalHours: 80,
-    currentVolunteers: 9,
-    minVolunteers: 5,
-    maxVolunteers: 15,
-    minAge: 16,
-    maxAge: 50,
-    category: { id: 'c2', name: 'Education' },
-    skills: [{ id: 's4', name: 'Teaching' }, { id: 's5', name: 'Tutoring' }],
-    organization: { id: 'org2', name: 'Bright Minds NGO', phone: '+31622222222', imageUrl: null },
-    image: null,
-  },
-  {
-    id: 'o3',
-    title: 'Coastal Cleanup Day',
-    description:
-      'Join a one-day beach and coastal cleanup effort to protect local marine ecosystems.',
-    registrationClosedManually: false,
-    startDate: '2026-08-12',
-    endDate: '2026-08-12',
-    location: 'Scheveningen Beach, NL',
-    registerStartAt: '2026-07-20',
-    registerEndAt: '2026-08-10',
-    minHours: 3,
-    maxHours: 5,
-    totalHours: 40,
-    currentVolunteers: 22,
-    minVolunteers: 10,
-    maxVolunteers: 40,
-    minAge: 14,
-    maxAge: null,
-    category: { id: 'c5', name: 'Environment' },
-    skills: [{ id: 's12', name: 'Environmental Awareness' }],
-    organization: { id: 'org3', name: 'Green Coast Initiative', phone: '+31633333333', imageUrl: null },
-    image: null,
-  },
-  {
-    id: 'o4',
-    title: 'Community Food Bank Support',
-    description:
-      'Sort, pack, and distribute food donations to families in need across the city.',
-    registrationClosedManually: false,
-    // تاريخ البدء ماضٍ فعليًا (قبل تاريخ اليوم) — تُعرض تلقائيًا كـ "قيد
-    // العمل" (in_progress) بدون أي تدخل يدوي، مثال حي على الحساب التلقائي
-    startDate: '2026-07-25',
-    endDate: '2026-10-01',
-    location: 'Rotterdam, Netherlands',
-    registerStartAt: '2026-06-01',
-    registerEndAt: '2026-07-20',
-    minHours: 3,
-    maxHours: 6,
-    totalHours: 150,
-    currentVolunteers: 30,
-    minVolunteers: 15,
-    maxVolunteers: 50,
-    minAge: 18,
-    maxAge: 65,
-    category: { id: 'c3', name: 'Social' },
-    skills: [{ id: 's8', name: 'Event Management' }],
-    organization: { id: 'org4', name: 'City Food Bank', phone: '+31644444444', imageUrl: null },
-    image: null,
-  },
-  {
-    id: 'o5',
-    title: 'Winter Clothes Drive',
-    description:
-      'Collected and distributed warm clothing to families ahead of the winter season.',
-    registrationClosedManually: false,
-    startDate: '2025-11-01',
-    endDate: '2025-12-20',
-    location: 'Rotterdam, Netherlands',
-    registerStartAt: '2025-10-01',
-    registerEndAt: '2025-10-25',
-    minHours: 2,
-    maxHours: 4,
-    totalHours: 200,
-    currentVolunteers: 25,
-    minVolunteers: 10,
-    maxVolunteers: 25,
-    minAge: null,
-    maxAge: null,
-    category: { id: 'c3', name: 'Social' },
-    skills: [{ id: 's8', name: 'Event Management' }],
-    organization: { id: 'org4', name: 'City Food Bank', phone: '+31644444444', imageUrl: null },
-    image: null,
-  },
-  {
-    id: 'o6',
-    title: 'Summer Reading Camp',
-    description:
-      'A two-week reading and literacy camp for children in underserved neighborhoods.',
-    registrationClosedManually: false,
-    startDate: '2025-07-01',
-    endDate: '2025-07-14',
-    location: 'The Hague, Netherlands',
-    registerStartAt: '2025-05-01',
-    registerEndAt: '2025-06-20',
-    minHours: 3,
-    maxHours: 5,
-    totalHours: 180,
-    currentVolunteers: 18,
-    minVolunteers: 8,
-    maxVolunteers: 18,
-    minAge: 16,
-    maxAge: 30,
-    category: { id: 'c2', name: 'Education' },
-    skills: [{ id: 's4', name: 'Teaching' }],
-    organization: { id: 'org2', name: 'Bright Minds NGO', phone: '+31622222222', imageUrl: null },
-    image: null,
-  },
-]
 
 // يبني FormData لطلب إنشاء/تعديل فرصة، مع إرفاق الصورة إن وُجدت
 function buildOpportunityFormData(payload, imageFile) {
@@ -212,7 +68,6 @@ function matchesFilters(opportunity, filters = {}) {
     skillId = '',
     skillIds = [],
     location = '',
-    age = null,
   } = filters
 
   const normalizedOpportunity = opportunity || {}
@@ -240,9 +95,7 @@ function matchesFilters(opportunity, filters = {}) {
   const matchesLocation =
     !location || opportunityLocation.toLowerCase().includes(location.trim().toLowerCase())
 
-  const matchesAge = age == null || isVolunteerAgeEligible(age, normalizedOpportunity)
-
-  return matchesSearch && matchesCategory && matchesSkill && matchesLocation && matchesAge
+  return matchesSearch && matchesCategory && matchesSkill && matchesLocation
 }
 
 /**
@@ -304,9 +157,9 @@ export async function fetchOpportunities(filters = {}) {
  * نستبدل منطق الـ MOCK هون بس، بدون ما نلمس أي Component يستخدمها.
  * شكل الـ Response النهائي (وهل فيه matching score) لسا بانتظار تأكيد الباك.
  *
- * @param {{skillIds?: string[], age?: number|null, city?: string}} volunteer
+ * @param {{skillIds?: string[], city?: string}} volunteer
  */
-export async function fetchSuggestedOpportunities({ skillIds = [], age = null, city = '' } = {}) {
+export async function fetchSuggestedOpportunities({ skillIds = [], city = '' } = {}) {
   if (MOCK_MODE) {
     await wait()
     const categoryIds = getCategoryIdsForSkillIds(skillIds)
@@ -318,7 +171,6 @@ export async function fetchSuggestedOpportunities({ skillIds = [], age = null, c
         skillIds,
         categoryIds,
         location: city,
-        age,
       })
     }).map(attachComputedStatus)
   }
@@ -416,7 +268,12 @@ export async function fetchOpportunitiesByOrganization(organizationId) {
 export async function deleteOpportunity(id) {
   if (MOCK_MODE) {
     await wait()
-    MOCK_OPPORTUNITIES = MOCK_OPPORTUNITIES.filter((item) => item.id !== id)
+    // splice بالمكان بدل إعادة تعيين MOCK_OPPORTUNITIES بالكامل: هي
+    // مستوردة هلق من mockOpportunitiesStore.js (named import) — وnamed
+    // imports ثابتة (read-only binding) بوضع ES Modules، ما بينعاد
+    // تعيينها من ملف تاني غير يلي عرّفها، فقط تعديل محتواها بالمكان
+    const index = MOCK_OPPORTUNITIES.findIndex((item) => item.id === id)
+    if (index !== -1) MOCK_OPPORTUNITIES.splice(index, 1)
     return { success: true }
   }
 
@@ -487,9 +344,8 @@ export async function updateOpportunity(id, { imageFile, ...payload }) {
  * Registers the current volunteer's participation in an opportunity.
  * Maps to the "participates" relation (volunteer <-> opportunity).
  * @param {string} id
- * @param {number} committedHours - أقل عدد ساعات حدّده المتطوع بنفسه
- *   وقت التسجيل، لازم يكون على الأقل minHours تبع هاي الفرصة بالذات
- *   (بدون سقف أعلى مفروض بهاي الخطوة)
+ * @param {number} committedHours - عدد الساعات يلي حدّده المتطوع بنفسه
+ *   وقت التسجيل، لازم يكون جوا نطاق [minHours, maxHours] تبع هاي الفرصة
  */
 export async function participateInOpportunity(id, committedHours) {
   if (MOCK_MODE) {
@@ -504,18 +360,46 @@ export async function participateInOpportunity(id, committedHours) {
       return { success: false, error: 'Registration is no longer open for this opportunity' }
     }
 
-    // تحقق من عدد الساعات — حقل "حد أدنى" بس (مو نطاق مغلق)، فبنتحقق إنه
-    // على الأقل minHours تبع الفرصة بدون أي سقف أعلى نفرضه هون. نفس
-    // القاعدة لازم تتأكد بالباك اند الحقيقي كمان (الفرونت خط دفاع أول بس)
+    // تحقق من عدد الساعات — لازم يكون *جوا* نطاق الفرصة بالكامل
+    // [minHours, maxHours]، مش بس أكبر من الحد الأدنى. نفس القاعدة
+    // لازم تتأكد بالباك اند الحقيقي كمان (الفرونت خط دفاع أول بس)
     const hours = Number(committedHours)
-    if (!Number.isFinite(hours) || hours < opportunity.minHours) {
+    if (!Number.isFinite(hours) || hours < opportunity.minHours || hours > opportunity.maxHours) {
       return {
         success: false,
-        error: `Please commit to at least ${opportunity.minHours} hours.`,
+        error: `Please commit to a number between ${opportunity.minHours} and ${opportunity.maxHours} hours.`,
       }
     }
 
     opportunity.currentVolunteers = (opportunity.currentVolunteers || 0) + 1
+
+    // نربط الانضمام هون فعليًا بقائمة المتقدمين يلي بتشوفها المنظمة —
+    // بدون هالخطوة كان المتطوع بيزيد بعداد "X/Y volunteers joined" بس
+    // بدون ما يظهر إطلاقًا بصفحة applicants (فجوة Mock سابقة بين
+    // opportunities.js وparticipations.js، راجع mockParticipationsStore.js)
+    const email = getCurrentSessionEmail()
+    const mockUser = email ? loadMockUsers().find((user) => user.email === email) : null
+
+    if (mockUser) {
+      // skillIds مخزّنة بالبروفايل (مو أسماء) — لازم نحوّلها لأسماء
+      // حقيقية قبل ما تنعرض ببطاقة المتقدم عند المنظمة
+      const allSkills = await fetchAvailableSkills()
+      const skillNames = (mockUser.skillIds || [])
+        .map((skillId) => allSkills.find((skill) => skill.id === skillId)?.name)
+        .filter(Boolean)
+
+      addMockParticipation({
+        opportunityId: id,
+        committedHours: hours,
+        volunteerProfile: {
+          name: [mockUser.firstName, mockUser.lastName].filter(Boolean).join(' ') || 'A volunteer',
+          photo: mockUser.imageUrl || null,
+          city: mockUser.city || '',
+          skills: skillNames,
+          phone: mockUser.phone || '',
+        },
+      })
+    }
 
     return { success: true }
   }

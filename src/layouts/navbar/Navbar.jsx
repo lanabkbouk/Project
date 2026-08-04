@@ -10,6 +10,7 @@ import {
   Settings2,
   UserRound,
   ChevronDown,
+  Globe,
 } from "lucide-react";
 
 import { ROUTES } from "../../constants/paths";
@@ -71,6 +72,7 @@ export default function Navbar({ role = "guest" }) {
 
   const baseLinks = [{ name: "Home", href: ROUTES.HOME }];
   const aboutLink = { name: "About Us", href: ROUTES.ABOUT };
+  const isAdmin = accountType === ACCOUNT_TYPES.ADMIN;
 
   // "Dashboard" مرتبط فعليًا بمنظمة موثّقة بـ id — لو مش متوفر بعد
   // (مثلًا مباشرة بعد التسجيل بوضع real API لسا ما وصل)، منخفيه بدل ما
@@ -78,7 +80,14 @@ export default function Navbar({ role = "guest" }) {
   const roleLinks = (linksByRole[role] || []).filter(
     (link) => link.name !== "Dashboard" || Boolean(organizationId)
   );
-  const allLinks = [...baseLinks, ...roleLinks, aboutLink];
+
+  // شاشات الأدمن عندها تنقّلها الخاص بالكامل بـ AdminSidebar (يسار
+  // الشاشة) — أي رابط تاني هون بيصير تكرار. النافبار هون بيقتصر على
+  // رابط وحيد وواضح: "View site"، أي مخرج صريح لوضع المستخدم العادي،
+  // بدل قائمة Home/About Us العامة يلي ما إلها معنى واضح جوا سياق إدارة
+  const allLinks = isAdmin
+    ? [{ name: "View site", href: ROUTES.HOME, icon: Globe }]
+    : [...baseLinks, ...roleLinks, aboutLink];
 
   const linkClass = ({ isActive }) =>
     `relative inline-flex py-2 transition duration-300 ${
@@ -215,7 +224,10 @@ export default function Navbar({ role = "guest" }) {
               {allLinks.map((link) => (
                 <li key={link.name}>
                   <NavLink to={link.href} className={linkClass}>
-                    {link.name}
+                    <span className="flex items-center gap-1.5">
+                      {link.icon && <link.icon size={16} aria-hidden="true" />}
+                      {link.name}
+                    </span>
                   </NavLink>
                 </li>
               ))}
@@ -241,7 +253,10 @@ export default function Navbar({ role = "guest" }) {
                     }`
                   }
                 >
-                  {link.name}
+                  <span className="flex items-center gap-2">
+                    {link.icon && <link.icon size={16} aria-hidden="true" />}
+                    {link.name}
+                  </span>
                 </NavLink>
               </li>
             ))}

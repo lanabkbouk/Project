@@ -12,11 +12,12 @@ export const linksByRole = {
     { name: 'My Causes', href: ROUTES.MY_CAUSES },
   ],
 
-  admin: [
-    { name: 'Dashboard', href: ROUTES.ADMIN_DASHBOARD },
-    { name: 'Organization Verification', href: ROUTES.ADMIN_ORGANIZATIONS },
-    { name: 'Categories', href: ROUTES.ADMIN_CATEGORIES },
-  ],
+  // ⚠️ عمدًا بدون روابط هون: كل تنقّل الأدمن (Dashboard/Organization
+  // Verification/Categories) موجود أصلًا بـ AdminSidebar.jsx على يسار
+  // شاشات الأدمن — تكرارها هون كان يعرض نفس الروابط مرتين بمكانين
+  // مختلفين بنفس الشاشة. Navbar.jsx بيتعامل مع هالحالة بشكل خاص
+  // (رابط "View site" وحيد بدل قائمة كاملة) — راجع isAdmin هناك.
+  admin: [],
 
   guest: [
     { name: 'Opportunities', href: ROUTES.OPPORTUNITIES },

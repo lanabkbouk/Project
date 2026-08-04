@@ -1,6 +1,5 @@
-// مودال تأكيد رفض توثيق منظمة، مع سبب اختياري يُعرض للمنظمة لاحقًا عبر
-// VerificationStatusBanner الموجود أصلًا بصفحتها. القبول لا يحتاج مودال
-// (فعل بسيط بلا سبب مطلوب)، لذلك هذا المودال خاص بالرفض فقط.
+// مودال تأكيد رفض توثيق منظمة، مع سبب إلزامي يرافق القرار. القبول
+// يُدار بمودال منفصل في صفحة المراجعة حتى يبقى التدفق واضحًا.
 
 import { useState } from 'react'
 import Modal from '../ui/Modal'
@@ -9,14 +8,24 @@ import Button from '../ui/Button'
 
 export default function VerificationDecisionModal({ open, organizationName, onClose, onConfirm, isSubmitting }) {
   const [reason, setReason] = useState('')
+  const [hasAttemptedConfirm, setHasAttemptedConfirm] = useState(false)
+
+  const trimmedReason = reason.trim()
+  const reasonError = hasAttemptedConfirm && !trimmedReason ? 'Rejection reason is required.' : ''
 
   const handleConfirm = () => {
-    onConfirm(reason.trim())
+    setHasAttemptedConfirm(true)
+
+    if (!trimmedReason) return
+
+    onConfirm(trimmedReason)
     setReason('')
+    setHasAttemptedConfirm(false)
   }
 
   const handleClose = () => {
     setReason('')
+    setHasAttemptedConfirm(false)
     onClose()
   }
 
@@ -33,6 +42,7 @@ export default function VerificationDecisionModal({ open, organizationName, onCl
           <Button
             variant="danger"
             onClick={handleConfirm}
+            disabled={isSubmitting || !trimmedReason}
             isLoading={isSubmitting}
             loadingText="Submitting..."
           >
@@ -52,6 +62,7 @@ export default function VerificationDecisionModal({ open, organizationName, onCl
         rows={4}
         value={reason}
         onChange={(event) => setReason(event.target.value)}
+        error={reasonError}
       />
     </Modal>
   )

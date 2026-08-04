@@ -65,8 +65,6 @@ const DEFAULT_VALUES = {
   totalHours: "",
   minVolunteers: "",
   maxVolunteers: "",
-  minAge: "",
-  maxAge: "",
 };
 
 export default function CreateEditCause() {
@@ -134,8 +132,6 @@ export default function CreateEditCause() {
       totalHours: opportunity.totalHours,
       minVolunteers: opportunity.minVolunteers,
       maxVolunteers: opportunity.maxVolunteers,
-      minAge: opportunity.minAge ?? "",
-      maxAge: opportunity.maxAge ?? "",
     });
 
     if (opportunity.image) setPreviewUrl(opportunity.image);
@@ -160,9 +156,6 @@ export default function CreateEditCause() {
       category: selectedCategory ? { id: selectedCategory.id, name: selectedCategory.name } : null,
       skills: selectedSkills,
       location: values.city,
-      // نطاق العمر اختياري — نحوّل الحقل الفارغ إلى null بدل نص فاضي
-      minAge: values.minAge === "" ? null : Number(values.minAge),
-      maxAge: values.maxAge === "" ? null : Number(values.maxAge),
       imageFile,
     };
 

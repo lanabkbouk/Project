@@ -5,7 +5,13 @@ import { ROUTES } from "../../constants/paths";
 import { CARD_BASE } from "../../utils/surfaceStyles";
 
 export default function ParticipationCard({ participation }) {
-  const { opportunity, status, hoursLogged, joinedDate } = participation;
+  const { opportunity, status, committedHours, hoursLogged, joinedDate } = participation;
+  // hoursLogged بيضل null لحد ما المنظمة تأكد/تعدّل الرقم النهائي بعد
+  // انتهاء الفرصة فعليًا (راجع updateParticipationHours) — قبلها بنعرض
+  // الرقم يلي المتطوع التزم فيه هو بنفسه لحظة الانضمام، بوصف واضح إنه
+  // "التزام" مش "ساعات مؤكدة" حتى ما يلتبس على المتطوع
+  const isConfirmed = hoursLogged !== null && hoursLogged !== undefined;
+  const hoursLabel = isConfirmed ? `${hoursLogged} hrs logged` : `${committedHours} hrs pledged`;
 
   return (
     <div className={CARD_BASE}>
@@ -23,7 +29,7 @@ export default function ParticipationCard({ participation }) {
         </span>
         <span className="flex items-center gap-1">
           <Clock size={14} className="text-primary" aria-hidden="true" />
-          {hoursLogged} hrs logged
+          {hoursLabel}
         </span>
         <span className="text-heading/40">Joined {joinedDate}</span>
       </div>

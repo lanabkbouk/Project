@@ -1,12 +1,13 @@
-
 // نافذة تأكيد صغيرة تظهر لما المتطوع يضغط "Participate" — بتطلب منه رقم
-// واحد بس: أقل عدد ساعات هو مستعد يلتزم فيها بهاي الفرصة (مو اختيار بين
-// مستويين/حدّين). الشرط الوحيد: هالرقم لازم يكون على الأقل minHours تبع
-// الفرصة (الحد الأدنى المطلوب من المنظمة) — بدون سقف أعلى يفرض عليه هون.
+// واحد بس: عدد الساعات هو مستعد يلتزم فيها بهاي الفرصة، ولازم يكون
+// *جوا* نطاق الفرصة بالكامل [minHours, maxHours] — مش بس أكبر من الحد
+// الأدنى، متل ما كان قبل (كانت الواجهة بتقول "at least X hours" وما
+// كانت تذكر أو تفرض الحد الأعلى إطلاقًا، فالمتطوع كان يقدر يكتب رقم
+// أكبر من طاقة الفرصة الفعلية بدون أي تنبيه).
 //
 // التحقق هون خط دفاع أول بس — الخدمة (opportunities.js) بترفض أي قيمة
-// أقل من الحد الأدنى حتى لو تجاوزت هالتحقق هون، والباك اند الحقيقي لازم
-// يتحقق نفس الشي كمان.
+// برا النطاق حتى لو تجاوزت هالتحقق هون، والباك اند الحقيقي لازم يتحقق
+// نفس الشي كمان.
 
 import { useState } from "react";
 import Modal from "../ui/Modal";
@@ -18,6 +19,7 @@ export default function ParticipateHoursModal({
   onClose,
   onConfirm,
   minHours,
+  maxHours,
   submitting = false,
   serverError = "",
 }) {
@@ -27,8 +29,8 @@ export default function ParticipateHoursModal({
 
   function handleConfirm() {
     const value = Number(hours);
-    if (!Number.isFinite(value) || value < minHours) {
-      setLocalError(`Please enter at least ${minHours} hours.`);
+    if (!Number.isFinite(value) || value < minHours || value > maxHours) {
+      setLocalError(`Please enter a number between ${minHours} and ${maxHours} hours.`);
       return;
     }
     setLocalError("");
@@ -44,7 +46,7 @@ export default function ParticipateHoursModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Minimum hours you can commit"
+      title="Hours you can commit"
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={submitting}>
@@ -57,15 +59,17 @@ export default function ParticipateHoursModal({
       }
     >
       <p className="mb-4">
-        This opportunity requires at least <strong>{minHours}</strong> hours per volunteer. Enter
-        the minimum number of hours you can commit to it.
+        This opportunity requires between <strong>{minHours}</strong> and{" "}
+        <strong>{maxHours}</strong> hours per volunteer. Enter the number of hours you can commit
+        to it.
       </p>
 
       <Input
-        label="Minimum hours you can commit"
+        label={`Hours you can commit (${minHours}–${maxHours})`}
         name="committedHours"
         type="number"
         min={minHours}
+        max={maxHours}
         value={hours}
         onChange={(event) => setHours(event.target.value)}
         error={displayedError}
