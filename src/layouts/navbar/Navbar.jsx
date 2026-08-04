@@ -7,6 +7,8 @@ import {
   X,
   UserIcon,
   LogOut,
+  Settings2,
+  UserRound,
   ChevronDown,
 } from "lucide-react";
 
@@ -37,6 +39,35 @@ export default function Navbar({ role = "guest" }) {
     logout();
     navigate(ROUTES.HOME);
   };
+
+  const profileHref =
+    accountType === ACCOUNT_TYPES.ADMIN
+      ? ROUTES.ADMIN_PROFILE
+      : accountType === ACCOUNT_TYPES.VOLUNTEER
+        ? ROUTES.VOLUNTEER_PROFILE
+        : ROUTES.ORGANIZATION_PROFILE;
+
+  const dropdownItems = [
+    {
+      name: accountType === ACCOUNT_TYPES.ADMIN ? "Profile" : "My Profile",
+      href: profileHref,
+      icon: UserRound,
+    },
+  ];
+
+  if (accountType === ACCOUNT_TYPES.ADMIN) {
+    dropdownItems.push({
+      name: "Settings",
+      href: ROUTES.ADMIN_SETTINGS,
+      icon: Settings2,
+    });
+  }
+
+  dropdownItems.push({
+    name: "Logout",
+    icon: LogOut,
+    onClick: handleLogout,
+  });
 
   const baseLinks = [{ name: "Home", href: ROUTES.HOME }];
   const aboutLink = { name: "About Us", href: ROUTES.ABOUT };
@@ -157,18 +188,7 @@ export default function Navbar({ role = "guest" }) {
                     </div>
                   }
                   items={[
-                    {
-                      name: "My Profile",
-                      href:
-                        accountType === ACCOUNT_TYPES.VOLUNTEER
-                          ? ROUTES.VOLUNTEER_PROFILE
-                          : ROUTES.ORGANIZATION_PROFILE,
-                    },
-                    {
-                      name: "Logout",
-                      icon: LogOut,
-                      onClick: handleLogout,
-                    },
+                    ...dropdownItems,
                   ]}
                 />
               </div>

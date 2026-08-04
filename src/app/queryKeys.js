@@ -44,6 +44,13 @@ export const queryKeys = {
     completed: ['opportunities', 'completed'],
   },
 
+  admin: {
+    // قائمة طلبات توثيق المنظمات بانتظار مراجعة الأدمن
+    pendingOrganizations: ['admin', 'organizations', 'pending'],
+    organizations: ['admin', 'organizations', 'all'],
+    dashboard: ['admin', 'dashboard'],
+  },
+
   participations: {
     all: ['participations'],
     mine: ['participations', 'mine'],

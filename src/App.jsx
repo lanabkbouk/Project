@@ -31,6 +31,11 @@ const OpportunityDetailsPage = lazy(() => import('./pages/opportunities/Opportun
 const OrganizationsListPage = lazy(() => import('./pages/organization/OrganizationsListPage'))
 const OrganizationDetailsPage = lazy(() => import('./pages/organization/OrganizationDetailsPage'))
 const Dashboard = lazy(() => import('./pages/dashboard'))
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
+const AdminOrganizationsReview = lazy(() => import('./pages/admin/AdminOrganizationsReview'))
+const AdminCatalogManagement = lazy(() => import('./pages/admin/AdminCatalogManagement'))
+const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'))
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
 const NotFound = lazy(() => import('./pages/notFound'))
 
 // نفس شجرة الراوتس القديمة بالضبط، بس عبر createRoutesFromElements حتى
@@ -69,6 +74,15 @@ const router = createBrowserRouter(
             <Route path={ROUTES.CREATE_CAUSE} element={<CreateEditCause />} />
             <Route path={`${ROUTES.MY_CAUSES}/:id/edit`} element={<CreateEditCause />} />
             <Route path={`${ROUTES.APPLICANTS}/:id`} element={<ApplicantsList />} />
+          </Route>
+
+          {/* Admin */}
+          <Route element={<ProtectedRoute allowedAccountTypes={[ACCOUNT_TYPES.ADMIN]} />}>
+            <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminDashboard />} />
+            <Route path={ROUTES.ADMIN_ORGANIZATIONS} element={<AdminOrganizationsReview />} />
+            <Route path={ROUTES.ADMIN_CATEGORIES} element={<AdminCatalogManagement />} />
+            <Route path={ROUTES.ADMIN_PROFILE} element={<AdminProfile />} />
+            <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettings />} />
           </Route>
         </Route>
 

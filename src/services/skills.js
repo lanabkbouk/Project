@@ -1,4 +1,3 @@
-
 // Matches the "skill" table in the ERD: skill_id, name.
 // Each skill carries a "categoryId" from the shared category table.
 // This lets the Volunteer Profile group skills by category and lets
@@ -91,4 +90,88 @@ export async function fetchSkillsByCategory(categoryId) {
   const skills = await fetchAvailableSkills();
   if (!categoryId) return skills;
   return skills.filter(( skill) => skill.categoryId === categoryId);
+}
+
+// ————————————————————————————————————————————————————————————
+// إدارة المهارات (أدمن فقط)
+//
+// ⚠️ مختلف عن categories.js: SkillController بالباك اند حاليًا كله
+// دوال فاضية (index/store/update/destroy بدون أي تنفيذ فعلي، وجدول
+// skills نفسه فيه بس id/timestamps — عمود "name" انضاف لاحقًا بـ
+// migration منفصلة). يعني هذا الجزء Mock-only 100% لحد ما فريق سنا
+// يكمل SkillController فعليًا. الاستدعاءات الحقيقية أدناه جاهزة
+// ومكتوبة بانتظار ذلك، لكنها لن تُستخدم قبل تفعيل VITE_API_MODE=real
+// وتأكيد اكتمال الكنترولر.
+// ————————————————————————————————————————————————————————————
+
+/**
+ * ينشئ مهارة جديدة تحت تصنيف معيّن.
+ * @param {{name: string, categoryId: string}} payload
+ */
+export async function createSkill(payload) {
+  if (MOCK_MODE) {
+    await wait()
+
+    const newSkill = { id: `s${Date.now()}`, name: payload.name, categoryId: payload.categoryId }
+    MOCK_SKILLS.push(newSkill)
+    MOCK_SKILL_CATEGORY_MAP[newSkill.id] = newSkill.categoryId
+    return { success: true, data: newSkill }
+  }
+
+  try {
+    const response = await apiClient.post('/skills', payload)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return { success: false, error: getApiErrorMessage(error, 'Failed to create skill') }
+  }
+}
+
+/**
+ * يعدّل اسم مهارة و/أو تصنيفها.
+ * @param {string|number} skillId
+ * @param {{name: string, categoryId: string}} payload
+ */
+export async function updateSkill(skillId, payload) {
+  if (MOCK_MODE) {
+    await wait()
+
+    const skill = MOCK_SKILLS.find((item) => item.id === skillId)
+    if (!skill) return { success: false, error: 'Skill not found' }
+
+    skill.name = payload.name
+    skill.categoryId = payload.categoryId
+    MOCK_SKILL_CATEGORY_MAP[skillId] = payload.categoryId
+    return { success: true, data: skill }
+  }
+
+  try {
+    const response = await apiClient.put(`/skills/${skillId}`, payload)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return { success: false, error: getApiErrorMessage(error, 'Failed to update skill') }
+  }
+}
+
+/**
+ * يحذف مهارة.
+ * @param {string|number} skillId
+ */
+export async function deleteSkill(skillId) {
+  if (MOCK_MODE) {
+    await wait()
+
+    const index = MOCK_SKILLS.findIndex((item) => item.id === skillId)
+    if (index === -1) return { success: false, error: 'Skill not found' }
+
+    MOCK_SKILLS.splice(index, 1)
+    delete MOCK_SKILL_CATEGORY_MAP[skillId]
+    return { success: true }
+  }
+
+  try {
+    await apiClient.delete(`/skills/${skillId}`)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: getApiErrorMessage(error, 'Failed to delete skill') }
+  }
 }

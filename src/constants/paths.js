@@ -15,6 +15,14 @@ export const ROUTES = {
   OPPORTUNITIES: '/opportunities',
   OPPORTUNITY_DETAILS: '/opportunities/:id',
   ORGANIZATIONS: '/organizations',
+
+  // Admin — مساحة العمل الإدارية
+  ADMIN_DASHBOARD: '/admin',
+  ADMIN_ORGANIZATIONS: '/admin/organizations',
+  ADMIN_CATEGORIES: '/admin/categories',
+  ADMIN_CATALOG: '/admin/categories',
+  ADMIN_PROFILE: '/admin/profile',
+  ADMIN_SETTINGS: '/admin/settings',
 }
 
 export const LEGACY_REDIRECTS = [
@@ -23,6 +31,7 @@ export const LEGACY_REDIRECTS = [
   { from: '/signUp', to: ROUTES.REGISTER },
   { from: '/volunteerProfile', to: ROUTES.VOLUNTEER_PROFILE },
   { from: '/orgProfile', to: ROUTES.ORGANIZATION_PROFILE },
+  { from: '/admin/catalog', to: ROUTES.ADMIN_CATEGORIES },
 ]
 
 export const AUTH_QUERY_KEYS = {

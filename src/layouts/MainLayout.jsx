@@ -10,6 +10,7 @@ export default function MainLayout() {
   const { accountType } = useAuth()
   const location = useLocation()
   const prefersReducedMotion = useReducedMotion()
+  const isAdminRoute = location.pathname.startsWith('/admin')
 
   return (
     <div className='flex min-h-screen flex-col bg-field text-heading'>
@@ -35,7 +36,7 @@ export default function MainLayout() {
           </motion.div>
         </AnimatePresence>
       </main>
-      <Footer />
+      {!isAdminRoute && <Footer />}
     </div>
   )
 }

@@ -1,7 +1,18 @@
+// صفحة "المتقدمين" عند المنظمة — تعرض كل من تقدّم على فرصة معيّنة
+// بغض النظر عن حالته (pending/accepted/rejected)، مع إحصائيات موجزة،
+// وبحث/فلترة/فرز محليين فوق القائمة المحمّلة أصلًا بالكامل.
+//
+// ⚠️ مهم: المرفوضون ما بينزالوا أبدًا من العرض هون — فقط تُخفى أزرار
+// القبول/الرفض عنهم (راجع ApplicantCard) ويظهر مؤشر "Decision completed"
+// بدلها. الفلترة بالأعلى اختيارية بيد المستخدم، مش حذف فعلي للبيانات.
+
+import { useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Users } from "lucide-react";
 import Typography from "../components/ui/Typography";
 import ApplicantCard from "../components/organization/ApplicantCard";
+import ApplicantsSummaryStats from "../components/organization/ApplicantsSummaryStats";
+import ApplicantsToolbar from "../components/organization/ApplicantsToolbar";
 import Skeleton from "../components/ui/Skeleton";
 import EmptyState from "../components/common/EmptyState";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
@@ -18,17 +29,22 @@ import { ROUTES } from "../constants/paths";
 export default function ApplicantsList() {
   const { id } = useParams();
   const { status, isVerified, hasLoadError } = useOrganizationVerification();
-    
-  // نفس هوك تفاصيل الفرصة المستخدم بصفحة عرض الفرصة — بس بحاجة الحقل
-  // opportunity منه، مو similar
+
   const opportunityQuery = useOpportunityDetailsQuery(id);
   const applicantsQuery = useApplicantsQuery(id);
   const updateStatusMutation = useUpdateParticipationStatusMutation(id);
 
   const opportunity = opportunityQuery.data?.opportunity ?? null;
-  const applicants = applicantsQuery.data ?? [];
+  const applicants = useMemo(() => applicantsQuery.data ?? [], [applicantsQuery.data]);
   const loading = opportunityQuery.isPending || applicantsQuery.isPending;
   const { toast, showSuccess, showError, closeToast } = useToast();
+
+  // حجز مستقبلي لميزة "إدارة ساعات التطوع" — راجع التعليق التفصيلي
+  // بأسفل ApplicantCard.jsx. محسوبة هون من تاريخ انتهاء الفرصة الحقيقي
+  // (opportunity.endDate) فقط لما يوصل، بدون أي استخدام فعلي بعد.
+  const opportunityHasEnded = Boolean(
+    opportunity?.endDate && new Date(opportunity.endDate) < new Date(),
+  );
 
   // بفضل mutation.variables: نعرف بالضبط أي متقدّم قيد التحديث حاليًا
   // بدون الحاجة لـ useState منفصلة (updatingId) نديرها يدويًا
@@ -46,8 +62,6 @@ export default function ApplicantsList() {
       return;
     }
 
-    // أول مرة هالفعل بيعطي تأكيد واضح — قبلها كان تغيّر حالة الكارد
-    // نفسه هو التأكيد الوحيد، بدون أي رسالة صريحة للمستخدم
     showSuccess(
       newStatus === PARTICIPATION_STATUS.ACCEPTED
         ? "Applicant accepted."
@@ -55,9 +69,44 @@ export default function ApplicantsList() {
     );
   };
 
-  const pendingCount = applicants.filter(
-    (applicant) => applicant.status === PARTICIPATION_STATUS.PENDING,
-  ).length;
+  // ————— بحث / فلترة / فرز (Client-side بالكامل) —————
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState("newest");
+
+  const visibleApplicants = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    const filtered = applicants.filter((applicant) => {
+      const matchesStatus = statusFilter === "all" || applicant.status === statusFilter;
+      const matchesSearch = !query || applicant.volunteer?.name?.toLowerCase().includes(query);
+      return matchesStatus && matchesSearch;
+    });
+
+    // participatedAt نص تاريخ (YYYY-MM-DD) فمقارنة السلاسل كافية
+    // ودقيقة، بدون حاجة نبني كائن Date لكل عنصر
+    return [...filtered].sort((a, b) =>
+      sortOrder === "newest"
+        ? b.participatedAt.localeCompare(a.participatedAt)
+        : a.participatedAt.localeCompare(b.participatedAt),
+    );
+  }, [applicants, search, statusFilter, sortOrder]);
+
+  const stats = useMemo(
+    () => ({
+      total: applicants.length,
+      pending: applicants.filter((a) => a.status === PARTICIPATION_STATUS.PENDING).length,
+      accepted: applicants.filter((a) => a.status === PARTICIPATION_STATUS.ACCEPTED).length,
+      rejected: applicants.filter((a) => a.status === PARTICIPATION_STATUS.REJECTED).length,
+    }),
+    [applicants],
+  );
+
+  // فرق بين "ما في متقدمين إطلاقًا" و"الفلتر الحالي ما طابق حدا" —
+  // الحالتين لازم رسالة مختلفة، وإلا مستخدم فلترة عالإجباري بيفتكر إنه
+  // الفرصة أصلًا بلا متقدمين
+  const hasAnyApplicants = applicants.length > 0;
+  const hasFilteredResults = visibleApplicants.length > 0;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -74,12 +123,11 @@ export default function ApplicantsList() {
       <Typography variant="sectionTitle" className="mb-1">
         Applicants
       </Typography>
-      {!loading ? (
-        <Typography variant="body" className="mb-8 text-body">
+      {!loading && (
+        <Typography variant="body" className="mb-6 text-body">
           {opportunity?.title}
-          {pendingCount > 0 ? ` — ${pendingCount} awaiting your review` : ""}
         </Typography>
-      ) : null}
+      )}
 
       {loading ? (
         <div className="flex flex-col gap-4">
@@ -94,29 +142,51 @@ export default function ApplicantsList() {
             </div>
           ))}
         </div>
-      ) : applicants.length === 0 ? (
+      ) : !hasAnyApplicants ? (
         <EmptyState
           icon={Users}
           title="No applicants yet"
           description="Once volunteers apply to this cause, they'll show up here."
         />
       ) : (
-        <div className="flex flex-col gap-4">
-          {applicants.map((applicant) => (
-            <ApplicantCard
-              key={applicant.id}
-              applicant={applicant}
-              isUpdating={updatingId === applicant.id}
-              isVerified={isVerified}
-              onAccept={(applicantId) =>
-                handleStatusChange(applicantId, PARTICIPATION_STATUS.ACCEPTED)
-              }
-              onReject={(applicantId) =>
-                handleStatusChange(applicantId, PARTICIPATION_STATUS.REJECTED)
-              }
+        <>
+          <ApplicantsSummaryStats {...stats} />
+
+          <ApplicantsToolbar
+            search={search}
+            onSearchChange={setSearch}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            sortOrder={sortOrder}
+            onSortOrderChange={setSortOrder}
+          />
+
+          {!hasFilteredResults ? (
+            <EmptyState
+              icon={Users}
+              title="No matching applicants"
+              description="Try a different search term or reset the status filter."
             />
-          ))}
-        </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {visibleApplicants.map((applicant) => (
+                <ApplicantCard
+                  key={applicant.id}
+                  applicant={applicant}
+                  isUpdating={updatingId === applicant.id}
+                  isVerified={isVerified}
+                  opportunityHasEnded={opportunityHasEnded}
+                  onAccept={(applicantId) =>
+                    handleStatusChange(applicantId, PARTICIPATION_STATUS.ACCEPTED)
+                  }
+                  onReject={(applicantId) =>
+                    handleStatusChange(applicantId, PARTICIPATION_STATUS.REJECTED)
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <Toast
