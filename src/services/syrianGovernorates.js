@@ -67,3 +67,119 @@ export const getGovernorateOptions = () =>
   }));
 
 export default syrianGovernorates;
+
+// ————————————————————————————————————————————————————————————
+// إدارة المدن/المحافظات (أدمن فقط) — نفس نمط {success,data/error}
+// المستخدم بـ categories.js وskills.js بالضبط. بوضع Mock، بنعدّل
+// نفس مصفوفة syrianGovernorates بالمكان (push/splice) حتى القائمة
+// تضل مصدر الحقيقة الوحيد لأي مكان تاني بيستوردها.
+//
+// ⚠️ ملاحظة معمارية: الفورمات (Register، بروفايل المنظمة، إنشاء فرصة)
+// بتبني قائمة الخيارات (GOVERNORATE_ITEMS) مرة وحدة وقت تحميل الملف،
+// فتعديل/حذف/إضافة مدينة من هون ما بينعكس فيها إلا بعد إعادة تحميل
+// الصفحة — سلوك مقبول لحد ما يتوفر API حقيقي وتصير الفورمات تجيب
+// القائمة عبر useQuery متل باقي البيانات، بدل استيراد ثابت وقت البناء.
+//
+// TODO: لما يجهز الباك اند، استبدلي الفرع غير-mock هون بنداءات حقيقية:
+// POST /api/governorates, PUT /api/governorates/{id}, DELETE /api/governorates/{id}
+// ————————————————————————————————————————————————————————————
+
+import { apiClient, getApiErrorMessage } from './api/client'
+import { isMockMode } from './api/mockMode'
+import { wait } from './api/delay'
+
+const MOCK_MODE = isMockMode()
+
+function slugify(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/**
+ * ينشئ محافظة/مدينة جديدة.
+ * @param {{nameAr: string, nameEn: string}} payload
+ */
+export async function createGovernorate(payload) {
+  if (MOCK_MODE) {
+    await wait()
+
+    const nameTaken = syrianGovernorates.some(
+      (governorate) => governorate.nameEn.trim().toLowerCase() === payload.nameEn.trim().toLowerCase(),
+    )
+    if (nameTaken) return { success: false, error: 'A city with this name already exists' }
+
+    const newGovernorate = {
+      id: Date.now(),
+      nameAr: payload.nameAr,
+      nameEn: payload.nameEn,
+      slug: slugify(payload.nameEn),
+    }
+    syrianGovernorates.push(newGovernorate)
+    return { success: true, data: newGovernorate }
+  }
+
+  try {
+    const response = await apiClient.post('/governorates', payload)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return { success: false, error: getApiErrorMessage(error, 'Failed to create city') }
+  }
+}
+
+/**
+ * يعدّل اسم محافظة/مدينة موجودة.
+ * @param {number|string} governorateId
+ * @param {{nameAr: string, nameEn: string}} payload
+ */
+export async function updateGovernorate(governorateId, payload) {
+  if (MOCK_MODE) {
+    await wait()
+
+    const governorate = syrianGovernorates.find((item) => item.id === governorateId)
+    if (!governorate) return { success: false, error: 'City not found' }
+
+    const nameTaken = syrianGovernorates.some(
+      (item) =>
+        item.id !== governorateId && item.nameEn.trim().toLowerCase() === payload.nameEn.trim().toLowerCase(),
+    )
+    if (nameTaken) return { success: false, error: 'A city with this name already exists' }
+
+    governorate.nameAr = payload.nameAr
+    governorate.nameEn = payload.nameEn
+    governorate.slug = slugify(payload.nameEn)
+    return { success: true, data: governorate }
+  }
+
+  try {
+    const response = await apiClient.put(`/governorates/${governorateId}`, payload)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return { success: false, error: getApiErrorMessage(error, 'Failed to update city') }
+  }
+}
+
+/**
+ * يحذف محافظة/مدينة.
+ * @param {number|string} governorateId
+ */
+export async function deleteGovernorate(governorateId) {
+  if (MOCK_MODE) {
+    await wait()
+
+    const index = syrianGovernorates.findIndex((item) => item.id === governorateId)
+    if (index === -1) return { success: false, error: 'City not found' }
+
+    syrianGovernorates.splice(index, 1)
+    return { success: true }
+  }
+
+  try {
+    await apiClient.delete(`/governorates/${governorateId}`)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: getApiErrorMessage(error, 'Failed to delete city') }
+  }
+}

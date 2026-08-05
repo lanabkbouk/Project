@@ -11,6 +11,10 @@ export const queryKeys = {
     all: ['skills'],
   },
 
+  cities: {
+    all: ['cities'],
+  },
+
   stats: {
     platform: ['stats', 'platform'],
   },

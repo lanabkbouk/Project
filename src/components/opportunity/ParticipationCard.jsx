@@ -7,6 +7,7 @@ import { useWithdrawParticipationMutation } from "../../hooks/queries/useWithdra
 import { PARTICIPATION_STATUS } from "../../constants/participationStatus";
 import { ROUTES } from "../../constants/paths";
 import { CARD_BASE } from "../../utils/surfaceStyles";
+import { isRegistrationOpen } from "../../utils/opportunityStatus";
 
 export default function ParticipationCard({ participation }) {
   const { opportunity, status, committedHours, hoursLogged, joinedDate } = participation;
@@ -22,9 +23,13 @@ export default function ParticipationCard({ participation }) {
     : `${committedHours} hrs pledged`;
 
   // قرار مع فريق سنا: الانسحاب متاح من pending أو accepted سوا (حذف
-  // كامل للسطر)، بس مش من rejected أو expired — ما في شي ينسحب منه
+  // كامل للسطر)، بس مش من rejected أو expired — ما في شي ينسحب منه.
+  // ⚠️ لازم كمان فترة التسجيل لسا مفتوحة — وإلا المنظمة ممكن تخسر مقعد
+  // مقبول بعد ما قفلت التسجيل (حتى لو الفرصة نفسها لسا ما بدأت)، فمجرد
+  // إغلاق التسجيل لازم يخفي زر الانسحاب نهائيًا
   const canWithdraw =
-    status === PARTICIPATION_STATUS.PENDING || status === PARTICIPATION_STATUS.ACCEPTED;
+    (status === PARTICIPATION_STATUS.PENDING || status === PARTICIPATION_STATUS.ACCEPTED) &&
+    isRegistrationOpen(opportunity);
 
   const handleWithdraw = async () => {
     const confirmed = window.confirm(

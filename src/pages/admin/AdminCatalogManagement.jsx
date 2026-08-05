@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
-import { Plus, Search, Tags } from 'lucide-react'
+import { Search, Sparkles, Tags } from 'lucide-react'
 
 import AdminLayout from '../../layouts/admin/AdminLayout'
+import CatalogSection from '../../components/admin/CatalogSection'
 import CategoryRow from '../../components/admin/CategoryRow'
 import CategoryFormModal from '../../components/admin/CategoryFormModal'
+import SkillRow from '../../components/admin/SkillRow'
+import SkillFormModal from '../../components/admin/SkillFormModal'
 import Toast from '../../components/common/Toast'
-import EmptyState from '../../components/common/EmptyState'
 import Badge from '../../components/common/Badge'
 import Input from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
@@ -16,6 +18,10 @@ import { useCategoriesQuery } from '../../hooks/queries/useCategoriesQuery'
 import { useCreateCategoryMutation } from '../../hooks/queries/useCreateCategoryMutation'
 import { useUpdateCategoryMutation } from '../../hooks/queries/useUpdateCategoryMutation'
 import { useDeleteCategoryMutation } from '../../hooks/queries/useDeleteCategoryMutation'
+import { useSkillsQuery } from '../../hooks/queries/useSkillsQuery'
+import { useCreateSkillMutation } from '../../hooks/queries/useCreateSkillMutation'
+import { useUpdateSkillMutation } from '../../hooks/queries/useUpdateSkillMutation'
+import { useDeleteSkillMutation } from '../../hooks/queries/useDeleteSkillMutation'
 import { useToast } from '../../hooks/useToast'
 
 function normalizeName(value) {
@@ -28,12 +34,18 @@ export default function AdminCatalogManagement() {
   const categoriesQuery = useCategoriesQuery()
   const categories = categoriesQuery.data ?? []
 
+  const skillsQuery = useSkillsQuery()
+  const skills = skillsQuery.data ?? []
+
   const { toast, showSuccess, showError, closeToast } = useToast()
 
-  const [searchTerm, setSearchTerm] = useState('')
+  // ————————————————————————————————————————————————————————————
+  // Categories
+  // ————————————————————————————————————————————————————————————
+  const [categorySearchTerm, setCategorySearchTerm] = useState('')
   const [categoryModal, setCategoryModal] = useState(null)
   const [categoryToDelete, setCategoryToDelete] = useState(null)
-  const [formError, setFormError] = useState('')
+  const [categoryFormError, setCategoryFormError] = useState('')
 
   const createCategoryMutation = useCreateCategoryMutation()
   const updateCategoryMutation = useUpdateCategoryMutation()
@@ -43,7 +55,7 @@ export default function AdminCatalogManagement() {
   const categoryMutation = isEditingCategory ? updateCategoryMutation : createCategoryMutation
 
   const filteredCategories = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase()
+    const normalizedSearch = categorySearchTerm.trim().toLowerCase()
 
     if (!normalizedSearch) return categories
 
@@ -55,15 +67,15 @@ export default function AdminCatalogManagement() {
 
       return haystack.includes(normalizedSearch)
     })
-  }, [categories, searchTerm])
+  }, [categories, categorySearchTerm])
 
-  const openCreateModal = () => {
-    setFormError('')
+  const openCreateCategoryModal = () => {
+    setCategoryFormError('')
     setCategoryModal({})
   }
 
-  const openEditModal = (category) => {
-    setFormError('')
+  const openEditCategoryModal = (category) => {
+    setCategoryFormError('')
     setCategoryModal(category)
   }
 
@@ -75,7 +87,7 @@ export default function AdminCatalogManagement() {
     )
 
     if (duplicateCategory) {
-      setFormError('A category with this name already exists.')
+      setCategoryFormError('A category with this name already exists.')
       return
     }
 
@@ -84,13 +96,13 @@ export default function AdminCatalogManagement() {
       : await createCategoryMutation.mutateAsync(form)
 
     if (!result.success) {
-      setFormError(result.error || 'Failed to save category')
+      setCategoryFormError(result.error || 'Failed to save category')
       return
     }
 
     showSuccess(isEditingCategory ? 'Category updated.' : 'Category created.')
     setCategoryModal(null)
-    setFormError('')
+    setCategoryFormError('')
   }
 
   const handleDeleteCategory = async () => {
@@ -106,20 +118,89 @@ export default function AdminCatalogManagement() {
     setCategoryToDelete(null)
   }
 
-  const headerActions = (
-    <Button variant="primary" onClick={openCreateModal} className="flex items-center gap-2">
-      <Plus size={16} />
-      Add category
-    </Button>
-  )
+  // ————————————————————————————————————————————————————————————
+  // Skills — نفس منطق التصنيفات بالضبط، بس مربوط بتصنيف عبر categoryId
+  // ————————————————————————————————————————————————————————————
+  const [skillSearchTerm, setSkillSearchTerm] = useState('')
+  const [skillModal, setSkillModal] = useState(null)
+  const [skillToDelete, setSkillToDelete] = useState(null)
+  const [skillFormError, setSkillFormError] = useState('')
+
+  const createSkillMutation = useCreateSkillMutation()
+  const updateSkillMutation = useUpdateSkillMutation()
+  const deleteSkillMutation = useDeleteSkillMutation()
+
+  const isEditingSkill = Boolean(skillModal && skillModal.id)
+  const skillMutation = isEditingSkill ? updateSkillMutation : createSkillMutation
+
+  const filteredSkills = useMemo(() => {
+    const normalizedSearch = skillSearchTerm.trim().toLowerCase()
+
+    if (!normalizedSearch) return skills
+
+    return skills.filter((skill) => {
+      const haystack = [skill.name, skill.category?.name].filter(Boolean).join(' ').toLowerCase()
+      return haystack.includes(normalizedSearch)
+    })
+  }, [skills, skillSearchTerm])
+
+  const openCreateSkillModal = () => {
+    setSkillFormError('')
+    setSkillModal({})
+  }
+
+  const openEditSkillModal = (skill) => {
+    setSkillFormError('')
+    setSkillModal(skill)
+  }
+
+  const handleSubmitSkill = async (form) => {
+    const normalizedIncomingName = normalizeName(form.name)
+    const duplicateSkill = skills.find(
+      (skill) => normalizeName(skill.name) === normalizedIncomingName && skill.id !== skillModal?.id,
+    )
+
+    if (duplicateSkill) {
+      setSkillFormError('A skill with this name already exists.')
+      return
+    }
+
+    const result = isEditingSkill
+      ? await updateSkillMutation.mutateAsync({ skillId: skillModal.id, payload: form })
+      : await createSkillMutation.mutateAsync(form)
+
+    if (!result.success) {
+      setSkillFormError(result.error || 'Failed to save skill')
+      return
+    }
+
+    showSuccess(isEditingSkill ? 'Skill updated.' : 'Skill created.')
+    setSkillModal(null)
+    setSkillFormError('')
+  }
+
+  const handleDeleteSkill = async () => {
+    if (!skillToDelete) return
+
+    const result = await deleteSkillMutation.mutateAsync(skillToDelete.id)
+    if (!result.success) {
+      showError(result.error || 'Failed to delete skill')
+      return
+    }
+
+    showSuccess('Skill deleted.')
+    setSkillToDelete(null)
+  }
 
   return (
     <AdminLayout
       eyebrow="Administrative workspace"
-      title="Category management"
-      description="Create, update, search, and remove professional categories used across the platform. Duplicate names are blocked before saving."
-      actions={headerActions}
+      title="Categories & skills"
+      description="Manage the shared categories used across opportunities, and the skills volunteers and opportunities are matched on. Duplicate names are blocked before saving."
     >
+      {/* ===========================
+          Categories
+      ============================ */}
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
         <div className={`${PANEL_SURFACE} p-5 md:p-6`}>
           <Typography variant="h4">Search categories</Typography>
@@ -130,8 +211,8 @@ export default function AdminCatalogManagement() {
           <div className="mt-4 max-w-2xl">
             <Input
               name="categorySearch"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
+              value={categorySearchTerm}
+              onChange={(event) => setCategorySearchTerm(event.target.value)}
               placeholder="Search by name or description"
               icon={Search}
               aria-label="Search categories"
@@ -155,35 +236,93 @@ export default function AdminCatalogManagement() {
         </div>
       </section>
 
-      {categoriesQuery.isPending ? (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="h-24 rounded-2xl border border-heading/10 bg-field/60" />
-          ))}
-        </div>
-      ) : filteredCategories.length === 0 ? (
-        <EmptyState
-          icon={Tags}
-          title={searchTerm ? 'No matching categories' : 'No categories yet'}
-          description={
-            searchTerm
-              ? 'Try a different search term or clear the filter.'
-              : 'Add the first category to start organizing opportunities.'
-          }
-        />
-      ) : (
-        <div className="space-y-3">
-          {filteredCategories.map((category) => (
-            <CategoryRow
-              key={category.id}
-              category={category}
-              onEdit={openEditModal}
-              onDelete={setCategoryToDelete}
-              isDeleting={deleteCategoryMutation.isPending && deleteCategoryMutation.variables === category.id}
+      <CatalogSection
+        title="Categories"
+        description="Used to group opportunities, skills, and achievements across the platform."
+        addLabel="Add category"
+        onAdd={openCreateCategoryModal}
+        items={filteredCategories}
+        isLoading={categoriesQuery.isPending}
+        emptyIcon={Tags}
+        emptyTitle={categorySearchTerm ? 'No matching categories' : 'No categories yet'}
+        emptyDescription={
+          categorySearchTerm
+            ? 'Try a different search term or clear the filter.'
+            : 'Add the first category to start organizing opportunities.'
+        }
+        renderItem={(category) => (
+          <CategoryRow
+            key={category.id}
+            category={category}
+            onEdit={openEditCategoryModal}
+            onDelete={setCategoryToDelete}
+            isDeleting={deleteCategoryMutation.isPending && deleteCategoryMutation.variables === category.id}
+          />
+        )}
+      />
+
+      {/* ===========================
+          Skills
+      ============================ */}
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+        <div className={`${PANEL_SURFACE} p-5 md:p-6`}>
+          <Typography variant="h4">Search skills</Typography>
+          <Typography variant="bodySm" className="mt-1 text-body">
+            {skills.length} total skills currently configured.
+          </Typography>
+
+          <div className="mt-4 max-w-2xl">
+            <Input
+              name="skillSearch"
+              value={skillSearchTerm}
+              onChange={(event) => setSkillSearchTerm(event.target.value)}
+              placeholder="Search by name or category"
+              icon={Search}
+              aria-label="Search skills"
             />
-          ))}
+          </div>
         </div>
-      )}
+
+        <div className="flex items-stretch">
+          <div className={`${PANEL_SURFACE} w-full p-5 md:p-6`}>
+            <Typography variant="overline" className="text-body/70">
+              Total skills
+            </Typography>
+            <div className="mt-3 flex items-end justify-between gap-4">
+              <Typography variant="h2">{skills.length}</Typography>
+              <Badge label="Platform wide" tone="primary" />
+            </div>
+            <Typography variant="bodySm" className="mt-3 text-body">
+              Skills are attached to a category and used to match volunteers with opportunities.
+            </Typography>
+          </div>
+        </div>
+      </section>
+
+      <CatalogSection
+        title="Skills"
+        description="Each skill belongs to a category, and volunteers/opportunities are matched against this list."
+        addLabel="Add skill"
+        onAdd={openCreateSkillModal}
+        items={filteredSkills}
+        isLoading={skillsQuery.isPending}
+        emptyIcon={Sparkles}
+        emptyTitle={skillSearchTerm ? 'No matching skills' : 'No skills yet'}
+        emptyDescription={
+          skillSearchTerm
+            ? 'Try a different search term or clear the filter.'
+            : 'Add the first skill to start matching volunteers with opportunities.'
+        }
+        renderItem={(skill) => (
+          <SkillRow
+            key={skill.id}
+            skill={skill}
+            onEdit={openEditSkillModal}
+            onDelete={setSkillToDelete}
+            isDeleting={deleteSkillMutation.isPending && deleteSkillMutation.variables === skill.id}
+          />
+        )}
+      />
 
       <CategoryFormModal
         key={categoryModal ? categoryModal.id ?? 'new' : 'closed'}
@@ -191,11 +330,11 @@ export default function AdminCatalogManagement() {
         category={isEditingCategory ? categoryModal : null}
         onClose={() => {
           setCategoryModal(null)
-          setFormError('')
+          setCategoryFormError('')
         }}
         onSubmit={handleSubmitCategory}
         isSubmitting={categoryMutation.isPending}
-        error={formError || (categoryMutation.data?.success === false ? categoryMutation.data.error : null)}
+        error={categoryFormError || (categoryMutation.data?.success === false ? categoryMutation.data.error : null)}
       />
 
       <Modal
@@ -219,8 +358,48 @@ export default function AdminCatalogManagement() {
         }
       >
         <Typography variant="body" className="text-body">
-          This category will be removed from the platform. Opportunities linked to it will need a
+          This category will be removed from the platform. Opportunities and skills linked to it will need a
           replacement category.
+        </Typography>
+      </Modal>
+
+      <SkillFormModal
+        key={skillModal ? skillModal.id ?? 'new' : 'closed'}
+        open={Boolean(skillModal)}
+        skill={isEditingSkill ? skillModal : null}
+        categories={categories}
+        onClose={() => {
+          setSkillModal(null)
+          setSkillFormError('')
+        }}
+        onSubmit={handleSubmitSkill}
+        isSubmitting={skillMutation.isPending}
+        error={skillFormError || (skillMutation.data?.success === false ? skillMutation.data.error : null)}
+      />
+
+      <Modal
+        open={Boolean(skillToDelete)}
+        onClose={() => setSkillToDelete(null)}
+        title={`Delete ${skillToDelete?.name || 'skill'}?`}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setSkillToDelete(null)} disabled={deleteSkillMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDeleteSkill}
+              isLoading={deleteSkillMutation.isPending}
+              loadingText="Deleting..."
+            >
+              Delete skill
+            </Button>
+          </>
+        }
+      >
+        <Typography variant="body" className="text-body">
+          This skill will be removed from the platform. Volunteer profiles and opportunities referencing it will
+          need to be updated.
         </Typography>
       </Modal>
 

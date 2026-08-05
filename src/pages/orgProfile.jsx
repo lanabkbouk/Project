@@ -6,18 +6,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { useOrganizationProfileQuery } from "../hooks/queries/useOrganizationProfileQuery";
 import { useUpdateOrganizationProfileMutation } from "../hooks/queries/useUpdateOrganizationProfileMutation";
-import { useRequestVerificationReviewMutation } from "../hooks/queries/useRequestVerificationReviewMutation";
 import { useImageUpload } from "../hooks/useImageUpload";
 import { queryKeys } from "../app/queryKeys";
 import { organizationProfileSchema } from "../utils/auth/OrganizationProfileValidation";
 import { ORGANIZATION_STATUS } from "../constants/organizationStatus";
 import { PANEL_SURFACE } from "../utils/surfaceStyles";
+import { markOrganizationStatusSeen } from "../utils/organizationVerificationSeenTracker";
 
 import OrgProfileHeader from "../components/OrgProfile/ProfileHeader";
 import OrgProfileForm from "../components/OrgProfile/ProfileForm";
 import OrgProfilePreview from "../components/OrgProfile/ProfilePreview";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
-import Button from "../components/ui/Button";
+import RejectedVerificationPanel from "../components/OrgProfile/RejectedVerificationPanel";
 import Skeleton from "../components/ui/Skeleton";
 import Toast from "../components/common/Toast";
 import { useToast } from "../hooks/useToast";
@@ -38,7 +38,6 @@ export default function OrgProfile() {
   const organization = organizationQuery.data?.success ? organizationQuery.data.data : null;
 
   const updateProfileMutation = useUpdateOrganizationProfileMutation(organizationId);
-  const requestReviewMutation = useRequestVerificationReviewMutation(organizationId);
 
   // useImageUpload يتكفّل بالمعاينة المحلية والتحقق من نوع/حجم الصورة —
   // نفس الـ hook المستخدم بصفحة Register وorgForm، بدل FileReader يدوي
@@ -75,6 +74,15 @@ export default function OrgProfile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organization, methods]);
 
+  // تعليم قرار التوثيق الحالي (verified/rejected) كـ"مشاهَد" — نفس منطق
+  // markStatusSeen بـ participates.jsx بالضبط: أول ما المنظمة تشوف
+  // حالتها هون فعليًا، تنبيه جرس الإشعارات المقابل بيختفي لحد ما يصير
+  // قرار جديد فعليًا (راجع services/notifications.js)
+  useEffect(() => {
+    if (!organization?.id || !organization?.status) return;
+    markOrganizationStatusSeen(organization.id, organization.status);
+  }, [organization?.id, organization?.status]);
+
   const onSubmit = async (data) => {
     try {
       // بناء FormData صار مسؤولية طبقة الخدمة (services/organization.js)
@@ -105,22 +113,6 @@ export default function OrgProfile() {
 
   const canUseServices = organization?.status === ORGANIZATION_STATUS.VERIFIED;
   const isRejected = organization?.status === ORGANIZATION_STATUS.REJECTED;
-
-  // فعل صريح ومنفصل تمامًا عن حفظ البروفايل العادي — عمدًا، حتى تعديل
-  // بسيط (رقم تلفون مثلًا) ما يفتح مراجعة جديدة بدون قصد المنظمة
-  const handleRequestReview = async () => {
-    const confirmed = window.confirm(
-      "Request a new verification review? Make sure you've updated any information the admin flagged before requesting review again.",
-    );
-    if (!confirmed) return;
-
-    const result = await requestReviewMutation.mutateAsync();
-    if (!result.success) {
-      showError(result.error || "Failed to request a new review");
-      return;
-    }
-    showSuccess("Review requested. We'll get back to you soon.");
-  };
 
   if (isLoading) {
     return (
@@ -164,23 +156,18 @@ export default function OrgProfile() {
       <div className="mx-auto w-full flex-1 max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="container mx-auto px-4 md:px-16 py-10 md:py-14">
 
-          <VerificationStatusBanner
-            status={organization?.status}
-            rejectionReason={organization?.rejectionReason}
-          />
-
-          {isRejected && (
-            <div className="flex justify-end -mt-4 mb-8">
-              <Button
-                variant="secondary"
-                size="small"
-                onClick={handleRequestReview}
-                isLoading={requestReviewMutation.isPending}
-                loadingText="Requesting..."
-              >
-                Request Verification Review
-              </Button>
-            </div>
+          {isRejected ? (
+            <RejectedVerificationPanel
+              organizationId={organizationId}
+              rejectionReason={organization?.rejectionReason}
+              onUploadSuccess={showSuccess}
+              onUploadError={showError}
+            />
+          ) : (
+            <VerificationStatusBanner
+              status={organization?.status}
+              rejectionReason={organization?.rejectionReason}
+            />
           )}
 
           <OrgProfileHeader

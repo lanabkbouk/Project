@@ -34,6 +34,7 @@ const Dashboard = lazy(() => import('./pages/dashboard'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminOrganizationsReview = lazy(() => import('./pages/admin/AdminOrganizationsReview'))
 const AdminCatalogManagement = lazy(() => import('./pages/admin/AdminCatalogManagement'))
+const AdminCitiesManagement = lazy(() => import('./pages/admin/AdminCitiesManagement'))
 const AdminProfile = lazy(() => import('./pages/admin/AdminProfile'))
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
 const NotFound = lazy(() => import('./pages/notFound'))
@@ -81,6 +82,7 @@ const router = createBrowserRouter(
             <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminDashboard />} />
             <Route path={ROUTES.ADMIN_ORGANIZATIONS} element={<AdminOrganizationsReview />} />
             <Route path={ROUTES.ADMIN_CATEGORIES} element={<AdminCatalogManagement />} />
+            <Route path={ROUTES.ADMIN_CITIES} element={<AdminCitiesManagement />} />
             <Route path={ROUTES.ADMIN_PROFILE} element={<AdminProfile />} />
             <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettings />} />
           </Route>

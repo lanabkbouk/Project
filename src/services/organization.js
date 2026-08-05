@@ -48,6 +48,7 @@ function getCurrentSessionEmail() {
 const EMPTY_ORGANIZATION = {
   id: null,
   name: '',
+  email: '',
   contactPerson: '',
   description: '',
   city: '',
@@ -80,6 +81,11 @@ export async function fetchOrganizationProfile(organizationId) {
       data: {
         id: mockUser.organizationId || null,
         name: mockUser.orgName || '',
+        // ⚠️ كان ناقص هون قبل — الإيميل كان موجود بس جوا owner.email،
+        // بينما orgProfile.jsx وOrgProfilePreview بيقرأوا organization.email
+        // مباشرة (نفس الشكل يلي organizationProfileResponseSchema بيرجعه
+        // بوضع real)، فكان يظهر فاضي دايمًا بوضع mock رغم إنه محفوظ فعليًا
+        email: mockUser.email || '',
         contactPerson: mockUser.contactPerson || '',
         description: mockUser.description || '',
         city: mockUser.city || '',
@@ -157,46 +163,56 @@ export async function updateOrganizationProfile(organizationId, profileData) {
 }
 
 // ————————————————————————————————————————————————————————————
-// إعادة طلب مراجعة التوثيق بعد الرفض (Request Verification Review)
+// إعادة رفع وثيقة التوثيق بعد الرفض (Resubmit Verification Document)
 //
-// ⚠️ بما إنه وثيقة التوثيق نفسها read-only بعد إنشاء الحساب (راجع
-// الملاحظة بأعلى الملف)، هاي الدالة **ما بترسل أي ملف جديد** — بس
-// بترجّع الحالة لـ pending بنفس الوثيقة الأصلية، بعد ما المنظمة تصلح
-// الحقول النصية القابلة للتعديل (اسم/وصف/مدينة...). لو سبب الرفض كان
-// متعلق بالوثيقة نفسها، هاي حالة ما إلها حل ذاتي بالتطبيق حاليًا.
+// ⚠️ عكس الوثيقة الأصلية (read-only بعد إنشاء الحساب — راجع الملاحظة
+// بأعلى الملف)، هاي الدالة **بترسل ملف جديد فعليًا** ليحل محل الوثيقة
+// المرفوضة، وبترجّع الحالة لـ pending تلقائيًا حتى يراجعها الأدمن من
+// جديد. هاي نقطة الحل الوحيدة المتاحة للمنظمة لما يكون سبب الرفض
+// متعلق بالوثيقة نفسها (كانت request-review القديمة بترجّع pending
+// بنفس الوثيقة المرفوضة، بدون أي فرصة تصليح فعلي).
 //
 // الباك اند الحقيقي ما عنده هالـ endpoint لسا — مطلوب جديد:
-//   PATCH /organizations/{id}/request-review
-// (بدون body، بس يرجّع status=pending ويصفّر rejection_reason)
+//   POST /organizations/{id}/verification-document  (multipart/form-data)
+// (حقل واحد: verification_document، يرجّع status=pending ويصفّر rejection_reason)
 // ————————————————————————————————————————————————————————————
 
 /**
  * @param {number|string} organizationId
- * @returns {Promise<{success: boolean, error?: string}>}
+ * @param {{file: File, previewUrl: string}} document - previewUrl هي معاينة
+ *   base64 محلية جاهزة أصلًا من useImageUpload، نستخدمها بوضع mock فقط
+ *   كبديل لرابط تخزين حقيقي (ما في سيرفر فعلي يرفع له الملف بهالوضع)
+ * @returns {Promise<{success: boolean, error?: string, data?: object}>}
  */
-export async function requestVerificationReview(organizationId) {
+export async function resubmitVerificationDocument(organizationId, { file, previewUrl }) {
+  if (!file) return { success: false, error: 'Please select a document to upload' }
+
   if (MOCK_MODE) {
     await wait()
 
     const email = getCurrentSessionEmail()
     if (!email) return { success: false, error: 'Could not identify the current organization' }
 
-    updateMockUser(email, {
+    const updated = updateMockUser(email, {
+      verificationDocumentUrl: previewUrl,
       status: ORGANIZATION_STATUS.PENDING,
       rejectionReason: '',
     })
 
-    return { success: true }
+    return { success: true, data: { verificationDocumentUrl: updated?.verificationDocumentUrl } }
   }
 
   if (!organizationId) {
-    return { success: false, error: 'Organization id is required to request a review' }
+    return { success: false, error: 'Organization id is required to resubmit the document' }
   }
 
   try {
-    await apiClient.patch(`/organizations/${organizationId}/request-review`)
-    return { success: true }
+    const formData = new FormData()
+    formData.append('verification_document', file)
+
+    const response = await apiClient.post(`/organizations/${organizationId}/verification-document`, formData)
+    return { success: true, data: response.data }
   } catch (error) {
-    return { success: false, error: getApiErrorMessage(error, 'Failed to request a new review') }
+    return { success: false, error: getApiErrorMessage(error, 'Failed to upload the new document') }
   }
 }

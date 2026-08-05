@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   Building2,
   LayoutDashboard,
+  MapPin,
   Settings2,
   ShieldCheck,
   Tags,
@@ -21,6 +22,7 @@ const navigationSections = [
       { label: 'Dashboard', to: ROUTES.ADMIN_DASHBOARD, icon: LayoutDashboard },
       { label: 'Organization verification', to: ROUTES.ADMIN_ORGANIZATIONS, icon: ShieldCheck },
       { label: 'Categories', to: ROUTES.ADMIN_CATEGORIES, icon: Tags },
+      { label: 'Cities', to: ROUTES.ADMIN_CITIES, icon: MapPin },
     ],
   },
   {

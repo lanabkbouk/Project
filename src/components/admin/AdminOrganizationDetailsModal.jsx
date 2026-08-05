@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Building2, ExternalLink, FileText, Image as ImageIcon, Maximize2 } from 'lucide-react'
+import { useState } from 'react'
+import { Building2, ExternalLink, Maximize2 } from 'lucide-react'
 
 import Badge from '../common/Badge'
 import InfoRow from '../ui/InfoRow'
@@ -21,15 +21,6 @@ function getStatusLabel(status) {
   return 'Pending'
 }
 
-function getDocumentKind(url = '') {
-  const cleanUrl = String(url).split('?')[0].toLowerCase()
-
-  if (/\.(png|jpe?g|gif|webp|avif|svg)$/.test(cleanUrl)) return 'image'
-  if (/\.pdf$/.test(cleanUrl)) return 'pdf'
-
-  return 'unknown'
-}
-
 export default function AdminOrganizationDetailsModal({
   open,
   organization,
@@ -44,21 +35,18 @@ export default function AdminOrganizationDetailsModal({
   const statusTone = getStatusTone(status)
   const isVerified = status === ORGANIZATION_STATUS.VERIFIED
   const isRejected = status === ORGANIZATION_STATUS.REJECTED
+  // مطلوب إجباريًا عند التسجيل (صورة فقط — راجع validation.js
+  // requiredFile + accept="image/jpeg,image/png,image/webp" بـ orgForm.jsx)
+  // ويُرفع مرة واحدة فقط، فكل منظمة توصل لهون معها وثيقة صورة دايمًا —
+  // ما في داعي لحالة "لا وثيقة" أو أنواع ملفات تانية (PDF...)
   const verificationDocumentUrl = organization?.verificationDocumentUrl || ''
-  const documentKind = useMemo(() => getDocumentKind(verificationDocumentUrl), [verificationDocumentUrl])
-  const hasVerificationDocument = Boolean(verificationDocumentUrl)
-  const documentPreviewTitle =
-    documentKind === 'image'
-      ? 'Verification document image preview'
-      : documentKind === 'pdf'
-        ? 'Verification document PDF preview'
-        : 'Verification document preview'
 
   return (
     <Modal
       open={open}
       onClose={onClose}
       title="Organization details"
+      scrollBody
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
@@ -138,70 +126,29 @@ export default function AdminOrganizationDetailsModal({
                 </Typography>
               </div>
 
-              <Button
-                variant="ghost"
-                size="small"
-                onClick={() => setIsDocumentPreviewOpen(true)}
-                disabled={!hasVerificationDocument}
-              >
+              <Button variant="ghost" size="small" onClick={() => setIsDocumentPreviewOpen(true)}>
                 <Maximize2 size={16} />
                 <span className="ml-1">Open larger preview</span>
               </Button>
             </div>
 
             <div className="mt-4 overflow-hidden rounded-2xl border border-heading/10 bg-bg">
-              {hasVerificationDocument ? (
-                documentKind === 'image' ? (
-                  <img
-                    src={verificationDocumentUrl}
-                    alt={`${organization.name || 'Organization'} verification document`}
-                    className="max-h-[22rem] w-full object-contain"
-                  />
-                ) : documentKind === 'pdf' ? (
-                  <iframe
-                    src={verificationDocumentUrl}
-                    title={documentPreviewTitle}
-                    className="h-[22rem] w-full border-0"
-                  />
-                ) : (
-                  <div className="flex min-h-[14rem] flex-col items-center justify-center gap-3 px-6 py-10 text-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                      <FileText size={28} aria-hidden="true" />
-                    </div>
-                    <div>
-                      <Typography variant="h6">Document preview unavailable</Typography>
-                      <Typography variant="bodySm" className="mt-1 text-body">
-                        Open the file in a new tab to review the uploaded document.
-                      </Typography>
-                    </div>
-                  </div>
-                )
-              ) : (
-                <div className="flex min-h-[14rem] flex-col items-center justify-center gap-3 px-6 py-10 text-center">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-heading/5 text-body">
-                    <ImageIcon size={28} aria-hidden="true" />
-                  </div>
-                  <div>
-                    <Typography variant="h6">No verification document uploaded</Typography>
-                    <Typography variant="bodySm" className="mt-1 text-body">
-                      The organization did not provide a verification file during registration.
-                    </Typography>
-                  </div>
-                </div>
-              )}
+              <img
+                src={verificationDocumentUrl}
+                alt={`${organization.name || 'Organization'} verification document`}
+                className="max-h-[22rem] w-full object-contain"
+              />
             </div>
 
-            {hasVerificationDocument && (
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <Button as="a" variant="ghost" size="small" href={verificationDocumentUrl} target="_blank" rel="noreferrer">
-                  <ExternalLink size={16} />
-                  <span className="ml-1">Open file in new tab</span>
-                </Button>
-                <Typography variant="bodySm" className="text-body">
-                  {documentKind === 'image' ? 'Image file preview' : documentKind === 'pdf' ? 'PDF file preview' : 'Generic file preview'}
-                </Typography>
-              </div>
-            )}
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Button as="a" variant="ghost" size="small" href={verificationDocumentUrl} target="_blank" rel="noreferrer">
+                <ExternalLink size={16} />
+                <span className="ml-1">Open file in new tab</span>
+              </Button>
+              <Typography variant="bodySm" className="text-body">
+                Image file preview
+              </Typography>
+            </div>
           </section>
         </div>
       )}
@@ -211,46 +158,21 @@ export default function AdminOrganizationDetailsModal({
         onClose={() => setIsDocumentPreviewOpen(false)}
         title="Verification document preview"
         dialogClassName="max-w-5xl"
+        scrollBody
       >
-        {hasVerificationDocument ? (
-          <div className="space-y-4">
-            <Typography variant="bodySm" className="text-body">
-              Review the uploaded document in a larger view. Use the file link if your browser blocks embedded previews.
-            </Typography>
-
-            <div className="overflow-hidden rounded-2xl border border-heading/10 bg-bg">
-              {documentKind === 'image' ? (
-                <img
-                  src={verificationDocumentUrl}
-                  alt={`${organization?.name || 'Organization'} verification document preview`}
-                  className="max-h-[75vh] w-full object-contain"
-                />
-              ) : documentKind === 'pdf' ? (
-                <iframe
-                  src={verificationDocumentUrl}
-                  title={documentPreviewTitle}
-                  className="h-[75vh] w-full border-0"
-                />
-              ) : (
-                <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 px-6 py-10 text-center">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 text-primary">
-                    <FileText size={34} aria-hidden="true" />
-                  </div>
-                  <div>
-                    <Typography variant="h5">Preview not available</Typography>
-                    <Typography variant="bodySm" className="mt-1 text-body">
-                      Open the file in a new tab to inspect the uploaded document.
-                    </Typography>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
+        <div className="space-y-4">
           <Typography variant="bodySm" className="text-body">
-            No verification document is available for this organization.
+            Review the uploaded document in a larger view. Use the file link if your browser blocks embedded previews.
           </Typography>
-        )}
+
+          <div className="overflow-hidden rounded-2xl border border-heading/10 bg-bg">
+            <img
+              src={verificationDocumentUrl}
+              alt={`${organization?.name || 'Organization'} verification document preview`}
+              className="max-h-[75vh] w-full object-contain"
+            />
+          </div>
+        </div>
       </Modal>
     </Modal>
   )

@@ -20,6 +20,7 @@ export const ROUTES = {
   ADMIN_DASHBOARD: '/admin',
   ADMIN_ORGANIZATIONS: '/admin/organizations',
   ADMIN_CATEGORIES: '/admin/categories',
+  ADMIN_CITIES: '/admin/cities',
   ADMIN_PROFILE: '/admin/profile',
   ADMIN_SETTINGS: '/admin/settings',
 }

@@ -12,6 +12,8 @@ const TYPE_ICONS = {
   hours: Clock3,
   "status-accepted": CheckCircle2,
   "status-rejected": XCircle,
+  "org-verified": CheckCircle2,
+  "org-rejected": XCircle,
 };
 
 const TYPE_ICON_COLORS = {
@@ -19,6 +21,8 @@ const TYPE_ICON_COLORS = {
   hours: "text-primary",
   "status-accepted": "text-emerald-500",
   "status-rejected": "text-red-500",
+  "org-verified": "text-emerald-500",
+  "org-rejected": "text-red-500",
 };
 
 export default function NotificationBell({ items, isOpen, onToggle, onClose }) {

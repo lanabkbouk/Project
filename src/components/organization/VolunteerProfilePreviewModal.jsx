@@ -28,7 +28,7 @@ export default function VolunteerProfilePreviewModal({ open, onClose, volunteer 
   const unlockedAchievements = achievements.filter((achievement) => achievement.unlocked);
 
   return (
-    <Modal open={open} onClose={onClose} title="Volunteer profile">
+    <Modal open={open} onClose={onClose} title="Volunteer profile" scrollBody>
       <div className="flex items-center gap-3 mb-5">
         {volunteer.photo ? (
           <img

@@ -14,6 +14,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { ACCOUNT_TYPES } from "../constants/auth/accountTypes";
 import { fetchRecentNotifications } from "../services/notifications";
+import { getOrganizationId } from "../utils/auth/getOrganizationId";
 
 // كل 5 ثواني — كافي لتجربة سلسة بدون ما نضرب الأداء، وبنفس الوقت مش
 // معتمدين بس على تغيير الصفحة (اللي كان السبب الحقيقي وراء المشكلة:
@@ -22,18 +23,24 @@ import { fetchRecentNotifications } from "../services/notifications";
 const POLL_INTERVAL_MS = 5000;
 
 export default function useRecentUpdates() {
-  const { isAuthenticated, accountType } = useAuth();
+  const { user, isAuthenticated, accountType } = useAuth();
   const location = useLocation();
-  const isVolunteer = isAuthenticated && accountType === ACCOUNT_TYPES.VOLUNTEER;
+  const organizationId = getOrganizationId(user);
+  // منظمة بدون organizationId (نادر — راجع feedback-org-account-data-flow)
+  // ما إلها تنبيهات توثيق ممكنة أصلًا، فمنعتبرها غير مؤهّلة هون كمان
+  const isNotifiable =
+    isAuthenticated &&
+    (accountType === ACCOUNT_TYPES.VOLUNTEER ||
+      (accountType === ACCOUNT_TYPES.ORGANIZATION && Boolean(organizationId)));
   const [items, setItems] = useState([]);
 
   useEffect(() => {
-    if (!isVolunteer) return undefined;
+    if (!isNotifiable) return undefined;
 
     let isMounted = true;
 
     function checkForUpdates() {
-      fetchRecentNotifications()
+      fetchRecentNotifications({ accountType, organizationId })
         .then((nextItems) => {
           if (isMounted) setItems(nextItems);
         })
@@ -49,7 +56,7 @@ export default function useRecentUpdates() {
       isMounted = false;
       clearInterval(intervalId);
     };
-  }, [isVolunteer, location.pathname]);
+  }, [isNotifiable, accountType, organizationId, location.pathname]);
 
-  return { items: isVolunteer ? items : [], hasUnseen: isVolunteer && items.length > 0 };
+  return { items: isNotifiable ? items : [], hasUnseen: isNotifiable && items.length > 0 };
 }
