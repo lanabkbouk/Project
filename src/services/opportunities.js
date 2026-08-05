@@ -152,9 +152,11 @@ function computeMatchScore(opportunity, { skillIds, skillNames, city, categoryHi
   const reasons = []
 
   const opportunitySkills = Array.isArray(opportunity.skills) ? opportunity.skills : []
+  // نحسب عدد المهارات المشتركة مرة واحدة فقط، ونعيد استخدام نفس القيمة
+  // لكل من نص السبب المعروض وحساب الـ score (بدل حساب .filter() مرتين)
+  const matchingSkillsCount = opportunitySkills.filter((skill) => skillIds.includes(skill.id)).length
   const matchingSkill = opportunitySkills.find((skill) => skillIds.includes(skill.id))
   if (matchingSkill) {
-    const matchingSkillsCount = opportunitySkills.filter((skill) => skillIds.includes(skill.id)).length
     reasons.push({
       weight: matchingSkillsCount * 3,
       text: `Matches your ${skillNames.get(matchingSkill.id) || matchingSkill.name} skill`,
@@ -182,12 +184,7 @@ function computeMatchScore(opportunity, { skillIds, skillNames, city, categoryHi
     reasons.push({ weight: 2, text: 'Near your city' })
   }
 
-  const score =
-    (matchingSkill
-      ? opportunitySkills.filter((skill) => skillIds.includes(skill.id)).length * 3
-      : 0) +
-    (isSameCity ? 2 : 0) +
-    historyScore
+  const score = matchingSkillsCount * 3 + (isSameCity ? 2 : 0) + historyScore
 
   // أقوى سبب بس (أعلى وزن) — لو تعادل وزنين، أول واحد انضاف (المهارة
   // دايمًا بتنضاف أول لو موجودة، فهي الأولوية بالتعادل تلقائيًا)
@@ -235,7 +232,14 @@ export async function fetchOpportunities(filters = {}) {
 
   try {
     const response = await apiClient.get('/opportunities', { params: filters })
-    return response.data || []
+    const data = Array.isArray(response.data) ? response.data : []
+    // نفس التطبيع المطبَّق على fetchSuggestedOpportunities وfetchOpportunityDetails
+    // — بدون هالخطوة ممكن تختلف بنية organization بين نقاط النهاية المختلفة
+    // بالباك اند، وتنكسر أي Component بيعتمد على شكل موحّد لبيانات المنظمة
+    return data.map((item) => ({
+      ...item,
+      organization: normalizeOpportunityOrganization(item.organization),
+    }))
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load opportunities'))
   }
