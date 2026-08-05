@@ -13,6 +13,7 @@ export default function AchievementsList() {
 
   useEffect(() => {
     let isMounted = true;
+    let markSeenTimeout;
 
     async function load() {
       try {
@@ -25,7 +26,15 @@ export default function AchievementsList() {
 
         setJustUnlockedIds(newlyUnlocked);
         setAchievements(data);
-        markAchievementIdsSeen(new Set([...seen, ...unlockedIds]));
+
+        // ⚠️ تأجيل التعليم كـ"مشاهد" — لو علّمناه فورًا هون (كان الكود
+        // القديم)، أي زيارة لصفحة البروفايل بتلغي التنبيه بالجرس على
+        // طول، حتى لو المستخدم أصلاً ما شاف الجرس أو الحركة بعد. منستنى
+        // 4 ثواني (وقت كافي لحركة الاحتفال + يلاحظها المستخدم فعليًا)
+        // قبل ما نعتبره "مشاهد" نهائيًا
+        markSeenTimeout = setTimeout(() => {
+          markAchievementIdsSeen(new Set([...seen, ...unlockedIds]));
+        }, 4000);
       } catch (err) {
         if (isMounted) setError(err.message || "Failed to load achievements");
       } finally {
@@ -36,6 +45,7 @@ export default function AchievementsList() {
     load();
     return () => {
       isMounted = false;
+      clearTimeout(markSeenTimeout);
     };
   }, []);
 

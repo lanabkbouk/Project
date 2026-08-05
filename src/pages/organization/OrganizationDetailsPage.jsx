@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { Building2, MapPin, Globe, Phone, User, PenSquare, Compass } from "lucide-react";
 import Typography from "../../components/ui/Typography";
@@ -5,8 +6,10 @@ import Button from "../../components/ui/Button";
 import OpportunityCard from "../../components/opportunity/OpportunityCard";
 import CardSkeleton from "../../components/ui/CardSkeleton";
 import EmptyState from "../../components/common/EmptyState";
+import StatusLegendPopover from "../../components/ui/StatusLegendPopover";
 import Skeleton from "../../components/ui/Skeleton";
 import { PANEL_SURFACE } from "../../utils/surfaceStyles";
+import { OPPORTUNITY_STATUS } from "../../constants/opportunityStatus";
 import { useOrganizationDetailsQuery } from "../../hooks/queries/useOrganizationDetailsQuery";
 import { useOrganizationOpportunitiesQuery } from "../../hooks/queries/useOrganizationOpportunitiesQuery";
 import { useAuth } from "../../context/AuthContext";
@@ -23,7 +26,23 @@ export default function OrganizationDetailsPage() {
   const opportunitiesQuery = useOrganizationOpportunitiesQuery(id);
 
   const organization = detailsQuery.data ?? null;
-  const opportunities = opportunitiesQuery.data ?? [];
+  const opportunities = useMemo(() => opportunitiesQuery.data ?? [], [opportunitiesQuery.data]);
+
+  // قرار: بروفايل المنظمة بيعرض سجلها الكامل، بس بقسمين منفصلين وليس
+  // قائمة مخلوطة — زائر بده ينضم فورًا لازم يلاقي المتاح بأعلى الصفحة
+  // بسرعة، والسجل الكامل (منتهي/شغال) موجود وواضح تحته، مش مخفي
+  const { openOpportunities, pastOpportunities } = useMemo(() => {
+    const open = [];
+    const past = [];
+    opportunities.forEach((opportunity) => {
+      if (opportunity.status === OPPORTUNITY_STATUS.REGISTRATION_OPEN) {
+        open.push(opportunity);
+      } else {
+        past.push(opportunity);
+      }
+    });
+    return { openOpportunities: open, pastOpportunities: past };
+  }, [opportunities]);
 
   const loading = detailsQuery.isPending;
   const loadError = detailsQuery.isError
@@ -162,28 +181,53 @@ export default function OrganizationDetailsPage() {
         </div>
       )}
 
-      {/* فرص هاي المنظمة المفتوحة حاليًا */}
+      {/* قسم أول: الفرص المتاحة للانضمام فورًا — أعلى الصفحة عمدًا،
+          حتى زائر بده ينضم يلاقيها بسرعة بدون ما يمر على السجل الكامل */}
       <Typography variant="h4" className="mb-4">
         Open Opportunities
       </Typography>
 
       {opportunitiesLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
           <CardSkeleton />
           <CardSkeleton />
         </div>
-      ) : opportunities.length === 0 ? (
-        <EmptyState
-          icon={Compass}
-          title="No open opportunities right now"
-          description="Check back later — this organization hasn't published any open opportunities yet."
-        />
+      ) : openOpportunities.length === 0 ? (
+        <div className="mb-10">
+          <EmptyState
+            icon={Compass}
+            title="No open opportunities right now"
+            description="Check back later — this organization hasn't published any open opportunities yet."
+          />
+        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {opportunities.map((opportunity) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
+          {openOpportunities.map((opportunity) => (
             <OpportunityCard key={opportunity.id} opportunity={opportunity} />
           ))}
         </div>
+      )}
+
+      {/* قسم ثانٍ: السجل الكامل (شغالة حاليًا أو منتهية) — شفافية عن
+          نشاط المنظمة، بدون خلطه مع القسم الأول القابل للتفاعل معه.
+          ما بيظهر إطلاقًا لو ما في شي فيه (منظمة جديدة بلا تاريخ) */}
+      {!opportunitiesLoading && pastOpportunities.length > 0 && (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <Typography variant="h4" className="mb-0">
+              Past Opportunities
+            </Typography>
+            {/* هون بالذات (مش بقسم Open Now) لأنه هون بتظهر أكتر من
+                حالة مختلفة سوا (Closed/In Progress/Completed) بنفس
+                الوقت — أكتر مكان بالمشروع محتاج شرح فوري */}
+            <StatusLegendPopover />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {pastOpportunities.map((opportunity) => (
+              <OpportunityCard key={opportunity.id} opportunity={opportunity} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

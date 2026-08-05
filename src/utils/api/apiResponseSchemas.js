@@ -131,3 +131,52 @@ export function validateOrganizationProfileResponse(responseData) {
 
   return { success: true, data: result.data }
 }
+
+// ---------------------------------------------------------------------------
+// المنظمة المتداخلة جوا استجابة فرصة (services/opportunities.js)
+// ---------------------------------------------------------------------------
+
+// نفس أسماء الحقول الحقيقية المؤكدة أعلاه بالضبط (profile_image, status)
+// — مش تخمين جديد، إعادة استخدام لنفس القاعدة يلي تأكدنا منها بفحص
+// OrganizationController فعليًا. phone استثناء: ⚠️ الباك اند حاليًا ما
+// بيرجّع رقم الهاتف إطلاقًا ضمن استجابة المنظمة (تأكدنا بالفحص أعلاه) —
+// .nullable().optional() هون لأنه لسا مش موجود، مش خطأ بالمخطط
+const nestedOrganizationSchema = z
+  .object({
+    id: z.union([z.string(), z.number()]).optional(),
+    name: z.string().default(''),
+    profile_image: z.string().nullable().optional(),
+    phone: z.string().nullable().optional(),
+    status: z.string().nullable().optional(),
+  })
+  .passthrough()
+  .transform((data) => ({
+    id: data.id ?? null,
+    name: data.name,
+    imageUrl: data.profile_image ?? null,
+    phone: data.phone ?? null,
+    // نفس fallback الافتراضي المستخدم ببروفايل المنظمة نفسها — لحد ما
+    // عمود status يضاف فعليًا بجدول organizations (راجع API_CONTRACT.md)
+    status: data.status || 'pending',
+  }))
+
+/**
+ * يطبّع كائن المنظمة المتداخل جوا أي استجابة فرصة (تفاصيل، قائمة،
+ * مقترحة...) من snake_case الخام لنفس الشكل يلي الـ Components بتتوقعه
+ * (imageUrl, status, phone). لو الحقل مش موجود إطلاقًا بالكائن الممرَّر
+ * (organization=null)، بترجع null كما هي بدون أي محاولة تطبيع.
+ * @param {object|null|undefined} rawOrganization
+ */
+export function normalizeOpportunityOrganization(rawOrganization) {
+  if (!rawOrganization) return null
+
+  const result = nestedOrganizationSchema.safeParse(rawOrganization)
+  // لو الشكل مش متوقع كليًا (حتى الاسم مفقود)، منرجع أصل الكائن بدل
+  // ما نكسر الصفحة بالكامل — أفضل نعرض بيانات ناقصة من صفحة فارغة
+  if (!result.success) {
+    console.error('Unexpected organization shape inside opportunity response:', result.error.flatten())
+    return rawOrganization
+  }
+
+  return result.data
+}

@@ -16,11 +16,13 @@ import { isMockMode } from './api/mockMode'
 import { wait } from './api/delay'
 import { OPPORTUNITY_STATUS } from '../constants/opportunityStatus'
 import { getEffectiveOpportunityStatus } from '../utils/opportunityStatus'
-import { getCategoryIdsForSkillIds, fetchAvailableSkills } from './skills'
+import { fetchAvailableSkills } from './skills'
 import { loadMockUsers } from './mock/mockUserStore'
-import { addMockParticipation } from './mock/mockParticipationsStore'
+import { addMockParticipation, MOCK_PARTICIPATIONS } from './mock/mockParticipationsStore'
 import { MOCK_OPPORTUNITIES, MOCK_MY_ORGANIZATION_ID } from './mock/mockOpportunitiesStore'
 import { AUTH_STORAGE_KEY } from '../constants/auth/storage'
+import { normalizeOpportunityOrganization } from '../utils/api/apiResponseSchemas'
+import { PARTICIPATION_STATUS } from '../constants/participationStatus'
 
 // إيميل الجلسة الحالية — نفس النمط المستخدم بـ services/organization.js
 // وservices/volunteer.js، لازم نعرف مين المتطوع الحالي لحظة الانضمام
@@ -98,6 +100,102 @@ function matchesFilters(opportunity, filters = {}) {
   return matchesSearch && matchesCategory && matchesSkill && matchesLocation
 }
 
+// ————————————————————————————————————————————————————————————
+// خوارزمية "الفرص المقترحة" — نظام نقاط (Matching Score) بدل فلترة
+// ثنائية (تظهر/ما تظهر). كل عامل بياخد وزن مختلف، وبنرتّب النتيجة من
+// الأعلى تطابقًا للأقل، بدل ما فرصة قريبة جدًا (بس ناقصها شرط واحد)
+// تختفي بالكامل وكأنها مش موجودة. الأوزان مبنية على 4 عوامل مبررة
+// بمعطيات موجودة أصلًا بالفرونت — صفر حاجة لأي بيانات جديدة من الباك اند
+// (لا تتبع تصفح، لا جدول جديد):
+//   +3 لكل مهارة مشتركة فعليًا (العامل الأقوى — تطابق مباشر ومباشر)
+//   +2 لو نفس مدينة المتطوع
+//   +1 لو سبق شارك بتصنيف الفرصة (اهتمام سابق موثّق)
+//   +2 إضافية لو سبق اتقبل بنفس التصنيف (نمط نجاح سابق)
+//   -1 لو سبق اترفض بنفس التصنيف (إشارة سلبية خفيفة، مش إقصاء كامل)
+// ————————————————————————————————————————————————————————————
+
+/**
+ * يبني خريطة "سجل التصنيفات" للمتطوع من مشاركاته السابقة — لكل تصنيف:
+ * كم مرة شارك فيه، وكم مرة اتقبل/اترفض. مبني بالكامل من بيانات
+ * المشاركات الموجودة أصلًا (MOCK_PARTICIPATIONS)، بدون أي مصدر جديد.
+ * @returns {Map<string, {total: number, accepted: number, rejected: number}>}
+ */
+function buildCategoryHistory() {
+  const history = new Map()
+
+  MOCK_PARTICIPATIONS.forEach((participation) => {
+    const opportunity = MOCK_OPPORTUNITIES.find((item) => item.id === participation.opportunityId)
+    const categoryId = opportunity?.category?.id
+    if (!categoryId) return
+
+    const entry = history.get(categoryId) || { total: 0, accepted: 0, rejected: 0 }
+    entry.total += 1
+    if (participation.status === PARTICIPATION_STATUS.ACCEPTED) entry.accepted += 1
+    if (participation.status === PARTICIPATION_STATUS.REJECTED) entry.rejected += 1
+    history.set(categoryId, entry)
+  })
+
+  return history
+}
+
+/**
+ * يحسب نقاط تطابق فرصة معيّنة مع متطوع معيّن، وبيرجّع كمان أقوى سبب
+ * تطابق كجملة مبسّطة (مش رقم خام) — نفس أسلوب LinkedIn/Netflix: سبب
+ * واحد بس، الأقوى، مش قائمة كل الأسباب مع بعض (بيصير مزدحم بصريًا).
+ * @param {object} opportunity
+ * @param {{skillIds: string[], skillNames: Map<string,string>, city: string, categoryHistory: Map}} params
+ * @returns {{score: number, reason: string|null}}
+ */
+function computeMatchScore(opportunity, { skillIds, skillNames, city, categoryHistory }) {
+  // كل سبب محتمل مع وزنه — نفس الأوزان المستخدمة بحساب score تمامًا،
+  // حتى "أقوى سبب" المعروض للمستخدم يطابق فعليًا أقوى عامل بالحساب
+  const reasons = []
+
+  const opportunitySkills = Array.isArray(opportunity.skills) ? opportunity.skills : []
+  const matchingSkill = opportunitySkills.find((skill) => skillIds.includes(skill.id))
+  if (matchingSkill) {
+    const matchingSkillsCount = opportunitySkills.filter((skill) => skillIds.includes(skill.id)).length
+    reasons.push({
+      weight: matchingSkillsCount * 3,
+      text: `Matches your ${skillNames.get(matchingSkill.id) || matchingSkill.name} skill`,
+    })
+  }
+
+  const categoryId = opportunity.category?.id
+  const history = categoryId ? categoryHistory.get(categoryId) : null
+  let historyScore = 0
+  if (history) {
+    if (history.total > 0) historyScore += 1
+    if (history.accepted > 0) {
+      historyScore += 2
+      reasons.push({ weight: 2, text: "You've succeeded in similar opportunities before" })
+    } else if (history.total > 0) {
+      reasons.push({ weight: 1, text: "Matches your past interests" })
+    }
+    if (history.rejected > 0) historyScore -= 1
+  }
+
+  const isSameCity = Boolean(
+    city && opportunity.location?.toLowerCase().includes(city.trim().toLowerCase()),
+  )
+  if (isSameCity) {
+    reasons.push({ weight: 2, text: 'Near your city' })
+  }
+
+  const score =
+    (matchingSkill
+      ? opportunitySkills.filter((skill) => skillIds.includes(skill.id)).length * 3
+      : 0) +
+    (isSameCity ? 2 : 0) +
+    historyScore
+
+  // أقوى سبب بس (أعلى وزن) — لو تعادل وزنين، أول واحد انضاف (المهارة
+  // دايمًا بتنضاف أول لو موجودة، فهي الأولوية بالتعادل تلقائيًا)
+  reasons.sort((a, b) => b.weight - a.weight)
+
+  return { score, reason: reasons[0]?.text || null }
+}
+
 /**
  * يجلب الفرص المكتملة بنجاح فقط (وصلت للعدد الكامل من المتطوعين
  * وانتهت فعليًا) — تُستخدم بسكشن "Success Stories" بالصفحة الرئيسية.
@@ -162,22 +260,56 @@ export async function fetchOpportunities(filters = {}) {
 export async function fetchSuggestedOpportunities({ skillIds = [], city = '' } = {}) {
   if (MOCK_MODE) {
     await wait()
-    const categoryIds = getCategoryIdsForSkillIds(skillIds)
+    const categoryHistory = buildCategoryHistory()
+    // لبناء جملة "Matches your X skill" محتاجين اسم المهارة، مش بس ID
+    const allSkills = await fetchAvailableSkills()
+    const skillNames = new Map(allSkills.map((skill) => [skill.id, skill.name]))
 
-    return MOCK_OPPORTUNITIES.filter((opportunity) => {
-      // الفئة تُشتق من مهارات المتطوع المتاحة، وباقي المعايير تستخدم نفس
-      // دالة المطابقة المشتركة حتى يظل السلوك موحّدًا بين التصفية والتوصية.
-      return matchesFilters(opportunity, {
-        skillIds,
-        categoryIds,
-        location: city,
-      })
-    }).map(attachComputedStatus)
+    return MOCK_OPPORTUNITIES.map((opportunity) => ({
+      opportunity,
+      ...computeMatchScore(opportunity, { skillIds, skillNames, city, categoryHistory }),
+    }))
+      // بس الفرص يلي إلها تطابق حقيقي (نقاط > 0) — مش أي فرصة بالمنصة.
+      // نقطة أدنى منطقية بدل عرض كل شي مرتّب بس بدون أي حد أدنى للصلة
+      .filter(({ score }) => score > 0)
+      // من الأعلى تطابقًا للأقل — عكس الفلترة الثنائية القديمة يلي كانت
+      // تُظهر أو تُخفي الفرصة بالكامل بدون أي تدرّج بينهم
+      .sort((a, b) => b.score - a.score)
+      .map(({ opportunity, reason }) => ({ ...attachComputedStatus(opportunity), matchReason: reason }))
   }
 
   try {
     const response = await apiClient.get('/volunteers/me/suggested-opportunities')
-    return response.data || []
+    const data = Array.isArray(response.data) ? response.data : []
+
+    // ⚠️ تطبيع دفاعي نهائي — بغض النظر شو بالضبط رح يرجّع الباك اند
+    // (سبب نصي جاهز، احتمال رقمي بس زي خوارزمية Naive Bayes، أو ولا
+    // شي إطلاقًا)، هالسطر بيضمن إنه الشاشة تشتغل صح بكل الحالات
+    // بدون أي حاجة لتعديل لاحق:
+    //   - أسماء حقول شائعة محتملة للسبب (match_reason/reason/explanation)
+    //     تُقرأ تلقائيًا لو وُجدت.
+    //   - لو رجع احتمال رقمي بس (probability/score) بدون نص، نولّد
+    //     جملة عامة منه ("Strong match" فوق 70%، وإلا "Recommended
+    //     for you") بدل ما نعرض رقم خام مالوش معنى للمستخدم.
+    //   - لو ما رجع ولا شي من هيك، matchReason بتضل null، وواجهة
+    //     "Suggested" أصلًا عندها Fallback جاهز ("Recommended for
+    //     you") بمكان التجميع — الشاشة ما بتنكسر بأي سيناريو.
+    return data.map((item) => {
+      const explicitReason = item.matchReason || item.match_reason || item.reason || item.explanation || null
+
+      const probability = typeof item.probability === 'number' ? item.probability
+        : typeof item.score === 'number' && item.score <= 1 ? item.score
+        : null
+
+      const derivedReason = explicitReason
+        || (probability != null ? (probability >= 0.7 ? 'Strong match for you' : 'Recommended for you') : null)
+
+      return {
+        ...attachComputedStatus(item),
+        organization: normalizeOpportunityOrganization(item.organization),
+        matchReason: derivedReason,
+      }
+    })
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load suggested opportunities'))
   }
@@ -205,7 +337,22 @@ export async function fetchOpportunityById(id) {
 
   try {
     const response = await apiClient.get(`/opportunities/${id}`)
-    return response.data
+    const data = response.data || {}
+
+    // ⚠️ نفس شكل استجابة Mock بالأعلى بالضبط: { opportunity, similar }
+    // — لو الباك اند الحقيقي رجّع شكل مختلف لما يُبنى فعليًا (Controller
+    // لسا فاضي كليًا حاليًا)، هون بالضبط المكان الوحيد يلي لازم يتعدّل
+    return {
+      opportunity: data.opportunity
+        ? { ...data.opportunity, organization: normalizeOpportunityOrganization(data.opportunity.organization) }
+        : null,
+      similar: Array.isArray(data.similar)
+        ? data.similar.map((item) => ({
+            ...item,
+            organization: normalizeOpportunityOrganization(item.organization),
+          }))
+        : [],
+    }
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load opportunity details'))
   }
@@ -234,27 +381,31 @@ export async function fetchMyOpportunities() {
 }
 
 /**
- * يجلب الفرص المفتوحة الخاصة بمنظمة معيّنة (للعرض بصفحة تفاصيل تلك
- * المنظمة العامة) — يختلف عن fetchMyOpportunities لأنه يقبل أي
- * organizationId (مو بس صاحبة الجلسة الحالية).
+ * يختلف عن fetchMyOpportunities لأنه يقبل أي organizationId (مو بس
+ * صاحبة الجلسة الحالية) — لعرض بروفايل أي منظمة من الخارج.
  *
  * ⚠️ الباك اند الحقيقي ما عنده endpoint فرص مفعّل إطلاقًا لسا (راجع
  * OpportunityController — كل الدوال فاضية بدون أي implementation). لما
  * يجهز، رح يشتغل مباشرة عبر ?organization_id= بدون أي تعديل هون.
+ *
+ * يجلب كل فرص منظمة معيّنة، بكل الحالات (بدون فلترة على registration_open) —
+ * صفحة بروفايل المنظمة (OrganizationDetailsPage.jsx) هي يلي بتقسمهم
+ * بصريًا لـ "Open Now" و"Past Opportunities"، مش الخدمة. قرار: زائر
+ * بروفايل منظمة بده يشوف سجلها الكامل (نشط + منتهي)، بعكس صفحة
+ * الاستكشاف العامة يلي بتعرض registration_open بس.
+ * @param {string} organizationId
  */
 export async function fetchOpportunitiesByOrganization(organizationId) {
   if (MOCK_MODE) {
     await wait()
     return MOCK_OPPORTUNITIES.map(attachComputedStatus).filter(
-      (opportunity) =>
-        opportunity.organization?.id === organizationId &&
-        opportunity.status === OPPORTUNITY_STATUS.REGISTRATION_OPEN,
+      (opportunity) => opportunity.organization?.id === organizationId,
     )
   }
 
   try {
     const response = await apiClient.get('/opportunities', {
-      params: { organization_id: organizationId, status: OPPORTUNITY_STATUS.REGISTRATION_OPEN },
+      params: { organization_id: organizationId },
     })
     return response.data || []
   } catch (error) {
@@ -392,11 +543,15 @@ export async function participateInOpportunity(id, committedHours) {
         opportunityId: id,
         committedHours: hours,
         volunteerProfile: {
+          email,
           name: [mockUser.firstName, mockUser.lastName].filter(Boolean).join(' ') || 'A volunteer',
           photo: mockUser.imageUrl || null,
           city: mockUser.city || '',
           skills: skillNames,
           phone: mockUser.phone || '',
+          educationLevel: mockUser.educationLevel || '',
+          dateOfBirth: mockUser.dateOfBirth || null,
+          gender: mockUser.gender || '',
         },
       })
     }

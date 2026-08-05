@@ -20,14 +20,15 @@ import { linksByRole } from "../../constants/navLinks";
 import LogoIcon from "../../components/ui/LogoIcon";
 import Button from "../../components/ui/Button";
 import NavbarDropdown from "../../components/ui/NavbarDropdown";
+import NotificationBell from "../../components/ui/NotificationBell";
 import { useAuth } from "../../context/AuthContext";
-import useUnseenAchievements from "../../hooks/useUnseenAchievements";
+import useRecentUpdates from "../../hooks/useRecentUpdates";
 import { getOrganizationId } from "../../utils/auth/getOrganizationId";
 
 export default function Navbar({ role = "guest" }) {
   const navigate = useNavigate();
   const { user, accountType, isAuthenticated, logout } = useAuth();
-  const hasUnseenAchievement = useUnseenAchievements();
+  const { items: recentUpdates } = useRecentUpdates();
   // بيوصل من AuthContext (real API) أو محليًا (mock mode بعد التسجيل —
   // راجع registerUser بـ services/auth.js). زر الـ Dashboard لازم
   // يعتمد على وجوده فعليًا، مش بس على نوع الحساب
@@ -35,6 +36,7 @@ export default function Navbar({ role = "guest" }) {
 
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isBellOpen, setIsBellOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -147,7 +149,14 @@ export default function Navbar({ role = "guest" }) {
 
               </div>
             ) : (
-              <div className="relative">
+              <div className="flex items-center gap-2">
+                <NotificationBell
+                  items={recentUpdates}
+                  isOpen={isBellOpen}
+                  onToggle={() => setIsBellOpen((current) => !current)}
+                  onClose={() => setIsBellOpen(false)}
+                />
+
                 <NavbarDropdown
                   isOpen={isProfileOpen}
                   setIsOpen={setIsProfileOpen}
@@ -157,37 +166,18 @@ export default function Navbar({ role = "guest" }) {
                                     text-white hover:bg-white/15 hover:border-white/25 
                                     transition">
                       {user?.avatarUrl ? (
-                        <span className="relative inline-flex">
-                          <img
-                            src={user.avatarUrl}
-                            alt={user.displayName}
-                            className="h-7 w-7 rounded-full object-cover border-2 border-primary/70"
-                          />
-                          {hasUnseenAchievement && (
-                            <span
-                              className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-danger border-2 border-black"
-                              aria-hidden="true"
-                            />
-                          )}
-                        </span>
+                        <img
+                          src={user.avatarUrl}
+                          alt={user.displayName}
+                          className="h-7 w-7 rounded-full object-cover border-2 border-primary/70"
+                        />
                       ) : (
-                        <span className="relative inline-flex">
-                          <div className="h-7 w-7 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
-                            <UserIcon className="h-4 w-4 text-primary" />
-                          </div>
-                          {hasUnseenAchievement && (
-                            <span
-                              className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-danger border-2 border-black"
-                              aria-hidden="true"
-                            />
-                          )}
-                        </span>
+                        <div className="h-7 w-7 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
+                          <UserIcon className="h-4 w-4 text-primary" />
+                        </div>
                       )}
                       <span className="text-sm sm:text-base">
                         {user?.displayName}
-                        {hasUnseenAchievement && (
-                          <span className="sr-only"> — You have a new achievement</span>
-                        )}
                       </span>
                       <ChevronDown
                         className={`w-4 h-4 text-white/60 transition-transform ${
@@ -196,9 +186,7 @@ export default function Navbar({ role = "guest" }) {
                       />
                     </div>
                   }
-                  items={[
-                    ...dropdownItems,
-                  ]}
+                  items={dropdownItems}
                 />
               </div>
             )}

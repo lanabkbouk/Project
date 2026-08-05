@@ -100,6 +100,13 @@ export async function updateCategory(categoryId, payload) {
     const category = MOCK_CATEGORIES.find((item) => item.id === categoryId)
     if (!category) return { success: false, error: 'Category not found' }
 
+    // نستثني التصنيف نفسه من فحص التكرار — نفس منطق updateSkill بالضبط
+    const nameTaken = MOCK_CATEGORIES.some(
+      (item) =>
+        item.id !== categoryId && item.name.trim().toLowerCase() === payload.name.trim().toLowerCase(),
+    )
+    if (nameTaken) return { success: false, error: 'A category with this name already exists' }
+
     category.name = payload.name
     category.description = payload.description
     return { success: true, data: category }

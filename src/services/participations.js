@@ -10,29 +10,12 @@ import { apiClient, getApiErrorMessage } from './api/client'
 import { isMockMode } from './api/mockMode'
 import { wait } from './api/delay'
 import { fetchOpportunities } from './opportunities'
-import { PARTICIPATION_STATUS } from '../constants/participationStatus'
+import { getEffectiveParticipationStatus, PARTICIPATION_STATUS } from '../constants/participationStatus'
+import { OPPORTUNITY_STATUS } from '../constants/opportunityStatus'
+import { MOCK_PARTICIPATIONS, MOCK_VOLUNTEER_PROFILES } from './mock/mockParticipationsStore'
+import { fetchVolunteerAchievements } from './achievements'
 
 const MOCK_MODE = isMockMode()
-
-// مثال واحد على كل حالة من الحالات الثلاث المؤكدة، لعرضها بالتصميم قبل الربط مع الباك اند
-// ⚠️ committedHours: الرقم يلي المتطوع التزم فيه لحظة الانضمام (عبر
-// ParticipateHoursModal). hoursLogged: الرقم النهائي يلي المنظمة بتأكده/
-// بتعدّله بعد ما الفرصة تخلص فعليًا — null لحد ما تحدّده (راجع
-// updateParticipationHours أسفل الملف). قبل الانتهاء الفعلي بيساوي
-// committedHours افتراضيًا (نفس الفكرة يلي بيبلّش فيها ManageHoursModal).
-const MOCK_PARTICIPATIONS = [
-  { id: 'p1', opportunityId: 'o1', status: PARTICIPATION_STATUS.PENDING, committedHours: 3, hoursLogged: null, joinedDate: '2026-07-25' },
-  { id: 'p2', opportunityId: 'o2', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 4, hoursLogged: null, joinedDate: '2026-07-20' },
-  { id: 'p5', opportunityId: 'o1', status: PARTICIPATION_STATUS.REJECTED, committedHours: 2, hoursLogged: null, joinedDate: '2026-05-15' },
-]
-
-// بيانات متطوع تجريبية لكل مشاركة، تُستخدم فقط بجانب المنظمة (قائمة المتقدمين)
-// حيث تحتاج المنظمة ترى معلومات المتطوع نفسه، لا فقط حالة طلبه
-const MOCK_APPLICANT_PROFILES = {
-  p1: { name: 'Lina Haddad', photo: null, city: 'Damascus', skills: ['First Aid', 'Communication'], phone: '+963911111111' },
-  p2: { name: 'Omar Khalil', photo: null, city: 'Aleppo', skills: ['Teaching'], phone: '+963922222222' },
-  p5: { name: 'Maya Saleh', photo: null, city: 'Damascus', skills: ['Photography'], phone: '+963955555555' },
-}
 
 /**
  * Fetches the current volunteer's participations (joined opportunities).
@@ -42,10 +25,16 @@ export async function fetchMyParticipations() {
   if (MOCK_MODE) {
     await wait()
     const opportunities = await fetchOpportunities()
-    return MOCK_PARTICIPATIONS.map((participation) => ({
-      ...participation,
-      opportunity: opportunities.find((item) => item.id === participation.opportunityId) || null,
-    })).filter((participation) => participation.opportunity)
+    return MOCK_PARTICIPATIONS.map((participation) => {
+      const opportunity = opportunities.find((item) => item.id === participation.opportunityId) || null
+      return {
+        ...participation,
+        // pending تتحول expired بالعرض تلقائيًا لو فات تاريخ بداية
+        // الفرصة والمنظمة ما ردّت — راجع constants/participationStatus.js
+        status: opportunity ? getEffectiveParticipationStatus(participation, opportunity) : participation.status,
+        opportunity,
+      }
+    }).filter((participation) => participation.opportunity)
   }
 
   try {
@@ -63,14 +52,68 @@ export async function fetchMyParticipations() {
 export async function fetchApplicantsForOpportunity(opportunityId) {
   if (MOCK_MODE) {
     await wait()
-    return MOCK_PARTICIPATIONS.filter((participation) => participation.opportunityId === opportunityId).map(
-      (participation) => ({
-        id: participation.id,
-        status: participation.status,
-        participatedAt: participation.joinedDate,
-        committedHours: participation.committedHours,
-        hoursLogged: participation.hoursLogged,
-        volunteer: MOCK_APPLICANT_PROFILES[participation.id] || null,
+    // محتاجين تاريخ بداية الفرصة لحساب Expired، وهوية المنظمة لحساب
+    // إحصائيات "لدى هالمنظمة بالذات" — نفس منطق fetchMyParticipations
+    // بالضبط، بس هون من جهة المنظمة
+    const opportunities = await fetchOpportunities()
+    const opportunity = opportunities.find((item) => item.id === opportunityId) || null
+    const organizationId = opportunity?.organization?.id
+
+    const applicants = MOCK_PARTICIPATIONS.filter(
+      (participation) => participation.opportunityId === opportunityId,
+    )
+
+    return Promise.all(
+      applicants.map(async (participation) => {
+        const volunteerProfile = MOCK_VOLUNTEER_PROFILES[participation.volunteerId] || null
+
+        // ⚠️ إحصائيات حقيقية محسوبة "لدى هالمنظمة بالذات" — مش رقم
+        // ثابت مخترع. بنجمع كل مشاركات نفس المتطوع (volunteerId)
+        // المرتبطة بفرص من نفس المنظمة الحالية فقط، ومكتملة فعليًا
+        let completedOpportunitiesCount = 0
+        let totalHoursVolunteered = 0
+        let achievements = []
+
+        if (volunteerProfile && organizationId) {
+          const sameVolunteerParticipations = MOCK_PARTICIPATIONS.filter(
+            (item) => item.volunteerId === participation.volunteerId,
+          )
+
+          sameVolunteerParticipations.forEach((item) => {
+            const itemOpportunity = opportunities.find((o) => o.id === item.opportunityId)
+            const isCompletedAtThisOrg =
+              itemOpportunity?.organization?.id === organizationId &&
+              itemOpportunity?.status === OPPORTUNITY_STATUS.COMPLETED &&
+              item.status === PARTICIPATION_STATUS.ACCEPTED
+
+            if (isCompletedAtThisOrg) {
+              completedOpportunitiesCount += 1
+              totalHoursVolunteered += Number(item.hoursLogged) || 0
+            }
+          })
+
+          // ⚠️ الإنجازات عكس الإحصائيات فوق — تراكمية عبر المنصة كلها
+          // (مش قابلة للعزل حسب منظمة، راجع API_CONTRACT.md)، فهون
+          // بنجيب القائمة الحقيقية الكاملة لهالمتطوع بغض النظر عن
+          // المنظمة الحالية
+          achievements = await fetchVolunteerAchievements(participation.volunteerId)
+        }
+
+        return {
+          id: participation.id,
+          // ⚠️ بدون هالسطر، طلب pending كان بيضل "Pending" للأبد حتى لو
+          // الفرصة خلصت من زمان — وبالتالي أزرار Accept/Reject تضل ظاهرة
+          // بشكل خاطئ عند المنظمة رغم إنه فات وقت القرار
+          status: opportunity
+            ? getEffectiveParticipationStatus(participation, opportunity)
+            : participation.status,
+          participatedAt: participation.joinedDate,
+          committedHours: participation.committedHours,
+          hoursLogged: participation.hoursLogged,
+          volunteer: volunteerProfile
+            ? { ...volunteerProfile, completedOpportunitiesCount, totalHoursVolunteered, achievements }
+            : null,
+        }
       }),
     )
   }
@@ -84,8 +127,7 @@ export async function fetchApplicantsForOpportunity(opportunityId) {
 }
 
 /**
- * نقطة موحّدة لتغيير حالة طلب مشاركة — تُستخدم من طرف المنظمة (accepted/rejected)
- * ومن طرف المتطوع (withdrawn) على حد سواء، عبر نفس الـ Endpoint.
+ * نقطة موحّدة لتغيير حالة طلب مشاركة — تُستخدم من طرف المنظمة (accepted/rejected).
  * @param {string} participationId
  * @param {string} status
  */
@@ -105,8 +147,28 @@ export async function updateParticipationStatus(participationId, status) {
   }
 }
 
-// withdrawParticipation انشالت مؤقتًا مع حالة WITHDRAWN — لو تأكدت
-// لاحقًا من الباك، ترجع الدالة والحالة مع بعض بنفس المكانين تمامًا.
+// انسحاب المتطوع من مشاركة — قرار مع فريق سنا: حذف السطر بالكامل من
+// opportunity_volunteer، بأي وقت (pending أو accepted سوا)، بدون أي
+// حالة "withdrawn" مخزّنة. مش endpoint تغيير حالة، هو DELETE فعلي.
+/**
+ * @param {string} participationId
+ */
+export async function withdrawParticipation(participationId) {
+  if (MOCK_MODE) {
+    await wait()
+    const index = MOCK_PARTICIPATIONS.findIndex((item) => item.id === participationId)
+    if (index === -1) return { success: false, error: 'Participation not found' }
+    MOCK_PARTICIPATIONS.splice(index, 1)
+    return { success: true }
+  }
+
+  try {
+    await apiClient.delete(`/participations/${participationId}`)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: getApiErrorMessage(error, 'Failed to withdraw from this opportunity') }
+  }
+}
 
 // ————————————————————————————————————————————————————————————
 // إدارة الساعات النهائية (منظمة فقط، بعد انتهاء الفرصة) — راجع

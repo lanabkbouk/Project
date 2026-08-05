@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { useOrganizationProfileQuery } from "../hooks/queries/useOrganizationProfileQuery";
 import { useUpdateOrganizationProfileMutation } from "../hooks/queries/useUpdateOrganizationProfileMutation";
+import { useRequestVerificationReviewMutation } from "../hooks/queries/useRequestVerificationReviewMutation";
 import { useImageUpload } from "../hooks/useImageUpload";
 import { queryKeys } from "../app/queryKeys";
 import { organizationProfileSchema } from "../utils/auth/OrganizationProfileValidation";
@@ -16,6 +17,7 @@ import OrgProfileHeader from "../components/OrgProfile/ProfileHeader";
 import OrgProfileForm from "../components/OrgProfile/ProfileForm";
 import OrgProfilePreview from "../components/OrgProfile/ProfilePreview";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
+import Button from "../components/ui/Button";
 import Skeleton from "../components/ui/Skeleton";
 import Toast from "../components/common/Toast";
 import { useToast } from "../hooks/useToast";
@@ -36,6 +38,7 @@ export default function OrgProfile() {
   const organization = organizationQuery.data?.success ? organizationQuery.data.data : null;
 
   const updateProfileMutation = useUpdateOrganizationProfileMutation(organizationId);
+  const requestReviewMutation = useRequestVerificationReviewMutation(organizationId);
 
   // useImageUpload يتكفّل بالمعاينة المحلية والتحقق من نوع/حجم الصورة —
   // نفس الـ hook المستخدم بصفحة Register وorgForm، بدل FileReader يدوي
@@ -101,6 +104,23 @@ export default function OrgProfile() {
   };
 
   const canUseServices = organization?.status === ORGANIZATION_STATUS.VERIFIED;
+  const isRejected = organization?.status === ORGANIZATION_STATUS.REJECTED;
+
+  // فعل صريح ومنفصل تمامًا عن حفظ البروفايل العادي — عمدًا، حتى تعديل
+  // بسيط (رقم تلفون مثلًا) ما يفتح مراجعة جديدة بدون قصد المنظمة
+  const handleRequestReview = async () => {
+    const confirmed = window.confirm(
+      "Request a new verification review? Make sure you've updated any information the admin flagged before requesting review again.",
+    );
+    if (!confirmed) return;
+
+    const result = await requestReviewMutation.mutateAsync();
+    if (!result.success) {
+      showError(result.error || "Failed to request a new review");
+      return;
+    }
+    showSuccess("Review requested. We'll get back to you soon.");
+  };
 
   if (isLoading) {
     return (
@@ -148,6 +168,20 @@ export default function OrgProfile() {
             status={organization?.status}
             rejectionReason={organization?.rejectionReason}
           />
+
+          {isRejected && (
+            <div className="flex justify-end -mt-4 mb-8">
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={handleRequestReview}
+                isLoading={requestReviewMutation.isPending}
+                loadingText="Requesting..."
+              >
+                Request Verification Review
+              </Button>
+            </div>
+          )}
 
           <OrgProfileHeader
             name={organization?.name}

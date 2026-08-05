@@ -45,10 +45,16 @@ export default function OpportunitiesListPage() {
 
   const categories = categoriesQuery.data ?? [];
   const opportunities = opportunitiesQuery.data;
+  // قرار: صفحة الاستكشاف (زائر أو متطوع، سواء) بتعرض بس الفرص المفتوحة
+  // للتسجيل فعليًا. أي حالة تانية (مقفولة/شغالة/منتهية) ما إلها قيمة
+  // عملية لحدا لسا ما انضم — بتضل متاحة عبر رابط مباشر لصفحة التفاصيل،
+  // أو بقسم "Past Opportunities" ببروفايل المنظمة، بس مش هون
   const visibleOpportunities = useMemo(
     () =>
       Array.isArray(opportunities)
-        ? opportunities.filter((opportunity) => opportunity.status !== OPPORTUNITY_STATUS.COMPLETED)
+        ? opportunities.filter(
+            (opportunity) => opportunity.status === OPPORTUNITY_STATUS.REGISTRATION_OPEN,
+          )
         : [],
     [opportunities],
   );
@@ -66,6 +72,24 @@ export default function OpportunitiesListPage() {
     const count = visibleOpportunities.length;
     return `${count} opportunit${count === 1 ? "y" : "ies"} found`;
   }, [visibleOpportunities.length]);
+
+  // بتبويب "Suggested" بس: تجميع بمستوى واحد حسب سبب الترشيح (سلوك
+  // المتطوع — مهاراته، مدينته، تاريخ مشاركاته)، مش حسب التصنيف. تصنيف
+  // الفرصة (Health/Education...) ضل داخل كل بطاقة كالمعتاد (Chip)،
+  // مش عنوان قسم خارجي. ترتيب الأقسام بيتبع ترتيب أول ظهور بالقائمة
+  // المرتّبة أصلًا بالنقاط، فالسبب الأقوى تطابقًا بيطلع أول قسم تلقائيًا
+  const groupedByReason = useMemo(() => {
+    if (!isSuggestedTab) return [];
+
+    const groups = new Map();
+    visibleOpportunities.forEach((opportunity) => {
+      const reasonName = opportunity.matchReason || "Recommended for you";
+      if (!groups.has(reasonName)) groups.set(reasonName, []);
+      groups.get(reasonName).push(opportunity);
+    });
+
+    return Array.from(groups.entries());
+  }, [isSuggestedTab, visibleOpportunities]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -109,8 +133,9 @@ export default function OpportunitiesListPage() {
             <div className="flex items-start gap-3 rounded-3xl bg-primary/5 border border-primary/15 p-4 mb-6">
               <Sparkles size={18} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
               <p className="text-sm text-heading/70">
-                Picked for you based on your category, skills, location, and age — this list
-                updates automatically as your profile changes.
+                Picked for you based on your skills, city, and past participation history —
+                grouped by category, and this list updates automatically as you engage with the
+                platform.
               </p>
             </div>
           ) : null}
@@ -133,14 +158,30 @@ export default function OpportunitiesListPage() {
                   : "Try a different search term or category."
               }
             />
+          ) : isSuggestedTab ? (
+            <div className="flex flex-col gap-10">
+              {groupedByReason.map(([reasonName, reasonOpportunities]) => (
+                <section key={reasonName}>
+                  <Typography variant="h4" className="mb-4">
+                    {reasonName}
+                  </Typography>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {reasonOpportunities.map((opportunity) => (
+                      <OpportunityCard
+                        key={opportunity.id}
+                        opportunity={opportunity}
+                        recommended
+                        showMatchReason={false}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 transition-opacity">
               {visibleOpportunities.map((opportunity) => (
-                <OpportunityCard
-                  key={opportunity.id}
-                  opportunity={opportunity}
-                  recommended={isSuggestedTab}
-                />
+                <OpportunityCard key={opportunity.id} opportunity={opportunity} />
               ))}
             </div>
           )}

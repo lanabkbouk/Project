@@ -51,6 +51,11 @@ export const HOME_FAQS = [
       "The organization behind the opportunity reviews each request and marks it as pending, accepted, or rejected.",
   },
   {
+    question: "What do the colored labels on opportunities mean?",
+    answer:
+      "Green means you can still join. Yellow means registration has closed but the opportunity hasn't started yet. Blue means it's happening right now. Gray means it has finished.",
+  },
+  {
     question: "Does an organization need approval before posting causes?",
     answer:
       "Yes, organizations go through a verification step before they're able to publish opportunities on the platform.",

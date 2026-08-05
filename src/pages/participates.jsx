@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Compass } from "lucide-react";
 import Typography from "../components/ui/Typography";
@@ -5,6 +6,9 @@ import ParticipationCard from "../components/opportunity/ParticipationCard";
 import Skeleton from "../components/ui/Skeleton";
 import EmptyState from "../components/common/EmptyState";
 import { useMyParticipationsQuery } from "../hooks/queries/useMyParticipationsQuery";
+import { markHoursSeen } from "../utils/hoursSeenTracker";
+import { markStatusSeen } from "../utils/participationStatusSeenTracker";
+import { PARTICIPATION_STATUS } from "../constants/participationStatus";
 import { CARD_SURFACE } from "../utils/surfaceStyles";
 import { ROUTES } from "../constants/paths";
 
@@ -12,11 +16,28 @@ export default function Participates() {
   const navigate = useNavigate();
   const participationsQuery = useMyParticipationsQuery();
 
-  const participations = participationsQuery.data ?? [];
+  const participations = useMemo(() => participationsQuery.data ?? [], [participationsQuery.data]);
   const loading = participationsQuery.isPending;
   const error = participationsQuery.isError
     ? participationsQuery.error?.message || "Failed to load your volunteering history"
     : "";
+
+  // تعليم كل الساعات المؤكدة وحالات القبول/الرفض الظاهرة هلق
+  // كـ"مشاهدة" — بعد هالسطر، النقطة الحمراء بالنافبار بتختفي لحد ما
+  // يظهر تحديث جديد فعليًا
+  useEffect(() => {
+    participations.forEach((participation) => {
+      if (participation.hoursLogged !== null && participation.hoursLogged !== undefined) {
+        markHoursSeen(participation.id, participation.hoursLogged);
+      }
+      if (
+        participation.status === PARTICIPATION_STATUS.ACCEPTED ||
+        participation.status === PARTICIPATION_STATUS.REJECTED
+      ) {
+        markStatusSeen(participation.id, participation.status);
+      }
+    });
+  }, [participations]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

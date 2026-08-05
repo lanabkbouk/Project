@@ -112,6 +112,11 @@ export async function createSkill(payload) {
   if (MOCK_MODE) {
     await wait()
 
+    const nameTaken = MOCK_SKILLS.some(
+      (skill) => skill.name.trim().toLowerCase() === payload.name.trim().toLowerCase(),
+    )
+    if (nameTaken) return { success: false, error: 'A skill with this name already exists' }
+
     const newSkill = { id: `s${Date.now()}`, name: payload.name, categoryId: payload.categoryId }
     MOCK_SKILLS.push(newSkill)
     MOCK_SKILL_CATEGORY_MAP[newSkill.id] = newSkill.categoryId
@@ -137,6 +142,14 @@ export async function updateSkill(skillId, payload) {
 
     const skill = MOCK_SKILLS.find((item) => item.id === skillId)
     if (!skill) return { success: false, error: 'Skill not found' }
+
+    // نستثني المهارة نفسها من فحص التكرار — وإلا ما كانت تقدر تحفظي
+    // بدون تعديل الاسم إطلاقًا (بيصير هو نفسه "مكرر" مع نفسه)
+    const nameTaken = MOCK_SKILLS.some(
+      (item) =>
+        item.id !== skillId && item.name.trim().toLowerCase() === payload.name.trim().toLowerCase(),
+    )
+    if (nameTaken) return { success: false, error: 'A skill with this name already exists' }
 
     skill.name = payload.name
     skill.categoryId = payload.categoryId

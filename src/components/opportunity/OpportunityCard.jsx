@@ -1,4 +1,4 @@
-import { MapPin, Clock, Users, Sparkles } from "lucide-react";
+import { MapPin, Clock, Users, Sparkles, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Card from "../ui/Card";
 import Chip from "../ui/Chip";
@@ -7,12 +7,21 @@ import OpportunityStatusBadge from "./OpportunityStatusBadge";
 import { CATEGORY_COLORS, CATEGORY_ICONS } from "../../utils/categoryStyles";
 import { ROUTES } from "../../constants/paths";
 
-export default function OpportunityCard({ opportunity, recommended = false }) {
+export default function OpportunityCard({
+  opportunity,
+  recommended = false,
+  showCategoryChip = true,
+  showMatchReason = true,
+}) {
   const navigate = useNavigate();
   const categoryName = opportunity.category?.name;
   const categoryStyle = CATEGORY_COLORS[categoryName] || CATEGORY_COLORS.Social;
   const CategoryIcon = CATEGORY_ICONS[categoryName] || Users;
   const spotsLeft = Math.max(opportunity.maxVolunteers - opportunity.currentVolunteers, 0);
+  // أقوى سبب تطابق بس (لا قائمة كاملة) — راجع services/opportunities.js
+  // computeMatchScore. showMatchReason=false لما السبب يصير عنوان قسم
+  // خارجي بدل سطر داخل البطاقة (راجع OpportunitiesListPage.jsx)
+  const matchReason = recommended && showMatchReason ? opportunity.matchReason : null;
 
   // Falls back to a category-colored icon whenever there's no real photo yet —
   // whether the organization hasn't uploaded one, or the backend rejected it.
@@ -56,7 +65,14 @@ export default function OpportunityCard({ opportunity, recommended = false }) {
         </span>
       </div>
 
-      {opportunity.category ? (
+      {matchReason ? (
+        <p className="flex items-center gap-1.5 mb-4 text-xs font-medium text-primary">
+          <Target size={13} aria-hidden="true" />
+          {matchReason}
+        </p>
+      ) : null}
+
+      {opportunity.category && showCategoryChip ? (
         <Chip customStyle={categoryStyle} className="mb-4 inline-block w-fit">
           {opportunity.category.name}
         </Chip>

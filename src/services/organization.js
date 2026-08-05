@@ -155,3 +155,48 @@ export async function updateOrganizationProfile(organizationId, profileData) {
     return { success: false, error: getApiErrorMessage(error, 'Failed to save organization profile') }
   }
 }
+
+// ————————————————————————————————————————————————————————————
+// إعادة طلب مراجعة التوثيق بعد الرفض (Request Verification Review)
+//
+// ⚠️ بما إنه وثيقة التوثيق نفسها read-only بعد إنشاء الحساب (راجع
+// الملاحظة بأعلى الملف)، هاي الدالة **ما بترسل أي ملف جديد** — بس
+// بترجّع الحالة لـ pending بنفس الوثيقة الأصلية، بعد ما المنظمة تصلح
+// الحقول النصية القابلة للتعديل (اسم/وصف/مدينة...). لو سبب الرفض كان
+// متعلق بالوثيقة نفسها، هاي حالة ما إلها حل ذاتي بالتطبيق حاليًا.
+//
+// الباك اند الحقيقي ما عنده هالـ endpoint لسا — مطلوب جديد:
+//   PATCH /organizations/{id}/request-review
+// (بدون body، بس يرجّع status=pending ويصفّر rejection_reason)
+// ————————————————————————————————————————————————————————————
+
+/**
+ * @param {number|string} organizationId
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function requestVerificationReview(organizationId) {
+  if (MOCK_MODE) {
+    await wait()
+
+    const email = getCurrentSessionEmail()
+    if (!email) return { success: false, error: 'Could not identify the current organization' }
+
+    updateMockUser(email, {
+      status: ORGANIZATION_STATUS.PENDING,
+      rejectionReason: '',
+    })
+
+    return { success: true }
+  }
+
+  if (!organizationId) {
+    return { success: false, error: 'Organization id is required to request a review' }
+  }
+
+  try {
+    await apiClient.patch(`/organizations/${organizationId}/request-review`)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: getApiErrorMessage(error, 'Failed to request a new review') }
+  }
+}

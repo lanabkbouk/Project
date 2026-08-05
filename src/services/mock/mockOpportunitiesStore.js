@@ -15,7 +15,7 @@ export const MOCK_OPPORTUNITIES = [
     maxVolunteers: 30,
     category: { id: 'c1', name: 'Health' },
     skills: [{ id: 's1', name: 'First Aid' }, { id: 's7', name: 'Communication' }],
-    organization: { id: 'org-mock', name: 'Blue Drop Foundation', imageUrl: null },
+    organization: { id: 'org-mock', name: 'Blue Drop Foundation', imageUrl: null, phone: '+31611111111' },
     image: null,
   },
   {
@@ -34,7 +34,7 @@ export const MOCK_OPPORTUNITIES = [
     maxVolunteers: 15,
     category: { id: 'c2', name: 'Education' },
     skills: [{ id: 's4', name: 'Teaching' }, { id: 's5', name: 'Tutoring' }],
-    organization: { id: 'org-mock', name: 'Bright Minds NGO', imageUrl: null },
+    organization: { id: 'org-mock', name: 'Bright Minds NGO', imageUrl: null, phone: '+31622222222' },
     image: null,
   },
   {
@@ -53,7 +53,7 @@ export const MOCK_OPPORTUNITIES = [
     maxVolunteers: 40,
     category: { id: 'c5', name: 'Environment' },
     skills: [{ id: 's12', name: 'Environmental Awareness' }],
-    organization: { id: 'org-mock', name: 'Green Coast Initiative', imageUrl: null },
+    organization: { id: 'org3', name: 'Green Coast Initiative', imageUrl: null, phone: '+31633333333' },
     image: null,
   },
   {
@@ -72,7 +72,7 @@ export const MOCK_OPPORTUNITIES = [
     maxVolunteers: 50,
     category: { id: 'c3', name: 'Social' },
     skills: [{ id: 's8', name: 'Event Management' }],
-    organization: { id: 'org-mock', name: 'City Food Bank', imageUrl: null },
+    organization: { id: 'org4', name: 'City Food Bank', imageUrl: null, phone: '+31644444444' },
     image: null,
   },
   {
@@ -91,7 +91,7 @@ export const MOCK_OPPORTUNITIES = [
     maxVolunteers: 25,
     category: { id: 'c3', name: 'Social' },
     skills: [{ id: 's8', name: 'Event Management' }],
-    organization: { id: 'org4', name: 'City Food Bank', imageUrl: null },
+    organization: { id: 'org4', name: 'City Food Bank', imageUrl: null, phone: '+31644444444' },
     image: null,
   },
   {
@@ -110,7 +110,7 @@ export const MOCK_OPPORTUNITIES = [
     maxVolunteers: 18,
     category: { id: 'c2', name: 'Education' },
     skills: [{ id: 's4', name: 'Teaching' }],
-    organization: { id: 'org2', name: 'Bright Minds NGO', imageUrl: null },
+    organization: { id: 'org2', name: 'Bright Minds NGO', imageUrl: null, phone: '+31622222222' },
     image: null,
   },
 ];

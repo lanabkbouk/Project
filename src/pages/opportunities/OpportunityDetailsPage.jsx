@@ -7,6 +7,7 @@ import Chip from "../../components/ui/Chip";
 import Button from "../../components/ui/Button";
 import OpportunityProgressBar from "../../components/opportunity/OpportunityProgressBar";
 import OpportunityStatusBadge from "../../components/opportunity/OpportunityStatusBadge";
+import StatusLegendPopover from "../../components/ui/StatusLegendPopover";
 import ParticipateHoursModal from "../../components/opportunity/ParticipateHoursModal";
 import CategorySidebar from "../../components/opportunity/CategorySidebar";
 import Skeleton from "../../components/ui/Skeleton";
@@ -161,7 +162,10 @@ export default function OpportunityDetailsPage() {
             <Typography variant="h1">
               {opportunity.title}
             </Typography>
-            <OpportunityStatusBadge status={opportunity.status} />
+            <div className="flex items-center gap-2">
+              <OpportunityStatusBadge status={opportunity.status} />
+              <StatusLegendPopover />
+            </div>
           </div>
 
           <div className="w-full aspect-video rounded-4xl overflow-hidden bg-heading/5 flex items-center justify-center mb-6">

@@ -1,10 +1,12 @@
 // بطاقة متقدّم واحد بقائمة "المتقدمين" عند المنظمة. أفاتار + معلومات على
 // اليسار، شارة الحالة والإجراء على اليمين، مع سطر مهارات مستقل تحته.
 
+import { useState } from "react";
 import { MapPin, Phone, Check, X, CheckCircle2, Clock3 } from "lucide-react";
 import Button from "../ui/Button";
 import SkillChipsPreview from "../common/SkillChipsPreview";
 import ParticipationStatusBadge from "../opportunity/ParticipationStatusBadge";
+import VolunteerProfilePreviewModal from "./VolunteerProfilePreviewModal";
 import { PARTICIPATION_STATUS } from "../../constants/participationStatus";
 import { CARD_BASE } from "../../utils/surfaceStyles";
 
@@ -22,6 +24,8 @@ export default function ApplicantCard({
   const { volunteer, status, participatedAt, committedHours, hoursLogged } = applicant;
   const isPending = status === PARTICIPATION_STATUS.PENDING;
   const isAccepted = status === PARTICIPATION_STATUS.ACCEPTED;
+  const isExpired = status === PARTICIPATION_STATUS.EXPIRED;
+  const [isProfilePreviewOpen, setIsProfilePreviewOpen] = useState(false);
   // "إدارة الساعات" تظهر فقط لمتطوع مقبول بعد ما الفرصة تخلص فعليًا —
   // المرفوض والمعلّق ما التزموا فعليًا فما في داعي نسألهم عن ساعات
   const canManageHours = isAccepted && opportunityHasEnded;
@@ -41,7 +45,15 @@ export default function ApplicantCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="font-semibold text-heading truncate">{volunteer.name}</h3>
+              <h3 className="font-semibold text-heading truncate">
+                <button
+                  type="button"
+                  onClick={() => setIsProfilePreviewOpen(true)}
+                  className="hover:text-primary hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  {volunteer.name}
+                </button>
+              </h3>
 
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-body mt-1">
                 {volunteer.city && (
@@ -111,7 +123,7 @@ export default function ApplicantCard({
           <>
             <span className="flex items-center gap-1.5 text-xs font-medium text-heading/50">
               <CheckCircle2 size={14} aria-hidden="true" />
-              {hasConfirmedHours ? "Hours confirmed" : "Decision completed"}
+              {isExpired ? "No response before it started" : hasConfirmedHours ? "Hours confirmed" : "Decision completed"}
             </span>
 
             {canManageHours && (
@@ -128,6 +140,12 @@ export default function ApplicantCard({
           </>
         )}
       </div>
+
+      <VolunteerProfilePreviewModal
+        open={isProfilePreviewOpen}
+        onClose={() => setIsProfilePreviewOpen(false)}
+        volunteer={volunteer}
+      />
     </div>
   );
 }

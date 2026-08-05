@@ -22,6 +22,9 @@ export function useOrganizationVerification() {
 
   // الخدمة بترجع { success, data } دايمًا (ما بترمي استثناء عند الفشل)
   const status = data?.success ? data.data?.status : null;
+  // ⚠️ كانت ناقصة قبل — الـ Banner بيدعم عرض السبب أصلًا، بس 4 من 5
+  // صفحات بتستخدم هالـ hook ما كانت توصلها لأنها ما كانت موجودة هون
+  const rejectionReason = data?.success ? data.data?.rejectionReason : null;
 
   // ⚠️ مهم: status=null بيصير بحالتين مختلفتين تمامًا:
   // 1) الطلب نجح لكن ما في organization/status (نادر) → مفيش خطأ فعلي
@@ -32,6 +35,7 @@ export function useOrganizationVerification() {
 
   return {
     status,
+    rejectionReason,
     loading: isLoading,
     hasLoadError,
     isVerified: status === ORGANIZATION_STATUS.VERIFIED,

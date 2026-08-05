@@ -3,8 +3,9 @@ import { fetchOpportunitiesByOrganization } from '../../services/opportunities'
 import { queryKeys } from '../../app/queryKeys'
 
 /**
- * يجلب الفرص المفتوحة لمنظمة معيّنة — منفصل عن useOrganizationDetailsQuery
+ * يجلب كل فرص منظمة معيّنة (كل الحالات) — منفصل عن useOrganizationDetailsQuery
  * عمدًا، حتى لو فشل جلب الفرص (أو تأخر) ما يعطّل عرض بيانات المنظمة نفسها.
+ * الصفحة (OrganizationDetailsPage.jsx) هي يلي بتقسمهم لـ Open Now/Past.
  * @param {string} organizationId
  */
 export function useOrganizationOpportunitiesQuery(organizationId) {

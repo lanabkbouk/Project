@@ -30,7 +30,7 @@ import { ROUTES } from "../constants/paths";
 
 export default function ApplicantsList() {
   const { id } = useParams();
-  const { status, isVerified, hasLoadError } = useOrganizationVerification();
+  const { status, rejectionReason, isVerified, hasLoadError } = useOrganizationVerification();
 
   const opportunityQuery = useOpportunityDetailsQuery(id);
   const applicantsQuery = useApplicantsQuery(id);
@@ -46,6 +46,7 @@ export default function ApplicantsList() {
   const opportunityHasEnded = Boolean(
     opportunity?.endDate && new Date(opportunity.endDate) < new Date(),
   );
+  
 
   // null = المودال مقفل، كائن applicant = مفتوح على هالمتقدّم بالذات
   const [hoursModalApplicant, setHoursModalApplicant] = useState(null);
@@ -131,7 +132,7 @@ export default function ApplicantsList() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <VerificationStatusBanner status={status} hasLoadError={hasLoadError} />
+      <VerificationStatusBanner status={status} rejectionReason={rejectionReason} hasLoadError={hasLoadError} />
 
       <Link
         to={ROUTES.MY_CAUSES}

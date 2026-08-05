@@ -71,7 +71,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const organizationId = getOrganizationId(user);
-  const { status, isVerified, hasLoadError } = useOrganizationVerification();
+  const { status, rejectionReason, isVerified, hasLoadError } = useOrganizationVerification();
 
   const dashboardQuery = useOrganizationDashboardQuery(organizationId);
   // isLoading (isPending && isFetching) مش isPending لحالها: isPending
@@ -91,7 +91,7 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <VerificationStatusBanner status={status} hasLoadError={hasLoadError} />
+      <VerificationStatusBanner status={status} rejectionReason={rejectionReason} hasLoadError={hasLoadError} />
 
       <Typography variant="sectionTitle" className="mb-2">
         Dashboard

@@ -20,7 +20,7 @@ export default function MyCauses() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const organizationId = getOrganizationId(user);
-  const { status, isVerified, hasLoadError } = useOrganizationVerification();
+  const { status, rejectionReason, isVerified, hasLoadError } = useOrganizationVerification();
 
   const opportunitiesQuery = useMyOpportunitiesQuery(organizationId);
   const deleteMutation = useDeleteOpportunityMutation(organizationId);
@@ -53,7 +53,7 @@ export default function MyCauses() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <VerificationStatusBanner status={status} hasLoadError={hasLoadError} />
+      <VerificationStatusBanner status={status} rejectionReason={rejectionReason} hasLoadError={hasLoadError} />
 
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>

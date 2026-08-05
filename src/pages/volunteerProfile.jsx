@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "react-router-dom";
@@ -33,6 +33,16 @@ export default function VolunteerProfile() {
   const { user, updateUser } = useAuth();
   const location = useLocation();
   const guardMessage = location.state?.message || '';
+
+  // لو المستخدم وصل عبر رابط فيه #achievements (متل جرس الإشعارات لما
+  // يضغط على تحديث إنجاز جديد)، نمرّر تلقائيًا لقسم الإنجازات بالضبط
+  // بدل ما يوصل أعلى الصفحة ويدوّر عليه يدويًا
+  useEffect(() => {
+    if (location.hash !== '#achievements') return;
+
+    const section = document.getElementById('achievements');
+    section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [location.hash]);
 
   // نفس هوك المهارات مستخدم هون وبـ ProfilePreview سوا — بفضل الكاش
   // المشترك ما بتنجلب مرتين حتى لو الاثنين رندروا بنفس اللحظة
@@ -149,7 +159,7 @@ export default function VolunteerProfile() {
             />
           </form>
 
-          <section className={`mt-8 ${PANEL_SURFACE} p-6 md:p-8`}>
+          <section id="achievements" className={`mt-8 ${PANEL_SURFACE} p-6 md:p-8`}>
             <Typography variant="h4" gutterBottom>
               Achievements
             </Typography>

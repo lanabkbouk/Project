@@ -73,7 +73,7 @@ export default function CreateEditCause() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const organizationId = getOrganizationId(user);
-  const { status, isVerified, hasLoadError } = useOrganizationVerification();
+  const { status, rejectionReason, isVerified, hasLoadError } = useOrganizationVerification();
 
   // نفس هوك التصنيفات المستخدم بصفحتي الفرص — كاش مشترك، ما بينجلب مرتين
   const categoriesQuery = useCategoriesQuery();
@@ -195,7 +195,7 @@ export default function CreateEditCause() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <VerificationStatusBanner status={status} hasLoadError={hasLoadError} />
+      <VerificationStatusBanner status={status} rejectionReason={rejectionReason} hasLoadError={hasLoadError} />
 
       <Typography variant="sectionTitle" className="mb-2">
         {isEditMode ? "Edit Cause" : "Create a New Cause"}

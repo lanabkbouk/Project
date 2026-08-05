@@ -17,8 +17,26 @@ export const OPPORTUNITY_STATUS = {
 };
 
 export const OPPORTUNITY_STATUS_META = {
-  [OPPORTUNITY_STATUS.REGISTRATION_OPEN]: { label: "Open", color: "green" },
-  [OPPORTUNITY_STATUS.REGISTRATION_CLOSED]: { label: "Closed", color: "gold" },
-  [OPPORTUNITY_STATUS.IN_PROGRESS]: { label: "In Progress", color: "blue" },
-  [OPPORTUNITY_STATUS.COMPLETED]: { label: "Completed", color: "gray" },
+  [OPPORTUNITY_STATUS.REGISTRATION_OPEN]: {
+    label: "Open",
+    color: "green",
+    // وصف مبسّط غير تقني — يُستخدم بـ StatusLegendPopover، مش أي مكان
+    // تقني. صياغة "شو هالمعنى للمستخدم" مش "شو الشرط البرمجي"
+    description: "There's still room to join.",
+  },
+  [OPPORTUNITY_STATUS.REGISTRATION_CLOSED]: {
+    label: "Closed",
+    color: "gold",
+    description: "Registration has ended, but the opportunity hasn't started yet.",
+  },
+  [OPPORTUNITY_STATUS.IN_PROGRESS]: {
+    label: "In Progress",
+    color: "blue",
+    description: "It's happening right now.",
+  },
+  [OPPORTUNITY_STATUS.COMPLETED]: {
+    label: "Completed",
+    color: "gray",
+    description: "It has finished.",
+  },
 };
