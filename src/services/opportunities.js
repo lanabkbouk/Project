@@ -39,13 +39,34 @@ function getCurrentSessionEmail() {
 
 const MOCK_MODE = isMockMode()
 
+// ⚠️ إصلاح جوهري: currentVolunteers ما عاد قيمة مخزّنة بتزيد بس (كانت
+// قبل هيك: تزيد بـ participateInOpportunity ولا تنقص أبدًا لا بالانسحاب
+// ولا بالرفض — يعني فرصة توصل عددها الكامل وينسحب/يُرفض نصف المتقدمين،
+// بتضل registration_closed للأبد رغم وجود مقاعد فاضية فعليًا).
+// الحل: نفس فلسفة status المحسوبة بالضبط (getEffectiveOpportunityStatus) —
+// currentVolunteers لازم تُحسب لحظيًا من عدد المشاركات الفعلية
+// (pending+accepted) بدل قيمة نخزّنها ونحدّثها يدويًا بكل عملية، فأي
+// انضمام/انسحاب/قبول/رفض ينعكس تلقائيًا بدون أي كود إضافي لكل حالة.
+function computeLiveCurrentVolunteers(opportunityId) {
+  return MOCK_PARTICIPATIONS.filter(
+    (participation) =>
+      participation.opportunityId === opportunityId &&
+      (participation.status === PARTICIPATION_STATUS.PENDING ||
+        participation.status === PARTICIPATION_STATUS.ACCEPTED),
+  ).length
+}
+
 // يستبدل status المخزّنة بالحالة "الفعلية" المحسوبة لحظيًا (راجع
 // utils/opportunityStatus.js) — بهيك أي Component بيقرأ opportunity.status
 // بيشوف دايمًا القيمة الصحيحة (تسجيل مفتوح/منتهي/قيد العمل/منتهية) بدون
 // أي تعديل إضافي على مكوّنات العرض نفسها
 function attachComputedStatus(opportunity) {
   if (!opportunity) return opportunity
-  return { ...opportunity, status: getEffectiveOpportunityStatus(opportunity) }
+  const withLiveCount = {
+    ...opportunity,
+    currentVolunteers: computeLiveCurrentVolunteers(opportunity.id),
+  }
+  return { ...withLiveCount, status: getEffectiveOpportunityStatus(withLiveCount) }
 }
 
 // يبني FormData لطلب إنشاء/تعديل فرصة، مع إرفاق الصورة إن وُجدت
@@ -511,7 +532,12 @@ export async function participateInOpportunity(id, committedHours) {
 
     // ما منسمح بالانضمام إلا لما التسجيل فعليًا مفتوح (مو ممتلئة، ومو
     // متجاوزة نافذة التسجيل، ومو مغلقة يدويًا) — الحالة محسوبة تلقائيًا
-    if (getEffectiveOpportunityStatus(opportunity) !== OPPORTUNITY_STATUS.REGISTRATION_OPEN) {
+    // ⚠️ لازم نستخدم العدد الحيّ (مش opportunity.currentVolunteers الخام
+    // من المخزن — صار مجمّدًا دايمًا على قيمة البذرة الأولية بعد ما شلنا
+    // الزيادة اليدوية فوق) وإلا فرصة امتلأت فعليًا بعد التسجيل ممكن تضل
+    // تقبل متطوعين جدد بالغلط، أو العكس
+    const liveOpportunity = { ...opportunity, currentVolunteers: computeLiveCurrentVolunteers(opportunity.id) }
+    if (getEffectiveOpportunityStatus(liveOpportunity) !== OPPORTUNITY_STATUS.REGISTRATION_OPEN) {
       return { success: false, error: 'Registration is no longer open for this opportunity' }
     }
 
@@ -526,7 +552,10 @@ export async function participateInOpportunity(id, committedHours) {
       }
     }
 
-    opportunity.currentVolunteers = (opportunity.currentVolunteers || 0) + 1
+    // ⚠️ ما عاد لازم نزيد currentVolunteers يدويًا هون — أصبحت محسوبة
+    // تلقائيًا من عدد المشاركات الفعلية بـ attachComputedStatus (راجع
+    // أعلى الملف)، فبمجرد ما نضيف المشاركة تحت، الرقم بينعكس صح تلقائيًا
+    // بكل نقطة قراءة — بما فيها الانسحاب والرفض لاحقًا، بدون أي كود إضافي
 
     // نربط الانضمام هون فعليًا بقائمة المتقدمين يلي بتشوفها المنظمة —
     // بدون هالخطوة كان المتطوع بيزيد بعداد "X/Y volunteers joined" بس

@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { withdrawParticipation } from '../../services/participations'
 import { queryKeys } from '../../app/queryKeys'
+import { PARTICIPATION_STATUS } from '../../constants/participationStatus'
 
 /**
- * ينسحب المتطوع من مشاركة (حذف كامل، مش تغيير حالة — راجع
- * services/participations.js). بعد النجاح نشيلها فورًا من كاش
- * "مشاركاتي" بدل إعادة جلب كاملة.
+ * ينسحب المتطوع من مشاركة — تحديث حالة إلى WITHDRAWN (مش حذف كامل،
+ * راجع services/participations.js لسبب هذا القرار). المشاركة تبقى
+ * ظاهرة بقائمة "مشاركاتي" عند المتطوع نفسه أيضًا (بحالة "Withdrew"،
+ * بدون أي زر إجراء متاح عليها بعدها)، بدل ما تختفي بصمت.
  */
 export function useWithdrawParticipationMutation() {
   const queryClient = useQueryClient()
@@ -17,7 +19,11 @@ export function useWithdrawParticipationMutation() {
 
       queryClient.setQueryData(queryKeys.participations.mine, (current) =>
         Array.isArray(current)
-          ? current.filter((participation) => participation.id !== participationId)
+          ? current.map((participation) =>
+              participation.id === participationId
+                ? { ...participation, status: PARTICIPATION_STATUS.WITHDRAWN }
+                : participation,
+            )
           : current,
       )
     },

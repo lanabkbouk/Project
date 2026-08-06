@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
-import { BellRing, ShieldCheck, SlidersHorizontal } from 'lucide-react'
+import { BellRing, KeyRound, ShieldCheck } from 'lucide-react'
 
 import AdminLayout from '../../layouts/admin/AdminLayout'
+import AdminResetPasswordModal from '../../components/admin/AdminResetPasswordModal'
 import Badge from '../../components/common/Badge'
 import Button from '../../components/ui/Button'
 import Typography from '../../components/ui/Typography'
@@ -35,7 +36,11 @@ export default function AdminSettings() {
   const { user } = useAuth()
   const { toast, showSuccess, closeToast } = useToast()
   const [preferences, setPreferences] = useState(loadPreferences)
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(false)
 
+  // TODO: هذه التفضيلات محفوظة محليًا فقط (localStorage) حاليًا — لما يجهز
+  // endpoint حقيقي لتفضيلات إشعارات الأدمن بالباك اند (Laravel)، تُستبدل
+  // القراءة/الكتابة هون باستدعاء الخدمة المناسب بدل localStorage مباشرة
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences))
   }, [preferences])
@@ -61,7 +66,7 @@ export default function AdminSettings() {
         </Button>
       }
     >
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
         <section className={`${PANEL_SURFACE} p-6 md:p-8`}>
           <div className="flex items-start gap-3">
             <div className="rounded-2xl bg-primary/10 p-3 text-primary">
@@ -164,6 +169,22 @@ export default function AdminSettings() {
 
             <div className={`${CARD_BASE} p-4`}>
               <Typography variant="overline" className="text-body/70">
+                Password
+              </Typography>
+              <Typography variant="bodySm" className="mt-2 text-body">
+                Send a reset link to this account's email instead of changing the password directly from the
+                profile page.
+              </Typography>
+              <div className="mt-3">
+                <Button variant="ghost" onClick={() => setResetPasswordOpen(true)}>
+                  <KeyRound size={16} aria-hidden="true" />
+                  <span className="ml-1.5">Reset password</span>
+                </Button>
+              </div>
+            </div>
+
+            <div className={`${CARD_BASE} p-4`}>
+              <Typography variant="overline" className="text-body/70">
                 Quick actions
               </Typography>
 
@@ -179,6 +200,12 @@ export default function AdminSettings() {
           </div>
         </section>
       </div>
+
+      <AdminResetPasswordModal
+        open={resetPasswordOpen}
+        onClose={() => setResetPasswordOpen(false)}
+        email={user?.email}
+      />
 
       <Toast message={toast.message} variant={toast.variant} duration={7000} onClose={closeToast} />
     </AdminLayout>

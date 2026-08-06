@@ -14,7 +14,7 @@ export default function MainLayout() {
 
   return (
     <div className='flex min-h-screen flex-col bg-field text-heading'>
-      <Navbar role={accountType || 'guest'} />
+      {!isAdminRoute && <Navbar role={accountType || 'guest'} />}
 
       <main className='w-full flex-1'>
         {/* انتقال ناعم بين الصفحات — مكان واحد يشمل كل الصفحات تلقائيًا

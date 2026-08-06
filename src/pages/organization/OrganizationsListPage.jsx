@@ -5,8 +5,10 @@ import OrganizationCard from "../../components/organization/OrganizationCard";
 import OrganizationSearchBar from "../../components/organization/OrganizationSearchBar";
 import CardSkeleton from "../../components/ui/CardSkeleton";
 import EmptyState from "../../components/common/EmptyState";
+import ShowMoreButton from "../../components/common/ShowMoreButton";
 import { useOrganizationsQuery } from "../../hooks/queries/useOrganizationsQuery";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
+import { useShowMore } from "../../hooks/useShowMore";
 
 export default function OrganizationsListPage() {
   const [search, setSearch] = useState("");
@@ -14,7 +16,8 @@ export default function OrganizationsListPage() {
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const organizationsQuery = useOrganizationsQuery({ search: debouncedSearch });
-  const organizations = organizationsQuery.data ?? [];
+  const organizations = useMemo(() => organizationsQuery.data ?? [], [organizationsQuery.data]);
+  const { visibleItems: visibleOrganizations, hasMore, remainingCount, showMore } = useShowMore(organizations);
 
   const isInitialLoading = organizationsQuery.isPending;
   const isRefetching = organizationsQuery.isFetching && !isInitialLoading;
@@ -71,10 +74,14 @@ export default function OrganizationsListPage() {
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 transition-opacity">
-          {organizations.map((organization) => (
+          {visibleOrganizations.map((organization) => (
             <OrganizationCard key={organization.id} organization={organization} />
           ))}
         </div>
+      )}
+
+      {!isInitialLoading && !error && hasMore && (
+        <ShowMoreButton remainingCount={remainingCount} onClick={showMore} />
       )}
     </div>
   );

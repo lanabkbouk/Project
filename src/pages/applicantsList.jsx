@@ -6,7 +6,8 @@
 // القبول/الرفض عنهم (راجع ApplicantCard) ويظهر مؤشر "Decision completed"
 // بدلها. الفلترة بالأعلى اختيارية بيد المستخدم، مش حذف فعلي للبيانات.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useShowMore } from "../hooks/useShowMore";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Users } from "lucide-react";
 import Typography from "../components/ui/Typography";
@@ -16,6 +17,7 @@ import ApplicantsToolbar from "../components/organization/ApplicantsToolbar";
 import ManageHoursModal from "../components/organization/ManageHoursModal";
 import Skeleton from "../components/ui/Skeleton";
 import EmptyState from "../components/common/EmptyState";
+import ShowMoreButton from "../components/common/ShowMoreButton";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
 import Toast from "../components/common/Toast";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
@@ -24,6 +26,7 @@ import { useApplicantsQuery } from "../hooks/queries/useApplicantsQuery";
 import { useUpdateParticipationStatusMutation } from "../hooks/queries/useUpdateParticipationStatusMutation";
 import { useUpdateParticipationHoursMutation } from "../hooks/queries/useUpdateParticipationHoursMutation";
 import { useToast } from "../hooks/useToast";
+import { markApplicantStatusSeen } from "../utils/organizationApplicantSeenTracker";
 import { PARTICIPATION_STATUS } from "../constants/participationStatus";
 import { CARD_SURFACE } from "../utils/surfaceStyles";
 import { ROUTES } from "../constants/paths";
@@ -41,6 +44,17 @@ export default function ApplicantsList() {
   const applicants = useMemo(() => applicantsQuery.data ?? [], [applicantsQuery.data]);
   const loading = opportunityQuery.isPending || applicantsQuery.isPending;
   const { toast, showSuccess, showError, closeToast } = useToast();
+
+  // تعليم كل انسحاب ظاهر هلق كـ"مشاهَد" — بعد هالسطر، تنبيه "A volunteer
+  // withdrew" المقابل بيختفي من جرس الإشعارات (نفس فلسفة markStatusSeen
+  // المستخدمة بصفحة My Volunteering عند المتطوع، بس هون من منظور المنظمة)
+  useEffect(() => {
+    applicants.forEach((applicant) => {
+      if (applicant.status === PARTICIPATION_STATUS.WITHDRAWN) {
+        markApplicantStatusSeen(applicant.id, PARTICIPATION_STATUS.WITHDRAWN);
+      }
+    });
+  }, [applicants]);
 
   // "إدارة الساعات" ما بتظهر إلا بعد ما تاريخ انتهاء الفرصة الحقيقي يفوت
   const opportunityHasEnded = Boolean(
@@ -130,6 +144,10 @@ export default function ApplicantsList() {
   const hasAnyApplicants = applicants.length > 0;
   const hasFilteredResults = visibleApplicants.length > 0;
 
+  // Show more فوق نتائج البحث/الفلترة نفسها (وليس القائمة الخام) —
+  // وإلا لو فلترت لـ 3 نتائج بس، بيضل زر "Show more" ظاهر بالغلط
+  const { visibleItems: pagedApplicants, hasMore, remainingCount, showMore } = useShowMore(visibleApplicants);
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <VerificationStatusBanner status={status} rejectionReason={rejectionReason} hasLoadError={hasLoadError} />
@@ -190,24 +208,27 @@ export default function ApplicantsList() {
               description="Try a different search term or reset the status filter."
             />
           ) : (
-            <div className="flex flex-col gap-4">
-              {visibleApplicants.map((applicant) => (
-                <ApplicantCard
-                  key={applicant.id}
-                  applicant={applicant}
-                  isUpdating={updatingId === applicant.id}
-                  isVerified={isVerified}
-                  opportunityHasEnded={opportunityHasEnded}
-                  onAccept={(applicantId) =>
-                    handleStatusChange(applicantId, PARTICIPATION_STATUS.ACCEPTED)
-                  }
-                  onReject={(applicantId) =>
-                    handleStatusChange(applicantId, PARTICIPATION_STATUS.REJECTED)
-                  }
-                  onManageHours={setHoursModalApplicant}
-                />
-              ))}
-            </div>
+            <>
+              <div className="flex flex-col gap-4">
+                {pagedApplicants.map((applicant) => (
+                  <ApplicantCard
+                    key={applicant.id}
+                    applicant={applicant}
+                    isUpdating={updatingId === applicant.id}
+                    isVerified={isVerified}
+                    opportunityHasEnded={opportunityHasEnded}
+                    onAccept={(applicantId) =>
+                      handleStatusChange(applicantId, PARTICIPATION_STATUS.ACCEPTED)
+                    }
+                    onReject={(applicantId) =>
+                      handleStatusChange(applicantId, PARTICIPATION_STATUS.REJECTED)
+                    }
+                    onManageHours={setHoursModalApplicant}
+                  />
+                ))}
+              </div>
+              {hasMore && <ShowMoreButton remainingCount={remainingCount} onClick={showMore} />}
+            </>
           )}
         </>
       )}

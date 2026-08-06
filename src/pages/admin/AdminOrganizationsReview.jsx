@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useShowMore } from '../../hooks/useShowMore'
 import { Search, ShieldCheck } from 'lucide-react'
 
 import AdminLayout from '../../layouts/admin/AdminLayout'
@@ -6,6 +7,7 @@ import OrganizationReviewCard from '../../components/admin/OrganizationReviewCar
 import AdminOrganizationDetailsModal from '../../components/admin/AdminOrganizationDetailsModal'
 import VerificationDecisionModal from '../../components/admin/VerificationDecisionModal'
 import EmptyState from '../../components/common/EmptyState'
+import ShowMoreButton from '../../components/common/ShowMoreButton'
 import Toast from '../../components/common/Toast'
 import Badge from '../../components/common/Badge'
 import Input from '../../components/ui/Input'
@@ -44,7 +46,12 @@ function AdminOrganizationsSkeleton() {
 }
 
 export default function AdminOrganizationsReview() {
-  const { data: organizations = [], isPending } = useAdminOrganizationsQuery()
+  const { data: organizationsData, isPending } = useAdminOrganizationsQuery()
+  // ⚠️ مو `data: organizations = []` (قيمة افتراضية بالتفكيك) — هاي
+  // بترجع مصفوفة `[]` *جديدة كل Render* طالما data لسا undefined، ما
+  // بتضل بنفس المرجع، وبتكسر useShowMore (كانت تسبب "Too many
+  // re-renders" هون بالضبط قبل هالإصلاح)
+  const organizations = useMemo(() => organizationsData ?? [], [organizationsData])
   const reviewMutation = useReviewOrganizationMutation()
   const { toast, showSuccess, showError, closeToast } = useToast()
 
@@ -74,6 +81,13 @@ export default function AdminOrganizationsReview() {
       return haystack.includes(normalizedSearch)
     })
   }, [organizations, searchTerm])
+
+  const {
+    visibleItems: visibleOrganizations,
+    hasMore,
+    remainingCount,
+    showMore,
+  } = useShowMore(filteredOrganizations)
 
   const totals = {
     all: organizations.length,
@@ -188,18 +202,21 @@ export default function AdminOrganizationsReview() {
           }
         />
       ) : (
-        <div className="space-y-3">
-          {filteredOrganizations.map((organization) => (
-            <OrganizationReviewCard
-              key={organization.id}
-              organization={organization}
-              isUpdating={updatingId === organization.id}
-              onViewDetails={setSelectedOrganization}
-              onApprove={handleApprove}
-              onReject={handleReject}
-            />
-          ))}
-        </div>
+        <>
+          <div className="space-y-3">
+            {visibleOrganizations.map((organization) => (
+              <OrganizationReviewCard
+                key={organization.id}
+                organization={organization}
+                isUpdating={updatingId === organization.id}
+                onViewDetails={setSelectedOrganization}
+                onApprove={handleApprove}
+                onReject={handleReject}
+              />
+            ))}
+          </div>
+          {hasMore && <ShowMoreButton remainingCount={remainingCount} onClick={showMore} />}
+        </>
       )}
 
       <AdminOrganizationDetailsModal

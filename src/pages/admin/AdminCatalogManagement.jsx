@@ -201,7 +201,7 @@ export default function AdminCatalogManagement() {
       {/* ===========================
           Categories
       ============================ */}
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-6">
         <div className={`${PANEL_SURFACE} p-5 md:p-6`}>
           <Typography variant="h4">Search categories</Typography>
           <Typography variant="bodySm" className="mt-1 text-body">
@@ -264,7 +264,7 @@ export default function AdminCatalogManagement() {
       {/* ===========================
           Skills
       ============================ */}
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-6">
         <div className={`${PANEL_SURFACE} p-5 md:p-6`}>
           <Typography variant="h4">Search skills</Typography>
           <Typography variant="bodySm" className="mt-1 text-body">

@@ -1,3 +1,13 @@
+// تواليد تواريخ نسبية لـ Date.now () بدل تواريخ تقويمية ثابتة — بدون
+// هيك، أي فرصة وهمية كانت رح تتحول لـ "completed" بمجرد ما التاريخ
+// الحقيقي يتخطى تاريخها المكتوب يدويًا (راجع getEffectiveOpportunityStatus
+// بـ utils/opportunityStatus.js يلي بيقارن الآن مع startDate/endDate)
+function daysFromNow(offset) {
+  const date = new Date()
+  date.setDate(date.getDate() + offset)
+  return date.toISOString().slice(0, 10)
+}
+
 export const MOCK_OPPORTUNITIES = [
   {
     id: 'o1',
@@ -5,8 +15,8 @@ export const MOCK_OPPORTUNITIES = [
     description:
       'Help install and maintain clean water access points for underserved communities. No prior experience required — training is provided on site.',
     status: 'open',
-    startDate: '2026-08-05',
-    endDate: '2026-08-1',
+    startDate: daysFromNow(14),
+    endDate: daysFromNow(45),
     location: 'Rotterdam, Netherlands',
     minHours: 2,
     maxHours: 6,
@@ -24,8 +34,8 @@ export const MOCK_OPPORTUNITIES = [
     description:
       'Support local students with homework help and basic literacy skills, twice a week in the afternoon.',
     status: 'open',
-    startDate: '2026-09-01',
-    endDate: '2026-12-15',
+    startDate: daysFromNow(40),
+    endDate: daysFromNow(160),
     location: 'The Hague, Netherlands',
     minHours: 2,
     maxHours: 4,
@@ -43,8 +53,8 @@ export const MOCK_OPPORTUNITIES = [
     description:
       'Join a one-day beach and coastal cleanup effort to protect local marine ecosystems.',
     status: 'open',
-    startDate: '2026-08-12',
-    endDate: '2026-08-12',
+    startDate: daysFromNow(20),
+    endDate: daysFromNow(20),
     location: 'Scheveningen Beach, NL',
     minHours: 3,
     maxHours: 5,
@@ -62,8 +72,8 @@ export const MOCK_OPPORTUNITIES = [
     description:
       'Sort, pack, and distribute food donations to families in need across the city.',
     status: 'open',
-    startDate: '2026-07-25',
-    endDate: '2026-10-01',
+    startDate: daysFromNow(-10),
+    endDate: daysFromNow(70),
     location: 'Rotterdam, Netherlands',
     minHours: 3,
     maxHours: 6,
@@ -81,8 +91,8 @@ export const MOCK_OPPORTUNITIES = [
     description:
       'Collected and distributed warm clothing to families ahead of the winter season.',
     status: 'closed',
-    startDate: '2025-11-01',
-    endDate: '2025-12-20',
+    startDate: daysFromNow(-90),
+    endDate: daysFromNow(-50),
     location: 'Rotterdam, Netherlands',
     minHours: 2,
     maxHours: 4,
@@ -100,8 +110,8 @@ export const MOCK_OPPORTUNITIES = [
     description:
       'A two-week reading and literacy camp for children in underserved neighborhoods.',
     status: 'closed',
-    startDate: '2025-07-01',
-    endDate: '2025-07-14',
+    startDate: daysFromNow(-200),
+    endDate: daysFromNow(-186),
     location: 'The Hague, Netherlands',
     minHours: 3,
     maxHours: 5,

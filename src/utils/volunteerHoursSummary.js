@@ -52,8 +52,15 @@ export function buildVolunteerHoursSummary(participations = []) {
     0,
   )
 
+  // الساعات "الملتزَم بها" لازم تستثني كل مين ما عاد ملتزم فعليًا —
+  // مش بس المرفوضين (قرار المنظمة)، كمان يلي انسحبوا بأنفسهم
+  // (WITHDRAWN)، وإلا وعد شخص انسحب بيضل محسوب بالمجموع بالغلط
   const totalPledgedHours = participations
-    .filter((participation) => participation.status !== PARTICIPATION_STATUS.REJECTED)
+    .filter(
+      (participation) =>
+        participation.status !== PARTICIPATION_STATUS.REJECTED &&
+        participation.status !== PARTICIPATION_STATUS.WITHDRAWN,
+    )
     .reduce((sum, participation) => sum + (Number(participation.committedHours) || 0), 0)
 
   // تجميع حسب المنظمة (Map للحفاظ على منظمة واحدة = مفتاح واحد بغض

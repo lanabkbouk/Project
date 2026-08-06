@@ -1,21 +1,32 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Building2, MapPin, Globe, Phone, User, PenSquare, Compass } from "lucide-react";
+import { Building2, MapPin, Globe, Phone, User, PenSquare, Compass, History } from "lucide-react";
 import Typography from "../../components/ui/Typography";
 import Button from "../../components/ui/Button";
+import Tabs from "../../components/ui/Tabs";
 import OpportunityCard from "../../components/opportunity/OpportunityCard";
 import CardSkeleton from "../../components/ui/CardSkeleton";
 import EmptyState from "../../components/common/EmptyState";
+import ShowMoreButton from "../../components/common/ShowMoreButton";
 import StatusLegendPopover from "../../components/ui/StatusLegendPopover";
 import Skeleton from "../../components/ui/Skeleton";
 import { PANEL_SURFACE } from "../../utils/surfaceStyles";
 import { OPPORTUNITY_STATUS } from "../../constants/opportunityStatus";
 import { useOrganizationDetailsQuery } from "../../hooks/queries/useOrganizationDetailsQuery";
 import { useOrganizationOpportunitiesQuery } from "../../hooks/queries/useOrganizationOpportunitiesQuery";
+import { useShowMore } from "../../hooks/useShowMore";
 import { useAuth } from "../../context/AuthContext";
 import { ROUTES } from "../../constants/paths";
 import { getOrganizationStatusMeta, ORGANIZATION_STATUS } from "../../constants/organizationStatus";
 import { getOrganizationId } from "../../utils/auth/getOrganizationId";
+
+// تبويبان بدل قسمين منفصلين تحت بعض — نفس التصنيف بالضبط (Open Now
+// مقابل السجل الكامل/Closed+In Progress+Completed سوا)، بس تجربة أنظف:
+// الزائر يشوف مباشرة قسم واحد بكل مرة بدل تمرير طويل عبر قسمين
+const ORG_OPPORTUNITIES_TABS = {
+  OPEN: "open",
+  PAST: "past",
+};
 
 export default function OrganizationDetailsPage() {
   const { id } = useParams();
@@ -43,6 +54,13 @@ export default function OrganizationDetailsPage() {
     });
     return { openOpportunities: open, pastOpportunities: past };
   }, [opportunities]);
+
+  const openShowMore = useShowMore(openOpportunities);
+  const pastShowMore = useShowMore(pastOpportunities);
+
+  // Open افتراضيًا — نفس الأولوية القديمة (زائر بده ينضم فورًا لازم
+  // يلاقي المتاح أول شي)، بس هلق بتبويب بدل قسم أول بالصفحة
+  const [activeTab, setActiveTab] = useState(ORG_OPPORTUNITIES_TABS.OPEN);
 
   const loading = detailsQuery.isPending;
   const loadError = detailsQuery.isError
@@ -181,52 +199,64 @@ export default function OrganizationDetailsPage() {
         </div>
       )}
 
-      {/* قسم أول: الفرص المتاحة للانضمام فورًا — أعلى الصفحة عمدًا،
-          حتى زائر بده ينضم يلاقيها بسرعة بدون ما يمر على السجل الكامل */}
-      <Typography variant="h4" className="mb-4">
-        Open Opportunities
-      </Typography>
+      {/* بدل قسمين منفصلين (Open + Past) تحت بعض، تبويب واحد نشط بكل
+          مرة — العداد بجانب كل تبويب يعطي فكرة سريعة قبل حتى الضغط */}
+      <Tabs
+        tabs={[
+          { id: ORG_OPPORTUNITIES_TABS.OPEN, label: "Open Opportunities", icon: Compass, count: openOpportunities.length },
+          { id: ORG_OPPORTUNITIES_TABS.PAST, label: "Past Opportunities", icon: History, count: pastOpportunities.length },
+        ]}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+        ariaLabel="Organization opportunities"
+      />
 
       {opportunitiesLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <CardSkeleton />
           <CardSkeleton />
         </div>
-      ) : openOpportunities.length === 0 ? (
-        <div className="mb-10">
+      ) : activeTab === ORG_OPPORTUNITIES_TABS.OPEN ? (
+        openOpportunities.length === 0 ? (
           <EmptyState
             icon={Compass}
             title="No open opportunities right now"
             description="Check back later — this organization hasn't published any open opportunities yet."
           />
-        </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {openShowMore.visibleItems.map((opportunity) => (
+                <OpportunityCard key={opportunity.id} opportunity={opportunity} />
+              ))}
+            </div>
+            {openShowMore.hasMore && (
+              <ShowMoreButton remainingCount={openShowMore.remainingCount} onClick={openShowMore.showMore} />
+            )}
+          </>
+        )
+      ) : pastOpportunities.length === 0 ? (
+        <EmptyState
+          icon={History}
+          title="No past opportunities yet"
+          description="This organization's completed and in-progress opportunities will show up here."
+        />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
-          {openOpportunities.map((opportunity) => (
-            <OpportunityCard key={opportunity.id} opportunity={opportunity} />
-          ))}
-        </div>
-      )}
-
-      {/* قسم ثانٍ: السجل الكامل (شغالة حاليًا أو منتهية) — شفافية عن
-          نشاط المنظمة، بدون خلطه مع القسم الأول القابل للتفاعل معه.
-          ما بيظهر إطلاقًا لو ما في شي فيه (منظمة جديدة بلا تاريخ) */}
-      {!opportunitiesLoading && pastOpportunities.length > 0 && (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <Typography variant="h4" className="mb-0">
-              Past Opportunities
-            </Typography>
-            {/* هون بالذات (مش بقسم Open Now) لأنه هون بتظهر أكتر من
-                حالة مختلفة سوا (Closed/In Progress/Completed) بنفس
-                الوقت — أكتر مكان بالمشروع محتاج شرح فوري */}
+          {/* هون بالذات (مش بتبويب Open) لأنه هون بتظهر أكتر من حالة
+              مختلفة سوا (Closed/In Progress/Completed) بنفس الوقت —
+              أكتر مكان بالمشروع محتاج شرح فوري */}
+          <div className="mb-4 flex justify-end">
             <StatusLegendPopover />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {pastOpportunities.map((opportunity) => (
+            {pastShowMore.visibleItems.map((opportunity) => (
               <OpportunityCard key={opportunity.id} opportunity={opportunity} />
             ))}
           </div>
+          {pastShowMore.hasMore && (
+            <ShowMoreButton remainingCount={pastShowMore.remainingCount} onClick={pastShowMore.showMore} />
+          )}
         </>
       )}
     </div>

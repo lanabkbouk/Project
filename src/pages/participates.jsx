@@ -5,7 +5,9 @@ import Typography from "../components/ui/Typography";
 import ParticipationCard from "../components/opportunity/ParticipationCard";
 import Skeleton from "../components/ui/Skeleton";
 import EmptyState from "../components/common/EmptyState";
+import ShowMoreButton from "../components/common/ShowMoreButton";
 import { useMyParticipationsQuery } from "../hooks/queries/useMyParticipationsQuery";
+import { useShowMore } from "../hooks/useShowMore";
 import { markHoursSeen } from "../utils/hoursSeenTracker";
 import { markStatusSeen } from "../utils/participationStatusSeenTracker";
 import { PARTICIPATION_STATUS } from "../constants/participationStatus";
@@ -17,6 +19,7 @@ export default function Participates() {
   const participationsQuery = useMyParticipationsQuery();
 
   const participations = useMemo(() => participationsQuery.data ?? [], [participationsQuery.data]);
+  const { visibleItems: visibleParticipations, hasMore, remainingCount, showMore } = useShowMore(participations);
   const loading = participationsQuery.isPending;
   const error = participationsQuery.isError
     ? participationsQuery.error?.message || "Failed to load your volunteering history"
@@ -78,9 +81,11 @@ export default function Participates() {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          {participations.map((participation) => (
+          {visibleParticipations.map((participation) => (
             <ParticipationCard key={participation.id} participation={participation} />
           ))}
+
+          {hasMore && <ShowMoreButton remainingCount={remainingCount} onClick={showMore} />}
         </div>
       )}
     </div>

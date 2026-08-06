@@ -107,7 +107,7 @@ export default function AdminCitiesManagement() {
       title="City management"
       description="Manage the governorates/cities used across registration, profiles, and opportunity forms. Duplicate names are blocked before saving."
     >
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-6">
         <div className={`${PANEL_SURFACE} p-5 md:p-6`}>
           <Typography variant="h4">Search cities</Typography>
           <Typography variant="bodySm" className="mt-1 text-body">

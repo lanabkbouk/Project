@@ -1,14 +1,32 @@
 import { MOCK_USERS_STORAGE_KEY } from '../../constants/auth/storage'
+import { ACCOUNT_TYPES } from '../../constants/auth/accountTypes'
 
-// قراءة قائمة المستخدمين الوهميين من التخزين المحلي
+// حساب أدمن افتراضي بوضع mock فقط — الأدمن ما إله شاشة تسجيل عامة
+// (قرار مقصود، راجع constants/auth/accountTypes.js)، فبدون حساب جاهز
+// هون ما في أي طريقة لاختبار تسجيل دخول أدمن بوضع mock إطلاقًا.
+// بوضع real: الحساب الفعلي يُنشأ يدويًا بالباك اند (Seeder/Tinker)،
+// وهاي القيمة ما إلها أي أثر.
+const DEFAULT_MOCK_ADMIN = {
+  email: 'admin@volunteer.test',
+  password: 'Admin@123',
+  accountType: ACCOUNT_TYPES.ADMIN,
+  firstName: 'Platform',
+  lastName: 'Admin',
+}
+
+// قراءة قائمة المستخدمين الوهميين من التخزين المحلي — نضمن دايمًا
+// وجود حساب أدمن واحد بالقائمة حتى لو التخزين فاضي بالكامل أو ما
+// فيه أدمن بعد (بدون تخزينه فعليًا بـ localStorage، فقط نُلحقه لحظة
+// القراءة، فهو موجود دايمًا وجاهز للاختبار)
 export function loadMockUsers() {
   try {
     const raw = localStorage.getItem(MOCK_USERS_STORAGE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
+    const parsed = raw ? JSON.parse(raw) : []
+    const users = Array.isArray(parsed) ? parsed : []
+    const hasAdmin = users.some((user) => user.accountType === ACCOUNT_TYPES.ADMIN)
+    return hasAdmin ? users : [...users, DEFAULT_MOCK_ADMIN]
   } catch {
-    return []
+    return [DEFAULT_MOCK_ADMIN]
   }
 }
 

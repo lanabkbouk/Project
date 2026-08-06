@@ -37,7 +37,12 @@ const MOCK_CATEGORIES = [
 export async function fetchCategories() {
   if (MOCK_MODE) {
     await wait()
-    return MOCK_CATEGORIES
+    // ⚠️ نسخة جديدة، مش المرجع الحي لـ MOCK_CATEGORIES — وإلا React
+    // Query بتخزّن نفس المصفوفة بالكاش، وأي push لاحق (زي createCategory
+    // تحت) بينعكس عليها مباشرة بصمت دون علم React Query، وبعدين
+    // onSuccess بيضيف العنصر يدويًا *مرة ثانية* فوق نفس المصفوفة
+    // المتغيّرة أصلًا → العنصر يظهر مكرَّرًا (بطاقتين لنفس الفئة الجديدة)
+    return [...MOCK_CATEGORIES]
   }
 
   try {

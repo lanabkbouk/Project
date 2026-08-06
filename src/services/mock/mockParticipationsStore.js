@@ -46,7 +46,7 @@ export const MOCK_PARTICIPATIONS = [
 // id)، لأنه بروفايل يخص شخص، مش طلب مشاركة واحد بعينه
 export const MOCK_VOLUNTEER_PROFILES = {
   v1: {
-    volunteerId: 'v1', name: 'Lina Haddad', photo: null, city: 'Damascus',
+    volunteerId: 'v1', name: 'Lama Haddad', photo: null, city: 'Damascus',
     skills: ['First Aid', 'Communication'], phone: '+963911111111',
     educationLevel: "Bachelor's Degree", dateOfBirth: '2001-03-14', gender: 'female',
   },

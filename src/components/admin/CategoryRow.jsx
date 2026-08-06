@@ -2,14 +2,23 @@ import { Pencil, Trash2 } from 'lucide-react'
 import Button from '../ui/Button'
 import Badge from '../common/Badge'
 import { CARD_BASE } from '../../utils/surfaceStyles'
+import { getCategoryTheme } from '../../utils/categoryStyles'
 
 export default function CategoryRow({ category, onEdit, onDelete, isDeleting }) {
   const opportunitiesCount = category.opportunitiesCount ?? 0
+  // اللون هون معروض فقط للتوضيح — الأدمن ما بيختاره يدويًا، هو محسوب
+  // تلقائيًا وثابت لكل فئة (راجع categoryStyles.js)، فهاي النقطة بس
+  // بتأكّد له إنه الفئة الجديدة صار إلها لون مميّز فورًا بكل الموقع
+  const theme = getCategoryTheme(category.name)
 
   return (
     <div className={`${CARD_BASE} flex flex-col gap-4 md:flex-row md:items-center md:justify-between`}>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`h-2.5 w-2.5 rounded-full shrink-0 ${theme.dot}`}
+            aria-hidden="true"
+          />
           <h3 className="text-base font-semibold text-heading">{category.name}</h3>
           <Badge
             label={`${opportunitiesCount} opportunit${opportunitiesCount === 1 ? 'y' : 'ies'}`}

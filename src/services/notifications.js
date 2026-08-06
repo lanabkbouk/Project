@@ -15,12 +15,14 @@
 import { apiClient, getApiErrorMessage } from './api/client'
 import { isMockMode } from './api/mockMode'
 import { fetchVolunteerAchievements } from './achievements'
-import { fetchMyParticipations } from './participations'
+import { fetchMyParticipations, fetchApplicantsForOpportunity } from './participations'
 import { fetchOrganizationProfile } from './organization'
+import { fetchMyOpportunities } from './opportunities'
 import { getSeenAchievementIds } from '../utils/achievementSeenTracker'
 import { getSeenHoursMap } from '../utils/hoursSeenTracker'
 import { getSeenStatusMap } from '../utils/participationStatusSeenTracker'
 import { getSeenOrganizationStatusMap } from '../utils/organizationVerificationSeenTracker'
+import { getSeenApplicantStatusMap } from '../utils/organizationApplicantSeenTracker'
 import { PARTICIPATION_STATUS } from '../constants/participationStatus'
 import { ORGANIZATION_STATUS } from '../constants/organizationStatus'
 import { ACCOUNT_TYPES } from '../constants/auth/accountTypes'
@@ -119,11 +121,82 @@ function buildOrganizationVerificationItems(organization, seenStatus) {
   ]
 }
 
+// يبني تذكيرًا لكل مشاركة "مقبولة" وتاريخ بدء فرصتها لسا ما وصل بعد
+// وواقع خلال يومين قادمين (startDate أكبر من الآن، وأقل من أو يساوي
+// الآن + يومين) — فرصة بدأت فعليًا (بالماضي أو هالّلحظة بالضبط) ما بتولّد
+// تذكيرًا. من نفس بيانات المشاركات المجلوبة أصلاً لباقي التنبيهات
+// بالأسفل، بدون أي جلب إضافي أو Cron/جدولة خلفية: بما إنه النظام أصلاً
+// محسوب لحظة تحميل الصفحة (مش Push حقيقي، راجع تعليق أعلى الملف)، شرط
+// بسيط زيادة كافٍ. بدون seen-tracker مقصود: هذا تذكير زمني بيختفي لحاله
+// أول ما الفرصة تبلّش (مش "خبر" يحتاج تُعلَّم كمقروء ويضل مخفي بعدها)
+function buildUpcomingOpportunityReminderItems(participations) {
+  const now = new Date()
+  const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000
+
+  return participations
+    .filter((participation) => {
+      if (participation.status !== PARTICIPATION_STATUS.ACCEPTED) return false
+
+      const startDate = participation.opportunity?.startDate
+        ? new Date(participation.opportunity.startDate)
+        : null
+      if (!startDate) return false
+
+      const msUntilStart = startDate - now
+      // > 0 (وليس >=) عمدًا — لو startDate ساوى "الآن" تمامًا أو صار
+      // بالماضي (فرصة بلّشت فعليًا)، ما بيصير تذكير "بدء قريب" لها إطلاقًا
+      return msUntilStart > 0 && msUntilStart <= TWO_DAYS_MS
+    })
+    .map((participation) => ({
+      id: `reminder:${participation.id}`,
+      type: 'opportunity-reminder',
+      title: 'Upcoming opportunity',
+      description: `"${participation.opportunity?.title || 'Your opportunity'}" starts soon — don't miss it.`,
+      href: ROUTES.MY_VOLUNTEERING,
+    }))
+}
+
+// يبني عناصر تنبيه من انسحاب متطوعين — لكل فرصة تخص المنظمة، نفحص
+// متقدّميها عن أي مشاركة WITHDRAWN لسا ما شافتها المنظمة (مقارنة بآخر
+// status محفوظ لنفس المشاركة، راجع organizationApplicantSeenTracker.js)
+async function buildWithdrawalItems(seenApplicantStatus) {
+  const opportunities = await fetchMyOpportunities()
+
+  const applicantsPerOpportunity = await Promise.all(
+    opportunities.map((opportunity) =>
+      fetchApplicantsForOpportunity(opportunity.id).then((applicants) => ({ opportunity, applicants })),
+    ),
+  )
+
+  const items = []
+
+  applicantsPerOpportunity.forEach(({ opportunity, applicants }) => {
+    applicants.forEach((applicant) => {
+      const isNewWithdrawal =
+        applicant.status === PARTICIPATION_STATUS.WITHDRAWN &&
+        seenApplicantStatus.get(String(applicant.id)) !== PARTICIPATION_STATUS.WITHDRAWN
+
+      if (!isNewWithdrawal) return
+
+      items.push({
+        id: `withdrawal:${applicant.id}`,
+        type: 'applicant-withdrawn',
+        title: 'A volunteer withdrew',
+        description: `${applicant.volunteer?.name || 'A volunteer'} withdrew from "${opportunity.title}"`,
+        href: `${ROUTES.APPLICANTS}/${opportunity.id}`,
+      })
+    })
+  })
+
+  return items
+}
+
 /**
  * يجلب التنبيهات الحديثة غير المقروءة للحساب الحالي — متطوع أو منظمة.
  *
  * بوضع Mock: تُشتق من الإنجازات + المشاركات (للمتطوع) أو من قرار توثيق
- * الأدمن (للمنظمة)، مقارنة بما هو مخزّن محليًا كـ "مشاهَد".
+ * الأدمن + انسحاب متطوعين من فرصها (للمنظمة)، مقارنة بما هو مخزّن
+ * محليًا كـ"مشاهَد".
  *
  * @param {{accountType?: string, organizationId?: string|number}} [context]
  * @returns {Promise<Array<{id:string, type:string, title:string, description:string, href:string}>>}
@@ -136,9 +209,18 @@ export async function fetchRecentNotifications({ accountType, organizationId } =
     if (!organizationId) return []
 
     const profileResult = await fetchOrganizationProfile(organizationId)
-    if (!profileResult.success) return []
+    const verificationItems = profileResult.success
+      ? buildOrganizationVerificationItems(profileResult.data, getSeenOrganizationStatusMap())
+      : []
 
-    return buildOrganizationVerificationItems(profileResult.data, getSeenOrganizationStatusMap())
+    // انسحاب المتطوعين متاح فقط لمنظمة موثّقة فعليًا (غير موثّقة أصلًا
+    // ما إلها فرص منشورة أو متقدّمين حقيقيين لتنسحب منهم)
+    const withdrawalItems =
+      profileResult.success && profileResult.data?.status === ORGANIZATION_STATUS.VERIFIED
+        ? await buildWithdrawalItems(getSeenApplicantStatusMap())
+        : []
+
+    return [...verificationItems, ...withdrawalItems]
   }
 
   if (MOCK_MODE) {
@@ -153,8 +235,9 @@ export async function fetchRecentNotifications({ accountType, organizationId } =
       getSeenHoursMap(),
       getSeenStatusMap(),
     )
+    const reminderItems = buildUpcomingOpportunityReminderItems(participations)
 
-    return [...achievementItems, ...participationItems]
+    return [...achievementItems, ...participationItems, ...reminderItems]
   }
 
   try {

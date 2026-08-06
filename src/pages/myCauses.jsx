@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Plus, FolderPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Typography from "../components/ui/Typography";
@@ -6,6 +7,7 @@ import MyCauseCard from "../components/organization/MyCauseCard";
 import VerificationStatusBanner from "../components/OrgProfile/VerificationStatusBanner";
 import CardSkeleton from "../components/ui/CardSkeleton";
 import EmptyState from "../components/common/EmptyState";
+import ShowMoreButton from "../components/common/ShowMoreButton";
 import Toast from "../components/common/Toast";
 import { useAuth } from "../context/AuthContext";
 import { useMyOpportunitiesQuery } from "../hooks/queries/useMyOpportunitiesQuery";
@@ -13,6 +15,7 @@ import { useDeleteOpportunityMutation } from "../hooks/queries/useDeleteOpportun
 import { useToggleOpportunityStatusMutation } from "../hooks/queries/useToggleOpportunityStatusMutation";
 import { useOrganizationVerification } from "../hooks/useOrganizationVerification";
 import { useToast } from "../hooks/useToast";
+import { useShowMore } from "../hooks/useShowMore";
 import { ROUTES } from "../constants/paths";
 import { getOrganizationId } from "../utils/auth/getOrganizationId";
 
@@ -29,7 +32,8 @@ export default function MyCauses() {
   // كان يشتغل ظاهريًا (confirm + spinner) بدون أي تأثير فعلي على البيانات
   const toggleStatusMutation = useToggleOpportunityStatusMutation(organizationId);
 
-  const opportunities = opportunitiesQuery.data ?? [];
+  const opportunities = useMemo(() => opportunitiesQuery.data ?? [], [opportunitiesQuery.data]);
+  const { visibleItems: visibleOpportunities, hasMore, remainingCount, showMore } = useShowMore(opportunities);
   const loading = opportunitiesQuery.isPending;
   const { toast, showSuccess, showError, closeToast } = useToast();
 
@@ -105,17 +109,20 @@ export default function MyCauses() {
           onAction={isVerified ? () => navigate(ROUTES.CREATE_CAUSE) : undefined}
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-          {opportunities.map((opportunity) => (
-            <MyCauseCard
-              key={opportunity.id}
-              opportunity={opportunity}
-              onDelete={handleDelete}
-              onToggleStatus={handleToggleStatus}
-              isVerified={isVerified}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            {visibleOpportunities.map((opportunity) => (
+              <MyCauseCard
+                key={opportunity.id}
+                opportunity={opportunity}
+                onDelete={handleDelete}
+                onToggleStatus={handleToggleStatus}
+                isVerified={isVerified}
+              />
+            ))}
+          </div>
+          {hasMore && <ShowMoreButton remainingCount={remainingCount} onClick={showMore} />}
+        </>
       )}
 
       <Toast

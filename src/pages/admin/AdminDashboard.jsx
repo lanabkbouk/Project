@@ -184,7 +184,7 @@ export default function AdminDashboard() {
             />
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
             <section className={`${PANEL_SURFACE} lg:col-span-2 p-6 md:p-8`}>
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -208,7 +208,7 @@ export default function AdminDashboard() {
                   recentOrganizations.map((organization) => (
                     <div
                       key={organization.id}
-                      className="rounded-2xl border border-heading/10 bg-field px-4 py-4"
+                      className="rounded-2xl border border-heading/10 bg-field px-4 py-4 transition hover:border-primary/20 hover:shadow-sm"
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0">
@@ -240,7 +240,7 @@ export default function AdminDashboard() {
               </Typography>
 
               <div className="mt-6 space-y-3">
-                <div className="rounded-2xl border border-heading/10 bg-field px-4 py-3">
+                <div className="rounded-2xl border border-heading/10 bg-field px-4 py-3 transition hover:border-primary/20 hover:shadow-sm">
                   <Typography variant="overline" className="text-body/70">
                     Pending verification
                   </Typography>
@@ -249,7 +249,7 @@ export default function AdminDashboard() {
                   </Typography>
                 </div>
 
-                <div className="rounded-2xl border border-heading/10 bg-field px-4 py-3">
+                <div className="rounded-2xl border border-heading/10 bg-field px-4 py-3 transition hover:border-primary/20 hover:shadow-sm">
                   <Typography variant="overline" className="text-body/70">
                     Rejected organizations
                   </Typography>
@@ -258,7 +258,7 @@ export default function AdminDashboard() {
                   </Typography>
                 </div>
 
-                <div className="rounded-2xl border border-heading/10 bg-field px-4 py-3">
+                <div className="rounded-2xl border border-heading/10 bg-field px-4 py-3 transition hover:border-primary/20 hover:shadow-sm">
                   <Typography variant="overline" className="text-body/70">
                     Verified organizations
                   </Typography>
@@ -267,7 +267,7 @@ export default function AdminDashboard() {
                   </Typography>
                 </div>
 
-                <div className="rounded-2xl border border-heading/10 bg-field px-4 py-3">
+                <div className="rounded-2xl border border-heading/10 bg-field px-4 py-3 transition hover:border-primary/20 hover:shadow-sm">
                   <Typography variant="overline" className="text-body/70">
                     Categories
                   </Typography>

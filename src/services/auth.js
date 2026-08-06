@@ -1,26 +1,26 @@
 import { ACCOUNT_TYPES } from '../constants/auth/accountTypes'
-import { MOCK_USERS_STORAGE_KEY } from '../constants/auth/storage'
 import { apiClient, getApiErrorMessage, getApiFieldErrors } from './api/client'
 import { isMockMode } from './api/mockMode'
 import { wait } from './api/delay'
 import { normalizeUser } from '../utils/auth/normalizeUser'
 import { validateAuthResponse } from '../utils/api/apiResponseSchemas'
+import { AUTH_STORAGE_KEY } from '../constants/auth/storage'
+import { loadMockUsers, saveMockUsers, updateMockUser } from './mock/mockUserStore'
 
 const MOCK_MODE = isMockMode()
 
-function loadMockUsers() {
+// إيميل المستخدم المسجّل دخوله حاليًا — نفس النمط المستخدم بـ
+// services/organization.js وservices/volunteer.js لتحديد أي مستخدم
+// وهمي نعدّل عليه بوضع الـ Mock بدون ما نطلب من الصفحة تمرير الإيميل
+// الحالي بكل استدعاء
+function getCurrentSessionEmail() {
   try {
-    const raw = localStorage.getItem(MOCK_USERS_STORAGE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw)?.user?.email || null
   } catch {
-    return []
+    return null
   }
-}
-
-function saveMockUsers(users) {
-  localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(users))
 }
 
 // إزالة كلمة المرور من بيانات المستخدم قبل تخزينها في الـ Context
@@ -78,10 +78,16 @@ function translateFieldErrors(rawFieldErrors) {
 function resolveAccountType(data) {
   const roles = data?.roles
   if (Array.isArray(roles)) {
+    // ⚠️ لازم نفحص admin *قبل* organization/volunteer — بدون هالأولوية،
+    // حساب أدمن ما كان بينعرف عليه إطلاقًا (الدالة كانت ترجّع null
+    // دايمًا لأي أدمن)، وAuthContext.login() برفض أي جلسة بدون
+    // accountType صالح — يعني ما في أدمن قادر يسجّل دخول أساسًا
+    if (roles.includes(ACCOUNT_TYPES.ADMIN)) return ACCOUNT_TYPES.ADMIN
     if (roles.includes(ACCOUNT_TYPES.ORGANIZATION)) return ACCOUNT_TYPES.ORGANIZATION
     if (roles.includes(ACCOUNT_TYPES.VOLUNTEER)) return ACCOUNT_TYPES.VOLUNTEER
   }
 
+  if (data?.accountType === ACCOUNT_TYPES.ADMIN) return ACCOUNT_TYPES.ADMIN
   if (data?.accountType === ACCOUNT_TYPES.ORGANIZATION) return ACCOUNT_TYPES.ORGANIZATION
   if (data?.accountType === ACCOUNT_TYPES.VOLUNTEER) return ACCOUNT_TYPES.VOLUNTEER
 
@@ -235,6 +241,74 @@ export async function loginUser(payload) {
     return {
       success: false,
       error: getApiErrorMessage(error, 'Unable to sign in'),
+      fieldErrors: translateFieldErrors(getApiFieldErrors(error)),
+    }
+  }
+}
+
+// تحديث بروفايل حساب الأدمن (اسم/إيميل/هاتف/نبذة قصيرة)
+export async function updateAdminProfile(payload) {
+  await wait()
+
+  if (MOCK_MODE) {
+    const email = getCurrentSessionEmail()
+    if (!email) return { success: false, error: 'No active admin session found' }
+
+    const updatedUser = updateMockUser(email, {
+      name: payload.name?.trim() || '',
+      email: payload.email?.trim().toLowerCase() || email,
+      phone: payload.phone?.trim() || '',
+      bio: payload.bio?.trim() || '',
+    })
+
+    if (!updatedUser) return { success: false, error: 'Admin account not found' }
+
+    return { success: true, data: normalizeUser(sanitizeUser(updatedUser)) }
+  }
+
+  try {
+    // TODO: تأكيد شكل/مسار الـ endpoint الحقيقي بالباك اند (Laravel) لما يجهز —
+    // المسار هون تقديري بانتظار توثيق الـ API الرسمي لهذا المسار
+    const response = await apiClient.put('/admin/profile', payload)
+    return { success: true, data: normalizeUser(sanitizeUser(response.data)) }
+  } catch (error) {
+    return {
+      success: false,
+      error: getApiErrorMessage(error, 'Unable to update the admin profile'),
+      fieldErrors: translateFieldErrors(getApiFieldErrors(error)),
+    }
+  }
+}
+
+// تغيير كلمة مرور حساب الأدمن — يتحقق من كلمة المرور الحالية بوضع الـ
+// Mock قبل الاستبدال (نفس السلوك المتوقّع من أي endpoint حقيقي)
+export async function changeAdminPassword(payload) {
+  await wait()
+
+  if (MOCK_MODE) {
+    const email = getCurrentSessionEmail()
+    if (!email) return { success: false, error: 'No active admin session found' }
+
+    const mockUsers = loadMockUsers()
+    const existingUser = mockUsers.find((user) => user.email === email)
+
+    if (!existingUser || existingUser.password !== payload.currentPassword) {
+      return { success: false, error: 'Current password is incorrect' }
+    }
+
+    updateMockUser(email, { password: payload.newPassword })
+    return { success: true, data: {} }
+  }
+
+  try {
+    // TODO: تأكيد شكل/مسار الـ endpoint الحقيقي بالباك اند (Laravel) لما يجهز —
+    // المسار هون تقديري بانتظار توثيق الـ API الرسمي لهذا المسار
+    await apiClient.put('/admin/password', payload)
+    return { success: true, data: {} }
+  } catch (error) {
+    return {
+      success: false,
+      error: getApiErrorMessage(error, 'Unable to update the password'),
       fieldErrors: translateFieldErrors(getApiFieldErrors(error)),
     }
   }

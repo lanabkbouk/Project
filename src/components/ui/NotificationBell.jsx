@@ -4,7 +4,7 @@
 // وأيقونة مختلفة لكل نوع تحديث — بدل نقطة حمراء صامتة أو نص فاضي.
 
 import { Link } from "react-router-dom";
-import { Bell, Trophy, Clock3, CheckCircle2, XCircle, PartyPopper } from "lucide-react";
+import { Bell, Trophy, Clock3, CalendarClock, CheckCircle2, XCircle, PartyPopper, LogOut } from "lucide-react";
 import useClickOutside from "../../hooks/useClickOutside";
 
 const TYPE_ICONS = {
@@ -14,6 +14,8 @@ const TYPE_ICONS = {
   "status-rejected": XCircle,
   "org-verified": CheckCircle2,
   "org-rejected": XCircle,
+  "applicant-withdrawn": LogOut,
+  "opportunity-reminder": CalendarClock,
 };
 
 const TYPE_ICON_COLORS = {
@@ -23,9 +25,11 @@ const TYPE_ICON_COLORS = {
   "status-rejected": "text-red-500",
   "org-verified": "text-emerald-500",
   "org-rejected": "text-red-500",
+  "applicant-withdrawn": "text-heading/50",
+  "opportunity-reminder": "text-sky-500",
 };
 
-export default function NotificationBell({ items, isOpen, onToggle, onClose }) {
+export default function NotificationBell({ items, isOpen, onToggle, onClose, triggerClassName }) {
   const rootRef = useClickOutside(isOpen, onClose);
   const count = items.length;
 
@@ -37,7 +41,10 @@ export default function NotificationBell({ items, isOpen, onToggle, onClose }) {
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-label={count > 0 ? `${count} new updates` : "Notifications"}
-        className="relative flex items-center justify-center h-10 w-10 rounded-2xl bg-white/10 border border-white/15 text-white hover:bg-white/15 hover:border-white/25 transition"
+        className={
+          triggerClassName ||
+          "relative flex items-center justify-center h-10 w-10 rounded-2xl bg-white/10 border border-white/15 text-white hover:bg-white/15 hover:border-white/25 transition"
+        }
       >
         <Bell className="h-4.5 w-4.5" aria-hidden="true" />
         {count > 0 && (

@@ -10,7 +10,7 @@ import { apiClient, getApiErrorMessage } from './api/client'
 import { isMockMode } from './api/mockMode'
 import { wait } from './api/delay'
 import { fetchOpportunities } from './opportunities'
-import { getEffectiveParticipationStatus } from '../constants/participationStatus'
+import { getEffectiveParticipationStatus, PARTICIPATION_STATUS } from '../constants/participationStatus'
 import { MOCK_PARTICIPATIONS, MOCK_VOLUNTEER_PROFILES } from './mock/mockParticipationsStore'
 import { fetchVolunteerAchievements } from './achievements'
 import { buildVolunteerHoursSummary } from '../utils/volunteerHoursSummary'
@@ -148,23 +148,25 @@ export async function updateParticipationStatus(participationId, status) {
   }
 }
 
-// انسحاب المتطوع من مشاركة — قرار مع فريق سنا: حذف السطر بالكامل من
-// opportunity_volunteer، بأي وقت (pending أو accepted سوا)، بدون أي
-// حالة "withdrawn" مخزّنة. مش endpoint تغيير حالة، هو DELETE فعلي.
+// انسحاب المتطوع من مشاركة — قرار مُحدَّث مع فريق سنا: بدل الحذف
+// الكامل (كان يعني اختفاء المتطوع من قائمة المتقدمين عند المنظمة
+// بصمت تام، بدون أي تفسير)، المشاركة تبقى بالسجل بحالة WITHDRAWN
+// صريحة — متاح من pending أو accepted سوا، بأي وقت. راجع
+// constants/participationStatus.js للفرق بين WITHDRAWN وREJECTED.
 /**
  * @param {string} participationId
  */
 export async function withdrawParticipation(participationId) {
   if (MOCK_MODE) {
     await wait()
-    const index = MOCK_PARTICIPATIONS.findIndex((item) => item.id === participationId)
-    if (index === -1) return { success: false, error: 'Participation not found' }
-    MOCK_PARTICIPATIONS.splice(index, 1)
+    const participation = MOCK_PARTICIPATIONS.find((item) => item.id === participationId)
+    if (!participation) return { success: false, error: 'Participation not found' }
+    participation.status = PARTICIPATION_STATUS.WITHDRAWN
     return { success: true }
   }
 
   try {
-    await apiClient.delete(`/participations/${participationId}`)
+    await apiClient.put(`/participations/${participationId}`, { status: PARTICIPATION_STATUS.WITHDRAWN })
     return { success: true }
   } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Failed to withdraw from this opportunity') }

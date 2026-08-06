@@ -1,18 +1,24 @@
 // حالات طلب المشاركة (Participation) الممكنة بين المتطوع والفرصة —
-// مؤكدة حاليًا 3 مخزّنة: pending/accepted/rejected (تحدّدها المنظمة).
+// مؤكدة حاليًا 4 مخزّنة: pending/accepted/rejected (تحدّدها المنظمة)،
+// وwithdrawn (يحدّدها المتطوع نفسه بانسحابه).
 //
-// EXPIRED حالة رابعة **محسوبة فقط، مش مخزّنة** — قرار مع فريق سنا: لو
+// EXPIRED حالة خامسة **محسوبة فقط، مش مخزّنة** — قرار مع فريق سنا: لو
 // status لسا pending وتاريخ بداية الفرصة المرتبطة فات، تُعتبر منتهية
 // الوقت تلقائيًا بالعرض بس (راجع getEffectiveParticipationStatus
 // أسفل الملف)، بدون أي عمود إضافي بقاعدة البيانات.
 //
-// الانسحاب (Withdraw) مش حالة إطلاقًا — قرار مع فريق سنا: حذف السطر
-// بالكامل من جدول opportunity_volunteer، بأي وقت (pending أو accepted).
-// راجع services/participations.js → withdrawParticipation
+// ⚠️ الانسحاب (Withdraw) — قرار مُحدَّث: كان سابقًا حذف كامل للسطر من
+// opportunity_volunteer (بدون أي أثر)، لكن هذا كان يعني اختفاء
+// المتطوع من قائمة المتقدمين عند المنظمة بصمت تام، بدون أي تفسير
+// (هل انسحب؟ خطأ تقني؟ ما في طريقة تعرف). الآن: المشاركة تبقى بالسجل
+// بحالة WITHDRAWN صريحة — مختلفة تمامًا عن REJECTED (رفض = قرار
+// المنظمة، انسحاب = قرار المتطوع)، فالتاريخ الكامل يبقى شفافًا لكلا
+// الطرفين. راجع services/participations.js → withdrawParticipation
 export const PARTICIPATION_STATUS = {
   PENDING: "pending",
   ACCEPTED: "accepted",
   REJECTED: "rejected",
+  WITHDRAWN: "withdrawn",
   EXPIRED: "expired",
 };
 
@@ -25,6 +31,7 @@ export const PARTICIPATION_STATUS_META = {
   [PARTICIPATION_STATUS.PENDING]: { label: "Pending Review", color: "gold" },
   [PARTICIPATION_STATUS.ACCEPTED]: { label: "Accepted", color: "green" },
   [PARTICIPATION_STATUS.REJECTED]: { label: "Rejected", color: "red" },
+  [PARTICIPATION_STATUS.WITHDRAWN]: { label: "Withdrew", color: "gray" },
   [PARTICIPATION_STATUS.EXPIRED]: { label: "Expired", color: "gray" },
 };
 

@@ -72,7 +72,10 @@ export default function Login() {
       return
     }
 
-    navigate(ROUTES.HOME)
+    // الأدمن بيوصل مباشرة لصفحة الإعدادات (مش الرئيسية) — هذا أول شي
+    // بيحتاجه عادةً (مراجعة توثيق منظمات، إدارة الفئات...)، بعكس متطوع
+    // أو منظمة يلي الصفحة الرئيسية منطقية إلهم كنقطة بداية
+    navigate(result.data.accountType === ACCOUNT_TYPES.ADMIN ? ROUTES.ADMIN_SETTINGS : ROUTES.HOME)
   }
 
   return (

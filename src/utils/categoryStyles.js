@@ -1,4 +1,22 @@
 // src/utils/categoryStyles.js
+//
+// ⚠️ تصميم مهم: أي فئة (Category) جديدة يضيفها الأدمن من لوحة الإدارة
+// (AdminCatalogManagement.jsx) بتاخد لونًا تلقائيًا ومميّزًا من هون
+// فورًا — بدون أي عمل إضافي من الأدمن، بدون أي عمود جديد بقاعدة
+// البيانات، وبدون أي تعديل على أي Component تاني بالموقع (السبعة
+// أماكن يلي بتستخدم CATEGORY_COLORS/CATEGORY_ICONS ما بتحتاج أي لمسة).
+//
+// كيف؟ عبر Proxy: الفئات الستة "التاريخية" (يلي الألوان فيها مختارة
+// يدويًا بمعنى — أحمر=صحة، أخضر=بيئة...) بترجع لونها الثابت كما هو
+// دايمًا. أي اسم فئة تاني (قديم أو جديد، ما إله فرق) بيمرّ على دالة
+// هاش بسيطة وثابتة (نفس الاسم = نفس اللون دايمًا) تختار لونًا من حوض
+// إضافي جاهز. النتيجة: كل فئة بالموقع إلها لون واحد ثابت ومميّز عن
+// جاراتها، من لحظة إنشائها، بدون أي قرار يدوي مطلوب.
+//
+// ملاحظة Tailwind v4: ما منقدر نبني كلاس ديناميكي بالـ Runtime زي
+// `text-${x}-600` لأن Tailwind لازم يشوف النص الحرفي الكامل بالسورس
+// حتى يولّد الـ CSS له — فكل توليفة لازم تكون مكتوبة كاملة وجاهزة
+// مسبقًا بالكود (سواء بالخريطة الأساسية أو بالحوض الإضافي تحت).
 
 import {
   HeartPulse,
@@ -6,11 +24,13 @@ import {
   Users,
   Dumbbell,
   Leaf,
-  Cpu
+  Cpu,
 } from "lucide-react";
 
 // -----------------------------
-// Category Icons
+// Category Icons (الأيقونة تبقى مبسّطة: أيقونة مخصّصة لأول 6 فئات
+// فقط، وأي فئة جديدة تاخد أيقونة عامة (Users) بكل مكان مستخدَم أصلًا
+// — نفس السلوك الحالي بالضبط، ما تغيّر شي هون)
 // -----------------------------
 export const CATEGORY_ICONS = {
   Health: HeartPulse,
@@ -22,9 +42,9 @@ export const CATEGORY_ICONS = {
 };
 
 // -----------------------------
-// Category Colors (Preview + Chips)
+// ألوان الفئات الست "التاريخية" — ثابتة ومقصودة، ما بتنحسب هاش أبدًا
 // -----------------------------
-export const CATEGORY_COLORS = {
+const CATEGORY_COLORS_BASE = {
   Health: "text-red-600 bg-red-100 border-red-200",
   Education: "text-blue-600 bg-blue-100 border-blue-200",
   Social: "text-purple-600 bg-purple-100 border-purple-200",
@@ -33,10 +53,7 @@ export const CATEGORY_COLORS = {
   Technical: "text-gray-700 bg-gray-100 border-gray-200",
 };
 
-// -----------------------------
-// Category Colors when Selected (ProfileForm)
-// -----------------------------
-export const CATEGORY_SELECTED_COLORS = {
+const CATEGORY_SELECTED_COLORS_BASE = {
   Health: "bg-red-600 text-white border-red-600",
   Education: "bg-blue-600 text-white border-blue-600",
   Social: "bg-purple-600 text-white border-purple-600",
@@ -44,3 +61,75 @@ export const CATEGORY_SELECTED_COLORS = {
   Environment: "bg-green-600 text-white border-green-600",
   Technical: "bg-gray-700 text-white border-gray-700",
 };
+
+// نقطة لون واضحة (500) لكل فئة تاريخية — تُستخدم فقط بمؤشر اللون
+// الصغير بلوحة الأدمن (CategoryRow.jsx)
+const CATEGORY_DOTS_BASE = {
+  Health: "bg-red-500",
+  Education: "bg-blue-500",
+  Social: "bg-purple-500",
+  Sport: "bg-orange-500",
+  Environment: "bg-green-500",
+  Technical: "bg-gray-500",
+};
+
+// -----------------------------
+// حوض ألوان إضافي — يُستخدم تلقائيًا لأي فئة جديدة (8 توليفات، أكتر
+// من كافية لعدد فئات معقول بمنصة تطوّعية). كل توليفة chip/selected/dot
+// جاهزة كنص كامل حتى Tailwind يقدر يولّدها.
+// -----------------------------
+const EXTRA_PALETTE = [
+  { chip: "text-teal-600 bg-teal-100 border-teal-200", selected: "bg-teal-600 text-white border-teal-600", dot: "bg-teal-500" },
+  { chip: "text-pink-600 bg-pink-100 border-pink-200", selected: "bg-pink-600 text-white border-pink-600", dot: "bg-pink-500" },
+  { chip: "text-amber-600 bg-amber-100 border-amber-200", selected: "bg-amber-600 text-white border-amber-600", dot: "bg-amber-500" },
+  { chip: "text-indigo-600 bg-indigo-100 border-indigo-200", selected: "bg-indigo-600 text-white border-indigo-600", dot: "bg-indigo-500" },
+  { chip: "text-cyan-600 bg-cyan-100 border-cyan-200", selected: "bg-cyan-600 text-white border-cyan-600", dot: "bg-cyan-500" },
+  { chip: "text-rose-600 bg-rose-100 border-rose-200", selected: "bg-rose-600 text-white border-rose-600", dot: "bg-rose-500" },
+  { chip: "text-lime-700 bg-lime-100 border-lime-200", selected: "bg-lime-700 text-white border-lime-700", dot: "bg-lime-600" },
+  { chip: "text-sky-600 bg-sky-100 border-sky-200", selected: "bg-sky-600 text-white border-sky-600", dot: "bg-sky-500" },
+];
+
+// هاش بسيط ومستقر (Deterministic) — نفس اسم الفئة بيرجّع نفس النتيجة
+// دايمًا، بأي مرة وبأي جلسة، بدون أي تخزين لازم
+function hashCategoryName(name) {
+  let hash = 0;
+  for (let index = 0; index < name.length; index += 1) {
+    hash = (hash * 31 + name.charCodeAt(index)) >>> 0;
+  }
+  return hash % EXTRA_PALETTE.length;
+}
+
+/**
+ * يرجّع توليفة الألوان (chip/selected/dot) لأي اسم فئة — مُصدَّرة
+ * كدالة مستقلة لاستخدامها بأي مكان يحتاج الثلاث قيم سوا (مثل منتقي
+ * اللون بلوحة الأدمن)، بدل الاعتماد فقط على الخرائط أدناه.
+ * @param {string} categoryName
+ */
+export function getCategoryTheme(categoryName) {
+  const name = String(categoryName || "");
+  return CATEGORY_COLORS_BASE[name]
+    ? {
+        chip: CATEGORY_COLORS_BASE[name],
+        selected: CATEGORY_SELECTED_COLORS_BASE[name],
+        dot: CATEGORY_DOTS_BASE[name],
+      }
+    : EXTRA_PALETTE[hashCategoryName(name)];
+}
+
+// Proxy: أي وصول بصيغة CATEGORY_COLORS[categoryName] (نفس الاستخدام
+// الحالي بكل مكان بالموقع) بيرجّع القيمة الثابتة للفئات الست، أو لون
+// مُولَّد تلقائيًا وثابت لأي فئة تانية — بدون أي تعديل على أماكن
+// الاستخدام السبعة الموجودة أصلًا
+export const CATEGORY_COLORS = new Proxy(CATEGORY_COLORS_BASE, {
+  get(target, prop) {
+    if (typeof prop !== "string") return target[prop];
+    return target[prop] || getCategoryTheme(prop).chip;
+  },
+});
+
+export const CATEGORY_SELECTED_COLORS = new Proxy(CATEGORY_SELECTED_COLORS_BASE, {
+  get(target, prop) {
+    if (typeof prop !== "string") return target[prop];
+    return target[prop] || getCategoryTheme(prop).selected;
+  },
+});

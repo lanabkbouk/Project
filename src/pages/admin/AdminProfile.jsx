@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ShieldCheck, UserRound } from 'lucide-react'
+import { UserRound } from 'lucide-react'
 
 import AdminLayout from '../../layouts/admin/AdminLayout'
 import Badge from '../../components/common/Badge'
@@ -13,6 +13,8 @@ import Toast from '../../components/common/Toast'
 import Typography from '../../components/ui/Typography'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../hooks/useToast'
+import { useUpdateAdminProfileMutation } from '../../hooks/queries/useUpdateAdminProfileMutation'
+import { useChangeAdminPasswordMutation } from '../../hooks/queries/useChangeAdminPasswordMutation'
 import { ROUTES } from '../../constants/paths'
 import { CARD_BASE, PANEL_SURFACE } from '../../utils/surfaceStyles'
 import { formatDateTime } from '../../utils/formatDateTime'
@@ -26,12 +28,14 @@ const EMPTY_PROFILE = {
 
 function ProfileEditModal({ open, profile, onClose, onSubmit, isSubmitting }) {
   const [form, setForm] = useState(EMPTY_PROFILE)
+  // تعبئة الفورم بأحدث بيانات البروفايل لحظة الفتح — معدّلة أثناء الـ
+  // render نفسه (بدل useEffect) لتفادي "cascading render" إضافي بدون داعي
+  const [wasOpen, setWasOpen] = useState(open)
 
-  useEffect(() => {
-    if (!open) return
-
-    setForm(profile || EMPTY_PROFILE)
-  }, [open, profile])
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (open) setForm(profile || EMPTY_PROFILE)
+  }
 
   return (
     <Modal
@@ -87,12 +91,12 @@ function ProfileEditModal({ open, profile, onClose, onSubmit, isSubmitting }) {
 
 function PasswordModal({ open, onClose, onSubmit, isSubmitting }) {
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
+  const [wasOpen, setWasOpen] = useState(open)
 
-  useEffect(() => {
-    if (!open) return
-
-    setForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
-  }, [open])
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (open) setForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+  }
 
   return (
     <Modal
@@ -147,10 +151,11 @@ function PasswordModal({ open, onClose, onSubmit, isSubmitting }) {
 export default function AdminProfile() {
   const { user, updateUser } = useAuth()
   const { toast, showSuccess, showError, closeToast } = useToast()
+  const updateProfileMutation = useUpdateAdminProfileMutation()
+  const changePasswordMutation = useChangeAdminPasswordMutation()
 
   const [editOpen, setEditOpen] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
 
   const profile = useMemo(
     () => ({
@@ -167,24 +172,23 @@ export default function AdminProfile() {
   const lastLogin = formatDateTime(user?.lastLoginAt || user?.last_login_at || user?.lastLogin)
 
   const handleSubmitProfile = async (form) => {
-    setSubmitting(true)
+    const result = await updateProfileMutation.mutateAsync({
+      name: form.name.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      bio: form.bio.trim(),
+    })
 
-    try {
-      updateUser({
-        ...user,
-        name: form.name.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        bio: form.bio.trim(),
-      })
-
-      showSuccess('Profile updated successfully.')
-      setEditOpen(false)
-    } catch {
-      showError('Unable to update profile right now.')
-    } finally {
-      setSubmitting(false)
+    if (!result.success) {
+      showError(result.error || 'Unable to update profile right now.')
+      return
     }
+
+    // مزامنة الجلسة المحلية (AuthContext) مع القيم المحفوظة فعليًا —
+    // نفس النمط المتّبع بصفحات بروفايل المنظمة/المتطوع
+    updateUser({ ...user, ...form })
+    showSuccess('Profile updated successfully.')
+    setEditOpen(false)
   }
 
   const handleSubmitPassword = async (form) => {
@@ -193,16 +197,18 @@ export default function AdminProfile() {
       return
     }
 
-    setSubmitting(true)
+    const result = await changePasswordMutation.mutateAsync({
+      currentPassword: form.currentPassword,
+      newPassword: form.newPassword,
+    })
 
-    try {
-      showSuccess('Password change request completed locally.')
-      setPasswordOpen(false)
-    } catch {
-      showError('Unable to update password right now.')
-    } finally {
-      setSubmitting(false)
+    if (!result.success) {
+      showError(result.error || 'Unable to update password right now.')
+      return
     }
+
+    showSuccess('Password updated successfully.')
+    setPasswordOpen(false)
   }
 
   return (
@@ -251,14 +257,14 @@ export default function AdminProfile() {
             <Button variant="ghost" onClick={() => setEditOpen(true)}>
               Edit profile
             </Button>
-            <Button variant="danger" onClick={() => setPasswordOpen(true)}>
+            <Button variant="secondary" onClick={() => setPasswordOpen(true)}>
               Change password
             </Button>
           </div>
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
         <section className={`${CARD_BASE} p-5 md:p-6`}>
           <Typography variant="h4">Account information</Typography>
           <div className="mt-4 space-y-1.5">
@@ -297,14 +303,14 @@ export default function AdminProfile() {
         profile={profile}
         onClose={() => setEditOpen(false)}
         onSubmit={handleSubmitProfile}
-        isSubmitting={submitting}
+        isSubmitting={updateProfileMutation.isPending}
       />
 
       <PasswordModal
         open={passwordOpen}
         onClose={() => setPasswordOpen(false)}
         onSubmit={handleSubmitPassword}
-        isSubmitting={submitting}
+        isSubmitting={changePasswordMutation.isPending}
       />
 
       <Toast message={toast.message} variant={toast.variant} duration={7000} onClose={closeToast} />

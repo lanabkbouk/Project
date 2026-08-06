@@ -25,6 +25,7 @@ export default function ApplicantCard({
   const isPending = status === PARTICIPATION_STATUS.PENDING;
   const isAccepted = status === PARTICIPATION_STATUS.ACCEPTED;
   const isExpired = status === PARTICIPATION_STATUS.EXPIRED;
+  const isWithdrawn = status === PARTICIPATION_STATUS.WITHDRAWN;
   const [isProfilePreviewOpen, setIsProfilePreviewOpen] = useState(false);
   // "إدارة الساعات" تظهر فقط لمتطوع مقبول بعد ما الفرصة تخلص فعليًا —
   // المرفوض والمعلّق ما التزموا فعليًا فما في داعي نسألهم عن ساعات
@@ -123,7 +124,13 @@ export default function ApplicantCard({
           <>
             <span className="flex items-center gap-1.5 text-xs font-medium text-heading/50">
               <CheckCircle2 size={14} aria-hidden="true" />
-              {isExpired ? "No response before it started" : hasConfirmedHours ? "Hours confirmed" : "Decision completed"}
+              {isWithdrawn
+                ? "Volunteer withdrew"
+                : isExpired
+                  ? "No response before it started"
+                  : hasConfirmedHours
+                    ? "Hours confirmed"
+                    : "Decision completed"}
             </span>
 
             {canManageHours && (
