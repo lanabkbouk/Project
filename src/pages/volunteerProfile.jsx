@@ -13,6 +13,7 @@ import ProfileHeader from "../components/volunteerProfile/ProfileHeader";
 import ProfileForm from "../components/volunteerProfile/ProfileForm";
 import ProfilePreview from "../components/volunteerProfile/ProfilePreview";
 import AchievementsList from "../components/volunteerProfile/AchievementsList";
+import VolunteeringHoursSummary from "../components/volunteerProfile/VolunteeringHoursSummary";
 import Typography from "../components/ui/Typography";
 import Modal from "../components/ui/Modal";
 import Button from "../components/ui/Button";
@@ -158,6 +159,13 @@ export default function VolunteerProfile() {
               availableSkills={availableSkills}
             />
           </form>
+
+          <section className={`mt-8 ${PANEL_SURFACE} p-6 md:p-8`}>
+            <Typography variant="h4" gutterBottom>
+              Volunteering Hours
+            </Typography>
+            <VolunteeringHoursSummary />
+          </section>
 
           <section id="achievements" className={`mt-8 ${PANEL_SURFACE} p-6 md:p-8`}>
             <Typography variant="h4" gutterBottom>

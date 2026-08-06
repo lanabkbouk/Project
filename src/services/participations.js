@@ -10,10 +10,10 @@ import { apiClient, getApiErrorMessage } from './api/client'
 import { isMockMode } from './api/mockMode'
 import { wait } from './api/delay'
 import { fetchOpportunities } from './opportunities'
-import { getEffectiveParticipationStatus, PARTICIPATION_STATUS } from '../constants/participationStatus'
-import { OPPORTUNITY_STATUS } from '../constants/opportunityStatus'
+import { getEffectiveParticipationStatus } from '../constants/participationStatus'
 import { MOCK_PARTICIPATIONS, MOCK_VOLUNTEER_PROFILES } from './mock/mockParticipationsStore'
 import { fetchVolunteerAchievements } from './achievements'
+import { buildVolunteerHoursSummary } from '../utils/volunteerHoursSummary'
 
 const MOCK_MODE = isMockMode()
 
@@ -67,30 +67,31 @@ export async function fetchApplicantsForOpportunity(opportunityId) {
       applicants.map(async (participation) => {
         const volunteerProfile = MOCK_VOLUNTEER_PROFILES[participation.volunteerId] || null
 
-        // ⚠️ إحصائيات حقيقية محسوبة "لدى هالمنظمة بالذات" — مش رقم
-        // ثابت مخترع. بنجمع كل مشاركات نفس المتطوع (volunteerId)
-        // المرتبطة بفرص من نفس المنظمة الحالية فقط، ومكتملة فعليًا
         let completedOpportunitiesCount = 0
         let totalHoursVolunteered = 0
         let achievements = []
 
+        // ⚠️ إحصائيات حقيقية محسوبة "لدى هالمنظمة بالذات" — مش رقم
+        // ثابت مخترع. بنبني قائمة مشاركات المتطوع كلها (كل المنظمات)
+        // بنفس شكل fetchMyParticipations (opportunity كاملة مرفقة)،
+        // ونمرّرها لـ buildVolunteerHoursSummary — نفس الدالة الموحّدة
+        // المستخدمة بالضبط بملخّص بروفايل المتطوع وبـ achievements.js،
+        // وناخد منها بس سطر المنظمة الحالية (organizationId)
         if (volunteerProfile && organizationId) {
-          const sameVolunteerParticipations = MOCK_PARTICIPATIONS.filter(
+          const enrichedParticipations = MOCK_PARTICIPATIONS.filter(
             (item) => item.volunteerId === participation.volunteerId,
+          ).map((item) => ({
+            ...item,
+            opportunity: opportunities.find((o) => o.id === item.opportunityId) || null,
+          }))
+
+          const hoursSummary = buildVolunteerHoursSummary(enrichedParticipations)
+          const orgEntry = hoursSummary.byOrganization.find(
+            (entry) => entry.organizationId === organizationId,
           )
 
-          sameVolunteerParticipations.forEach((item) => {
-            const itemOpportunity = opportunities.find((o) => o.id === item.opportunityId)
-            const isCompletedAtThisOrg =
-              itemOpportunity?.organization?.id === organizationId &&
-              itemOpportunity?.status === OPPORTUNITY_STATUS.COMPLETED &&
-              item.status === PARTICIPATION_STATUS.ACCEPTED
-
-            if (isCompletedAtThisOrg) {
-              completedOpportunitiesCount += 1
-              totalHoursVolunteered += Number(item.hoursLogged) || 0
-            }
-          })
+          completedOpportunitiesCount = orgEntry?.completedOpportunitiesCount || 0
+          totalHoursVolunteered = orgEntry?.confirmedHours || 0
 
           // ⚠️ الإنجازات عكس الإحصائيات فوق — تراكمية عبر المنصة كلها
           // (مش قابلة للعزل حسب منظمة، راجع API_CONTRACT.md)، فهون

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Clock, MapPin, LogOut } from "lucide-react";
+import { Building2, Clock, MapPin, LogOut } from "lucide-react";
 import Button from "../ui/Button";
 import ParticipationStatusBadge from "./ParticipationStatusBadge";
 import { useWithdrawParticipationMutation } from "../../hooks/queries/useWithdrawParticipationMutation";
@@ -46,12 +46,22 @@ export default function ParticipationCard({ participation }) {
 
   return (
     <div className={CARD_BASE}>
-      <div className="flex items-start justify-between gap-3 mb-2">
+      <div className="flex items-start justify-between gap-3 mb-1">
         <Link to={`${ROUTES.OPPORTUNITIES}/${opportunity.id}`} className="font-semibold text-heading hover:underline">
           {opportunity.title}
         </Link>
         <ParticipationStatusBadge status={status} />
       </div>
+
+      {opportunity.organization?.name && (
+        <Link
+          to={`${ROUTES.ORGANIZATIONS}/${opportunity.organization.id}`}
+          className="mb-2 flex w-fit items-center gap-1.5 text-sm text-body hover:text-primary hover:underline"
+        >
+          <Building2 size={13} className="text-primary shrink-0" aria-hidden="true" />
+          {opportunity.organization.name}
+        </Link>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-4 text-sm text-body">

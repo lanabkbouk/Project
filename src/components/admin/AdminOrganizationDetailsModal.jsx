@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Building2, ExternalLink, Maximize2 } from 'lucide-react'
+import { Building2, ExternalLink, Image as ImageIcon, Maximize2 } from 'lucide-react'
 
 import Badge from '../common/Badge'
+import EmptyState from '../common/EmptyState'
 import InfoRow from '../ui/InfoRow'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
@@ -36,10 +37,13 @@ export default function AdminOrganizationDetailsModal({
   const isVerified = status === ORGANIZATION_STATUS.VERIFIED
   const isRejected = status === ORGANIZATION_STATUS.REJECTED
   // مطلوب إجباريًا عند التسجيل (صورة فقط — راجع validation.js
-  // requiredFile + accept="image/jpeg,image/png,image/webp" بـ orgForm.jsx)
-  // ويُرفع مرة واحدة فقط، فكل منظمة توصل لهون معها وثيقة صورة دايمًا —
-  // ما في داعي لحالة "لا وثيقة" أو أنواع ملفات تانية (PDF...)
+  // requiredFile + accept="image/jpeg,image/png,image/webp" بـ orgForm.jsx)،
+  // فما في داعي لدعم أنواع ملفات تانية (PDF...). بس منّا نفترض إنها موجودة
+  // دايمًا 100%: منظمات قديمة/تجريبية أو استجابة API ناقصة ممكن توصل بدون
+  // رابط، فبنبقي حارس بسيط hasVerificationDocument لعرض حالة فارغة واضحة
+  // بدل صورة مكسورة (src فاضي) ورابط "Open file" بلا وجهة.
   const verificationDocumentUrl = organization?.verificationDocumentUrl || ''
+  const hasVerificationDocument = Boolean(verificationDocumentUrl)
 
   return (
     <Modal
@@ -126,29 +130,44 @@ export default function AdminOrganizationDetailsModal({
                 </Typography>
               </div>
 
-              <Button variant="ghost" size="small" onClick={() => setIsDocumentPreviewOpen(true)}>
+              <Button
+                variant="ghost"
+                size="small"
+                onClick={() => setIsDocumentPreviewOpen(true)}
+                disabled={!hasVerificationDocument}
+              >
                 <Maximize2 size={16} />
                 <span className="ml-1">Open larger preview</span>
               </Button>
             </div>
 
             <div className="mt-4 overflow-hidden rounded-2xl border border-heading/10 bg-bg">
-              <img
-                src={verificationDocumentUrl}
-                alt={`${organization.name || 'Organization'} verification document`}
-                className="max-h-[22rem] w-full object-contain"
-              />
+              {hasVerificationDocument ? (
+                <img
+                  src={verificationDocumentUrl}
+                  alt={`${organization.name || 'Organization'} verification document`}
+                  className="max-h-[22rem] w-full object-contain"
+                />
+              ) : (
+                <EmptyState
+                  icon={ImageIcon}
+                  title="No verification document uploaded"
+                  description="This organization has no verification document on file yet."
+                />
+              )}
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <Button as="a" variant="ghost" size="small" href={verificationDocumentUrl} target="_blank" rel="noreferrer">
-                <ExternalLink size={16} />
-                <span className="ml-1">Open file in new tab</span>
-              </Button>
-              <Typography variant="bodySm" className="text-body">
-                Image file preview
-              </Typography>
-            </div>
+            {hasVerificationDocument && (
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <Button as="a" variant="ghost" size="small" href={verificationDocumentUrl} target="_blank" rel="noreferrer">
+                  <ExternalLink size={16} />
+                  <span className="ml-1">Open file in new tab</span>
+                </Button>
+                <Typography variant="bodySm" className="text-body">
+                  Image file preview
+                </Typography>
+              </div>
+            )}
           </section>
         </div>
       )}
@@ -160,19 +179,25 @@ export default function AdminOrganizationDetailsModal({
         dialogClassName="max-w-5xl"
         scrollBody
       >
-        <div className="space-y-4">
-          <Typography variant="bodySm" className="text-body">
-            Review the uploaded document in a larger view. Use the file link if your browser blocks embedded previews.
-          </Typography>
+        {hasVerificationDocument ? (
+          <div className="space-y-4">
+            <Typography variant="bodySm" className="text-body">
+              Review the uploaded document in a larger view. Use the file link if your browser blocks embedded previews.
+            </Typography>
 
-          <div className="overflow-hidden rounded-2xl border border-heading/10 bg-bg">
-            <img
-              src={verificationDocumentUrl}
-              alt={`${organization?.name || 'Organization'} verification document preview`}
-              className="max-h-[75vh] w-full object-contain"
-            />
+            <div className="overflow-hidden rounded-2xl border border-heading/10 bg-bg">
+              <img
+                src={verificationDocumentUrl}
+                alt={`${organization?.name || 'Organization'} verification document preview`}
+                className="max-h-[75vh] w-full object-contain"
+              />
+            </div>
           </div>
-        </div>
+        ) : (
+          <Typography variant="bodySm" className="text-body">
+            No verification document is available for this organization.
+          </Typography>
+        )}
       </Modal>
     </Modal>
   )

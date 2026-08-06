@@ -24,7 +24,10 @@ import { wait } from './api/delay'
 import { MOCK_PARTICIPATIONS } from './mock/mockParticipationsStore'
 import { MOCK_OPPORTUNITIES } from './mock/mockOpportunitiesStore'
 import { PARTICIPATION_STATUS } from '../constants/participationStatus'
+import { OPPORTUNITY_STATUS } from '../constants/opportunityStatus'
 import { AUTH_STORAGE_KEY } from '../constants/auth/storage'
+import { getEffectiveOpportunityStatus } from '../utils/opportunityStatus'
+import { buildVolunteerHoursSummary } from '../utils/volunteerHoursSummary'
 
 const MOCK_MODE = isMockMode()
 
@@ -55,18 +58,30 @@ const ACHIEVEMENT_DEFINITIONS = [
  * @param {string} volunteerId
  */
 function computeAchievementsForVolunteer(volunteerId) {
-  const myParticipations = MOCK_PARTICIPATIONS.filter((p) => p.volunteerId === volunteerId)
+  // نبني نفس شكل fetchMyParticipations بالضبط (opportunity كاملة مرفقة
+  // بحالتها الفعلية) حتى نقدر نمرّرها لنفس الدالة الموحّدة
+  // buildVolunteerHoursSummary المستخدمة بملخّص بروفايل المتطوع وبإحصائيات
+  // "لدى هالمنظمة" بـ participations.js — صفر تكرار لمنطق حساب الساعات
+  const myParticipations = MOCK_PARTICIPATIONS.filter((p) => p.volunteerId === volunteerId).map(
+    (participation) => {
+      const opportunity = MOCK_OPPORTUNITIES.find((item) => item.id === participation.opportunityId) || null
+      return {
+        ...participation,
+        opportunity: opportunity ? { ...opportunity, status: getEffectiveOpportunityStatus(opportunity) } : null,
+      }
+    },
+  )
 
-  const completed = myParticipations.filter((participation) => {
-    const opportunity = MOCK_OPPORTUNITIES.find((item) => item.id === participation.opportunityId)
-    return (
+  const { totalConfirmedHours, completedOpportunitiesCount } = buildVolunteerHoursSummary(myParticipations)
+
+  // نفس شرط "مكتملة ومقبولة" المستخدم جوا buildVolunteerHoursSummary —
+  // معاد هون فقط لتحديد earnedDate (أقدم فرصة أكملها المتطوع)، مش لحساب
+  // أي رقم ساعات من جديد
+  const completed = myParticipations.filter(
+    (participation) =>
       participation.status === PARTICIPATION_STATUS.ACCEPTED &&
-      opportunity &&
-      new Date(opportunity.endDate) < new Date()
-    )
-  })
-
-  const totalHours = completed.reduce((sum, p) => sum + (Number(p.hoursLogged) || 0), 0)
+      participation.opportunity?.status === OPPORTUNITY_STATUS.COMPLETED,
+  )
 
   // أقدم فرصة مكتملة (تاريخًا) — تُستخدم كـ earnedDate لإنجاز "أول فرصة"
   const earliestCompleted = [...completed].sort(
@@ -74,9 +89,9 @@ function computeAchievementsForVolunteer(volunteerId) {
   )[0]
 
   const unlockedMap = {
-    a1: completed.length >= 1,
-    a2: totalHours >= 10,
-    a3: completed.length >= 3,
+    a1: completedOpportunitiesCount >= 1,
+    a2: totalConfirmedHours >= 10,
+    a3: completedOpportunitiesCount >= 3,
   }
 
   return ACHIEVEMENT_DEFINITIONS.map((definition) => ({
