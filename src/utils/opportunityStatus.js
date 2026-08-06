@@ -1,4 +1,3 @@
-
 // يحسب الحالة "الفعلية" للفرصة اعتمادًا على التاريخ الحالي وعدد المتطوعين،
 // بدل الاعتماد بس على قيمة status مخزّنة يدويًا — هيك الفرصة بتنتقل تلقائيًا
 // عبر مراحلها الأربع (تسجيل مفتوح ← تسجيل منتهي ← قيد العمل ← منتهية) بمجرد
@@ -42,4 +41,22 @@ export function getEffectiveOpportunityStatus(opportunity, now = new Date()) {
 /** اختصار شائع الاستخدام: هل المتطوع لسا يقدر يسجّل بهاي الفرصة؟ */
 export function isRegistrationOpen(opportunity, now = new Date()) {
   return getEffectiveOpportunityStatus(opportunity, now) === OPPORTUNITY_STATUS.REGISTRATION_OPEN;
+}
+
+const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+
+/**
+ * كم يوم متبقٍّ لبدء الفرصة، أو null لو خارج نافذة "قريبًا" (يومين)
+ * أو لو بدأت فعليًا (بالماضي أو هالّلحظة بالضبط). مصدر واحد يستخدمه
+ * services/notifications.js (تذكير الجرس) وParticipationCard.jsx
+ * (الشارة على البطاقة) معًا — نفس القاعدة بالضبط، بدون احتمال ينحرف
+ * أحد الملفين عن الآخر مستقبلًا.
+ * @param {string} [startDate]
+ * @param {Date} [now] - محقونة كوسيط لتسهيل الاختبار
+ */
+export function getDaysUntilStart(startDate, now = new Date()) {
+  if (!startDate) return null;
+  const msUntilStart = new Date(startDate) - now;
+  if (msUntilStart <= 0 || msUntilStart > TWO_DAYS_MS) return null;
+  return Math.max(1, Math.ceil(msUntilStart / (24 * 60 * 60 * 1000)));
 }

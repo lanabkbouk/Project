@@ -94,58 +94,66 @@ export default function ApplicantCard({
       {/* شريط الإجراء السفلي — أزرار قرار (pending)، أو مؤشر "تم البتّ"
           مع زر إدارة الساعات (accepted بعد انتهاء الفرصة)، أو المؤشر
           وحده (rejected، أو accepted قبل ما الفرصة تخلص) */}
-      <div className="flex items-center justify-end gap-2 pt-3 border-t border-heading/10">
-        {isPending ? (
-          <>
-            <Button
-              variant="success"
-              size="small"
-              disabled={isUpdating || !isVerified}
-              onClick={() => onAccept(applicant.id)}
-              className="flex items-center gap-1 !px-3 !py-1.5 !text-sm"
-              title={!isVerified ? "Available once your organization is verified" : undefined}
-            >
-              <Check size={14} />
-              Accept
-            </Button>
-            <Button
-              variant="ghost"
-              size="small"
-              disabled={isUpdating || !isVerified}
-              onClick={() => onReject(applicant.id)}
-              className="flex items-center gap-1 !px-3 !py-1.5 !text-sm text-danger hover:bg-danger/10"
-              title={!isVerified ? "Available once your organization is verified" : undefined}
-            >
-              <X size={14} />
-              Reject
-            </Button>
-          </>
-        ) : (
-          <>
-            <span className="flex items-center gap-1.5 text-xs font-medium text-heading/50">
-              <CheckCircle2 size={14} aria-hidden="true" />
-              {isWithdrawn
-                ? "Volunteer withdrew"
-                : isExpired
-                  ? "No response before it started"
-                  : hasConfirmedHours
-                    ? "Hours confirmed"
-                    : "Decision completed"}
-            </span>
-
-            {canManageHours && (
-              <Button
-                variant="secondary"
-                size="small"
-                onClick={() => onManageHours(applicant)}
-                className="flex items-center gap-1 !px-3 !py-1.5 !text-sm"
-              >
-                <Clock3 size={14} />
-                {hasConfirmedHours ? "Edit hours" : "Manage hours"}
-              </Button>
-            )}
-          </>
+      <div className="flex flex-col items-end gap-1.5 pt-3 border-t border-heading/10">
+        {isPending && (
+          <p className="text-xs text-heading/40">
+            This decision is final — it can't be reversed once submitted.
+          </p>
         )}
+
+        <div className="flex items-center justify-end gap-2">
+          {isPending ? (
+            <>
+              <Button
+                variant="success"
+                size="small"
+                disabled={isUpdating || !isVerified}
+                onClick={() => onAccept(applicant.id)}
+                className="flex items-center gap-1 !px-3 !py-1.5 !text-sm"
+                title={!isVerified ? "Available once your organization is verified" : undefined}
+              >
+                <Check size={14} />
+                Accept
+              </Button>
+              <Button
+                variant="ghost"
+                size="small"
+                disabled={isUpdating || !isVerified}
+                onClick={() => onReject(applicant.id)}
+                className="flex items-center gap-1 !px-3 !py-1.5 !text-sm text-danger hover:bg-danger/10"
+                title={!isVerified ? "Available once your organization is verified" : undefined}
+              >
+                <X size={14} />
+                Reject
+              </Button>
+            </>
+          ) : (
+            <>
+              <span className="flex items-center gap-1.5 text-xs font-medium text-heading/50">
+                <CheckCircle2 size={14} aria-hidden="true" />
+                {isWithdrawn
+                  ? "Volunteer withdrew"
+                  : isExpired
+                    ? "No response before it started"
+                    : hasConfirmedHours
+                      ? "Hours confirmed"
+                      : "Decision completed"}
+              </span>
+
+              {canManageHours && (
+                <Button
+                  variant="secondary"
+                  size="small"
+                  onClick={() => onManageHours(applicant)}
+                  className="flex items-center gap-1 !px-3 !py-1.5 !text-sm"
+                >
+                  <Clock3 size={14} />
+                  {hasConfirmedHours ? "Edit hours" : "Manage hours"}
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       <VolunteerProfilePreviewModal

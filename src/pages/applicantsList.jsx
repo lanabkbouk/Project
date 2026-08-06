@@ -74,6 +74,19 @@ export default function ApplicantsList() {
   const handleStatusChange = async (applicantId, newStatus) => {
     if (!isVerified) return;
 
+    // تأكيد فقط عند الرفض — قرار نهائي بلا رجعة بالواجهة الحالية
+    // (نفس نمط تأكيد الانسحاب بالضبط، راجع ParticipationCard.jsx).
+    // القبول ما بحتاج تأكيد: أثره أقل خطورة (لا يمنع المتطوع من أي
+    // شيء)، وإضافة خطوة تأكيد لكل قبول كانت رح تبطّئ سير عمل المنظمة
+    // بلا داعٍ حقيقي
+    if (newStatus === PARTICIPATION_STATUS.REJECTED) {
+      const applicant = applicants.find((item) => item.id === applicantId);
+      const confirmed = window.confirm(
+        `Reject ${applicant?.volunteer?.name || "this applicant"}? This can't be undone.`,
+      );
+      if (!confirmed) return;
+    }
+
     const result = await updateStatusMutation.mutateAsync({ applicantId, status: newStatus });
 
     if (!result.success) {

@@ -27,6 +27,7 @@ import { PARTICIPATION_STATUS } from '../constants/participationStatus'
 import { ORGANIZATION_STATUS } from '../constants/organizationStatus'
 import { ACCOUNT_TYPES } from '../constants/auth/accountTypes'
 import { ROUTES } from '../constants/paths'
+import { getDaysUntilStart } from '../utils/opportunityStatus'
 
 const MOCK_MODE = isMockMode()
 
@@ -121,32 +122,22 @@ function buildOrganizationVerificationItems(organization, seenStatus) {
   ]
 }
 
-// يبني تذكيرًا لكل مشاركة "مقبولة" وتاريخ بدء فرصتها لسا ما وصل بعد
-// وواقع خلال يومين قادمين (startDate أكبر من الآن، وأقل من أو يساوي
-// الآن + يومين) — فرصة بدأت فعليًا (بالماضي أو هالّلحظة بالضبط) ما بتولّد
-// تذكيرًا. من نفس بيانات المشاركات المجلوبة أصلاً لباقي التنبيهات
-// بالأسفل، بدون أي جلب إضافي أو Cron/جدولة خلفية: بما إنه النظام أصلاً
-// محسوب لحظة تحميل الصفحة (مش Push حقيقي، راجع تعليق أعلى الملف)، شرط
-// بسيط زيادة كافٍ. بدون seen-tracker مقصود: هذا تذكير زمني بيختفي لحاله
-// أول ما الفرصة تبلّش (مش "خبر" يحتاج تُعلَّم كمقروء ويضل مخفي بعدها)
+// يبني تذكيرًا لكل مشاركة "مقبولة" وتاريخ بدء فرصتها ضمن نافذة
+// "قريبًا" (يومين) — حساب النافذة نفسه مفوَّض بالكامل لـ
+// getDaysUntilStart (utils/opportunityStatus.js)، نفس الدالة
+// المستخدمة بالضبط بـ ParticipationCard.jsx لعرض شارة مطابقة على
+// البطاقة. من نفس بيانات المشاركات المجلوبة أصلاً لباقي التنبيهات
+// بالأسفل، بدون أي جلب إضافي أو Cron/جدولة خلفية (النظام أصلاً محسوب
+// لحظة تحميل الصفحة، راجع تعليق أعلى الملف). بدون seen-tracker مقصود:
+// هذا تذكير زمني بيختفي لحاله أول ما الفرصة تبلّش (مش "خبر" يحتاج
+// يُعلَّم كمقروء ويضل مخفي بعدها)
 function buildUpcomingOpportunityReminderItems(participations) {
-  const now = new Date()
-  const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000
-
   return participations
-    .filter((participation) => {
-      if (participation.status !== PARTICIPATION_STATUS.ACCEPTED) return false
-
-      const startDate = participation.opportunity?.startDate
-        ? new Date(participation.opportunity.startDate)
-        : null
-      if (!startDate) return false
-
-      const msUntilStart = startDate - now
-      // > 0 (وليس >=) عمدًا — لو startDate ساوى "الآن" تمامًا أو صار
-      // بالماضي (فرصة بلّشت فعليًا)، ما بيصير تذكير "بدء قريب" لها إطلاقًا
-      return msUntilStart > 0 && msUntilStart <= TWO_DAYS_MS
-    })
+    .filter(
+      (participation) =>
+        participation.status === PARTICIPATION_STATUS.ACCEPTED &&
+        getDaysUntilStart(participation.opportunity?.startDate) !== null,
+    )
     .map((participation) => ({
       id: `reminder:${participation.id}`,
       type: 'opportunity-reminder',

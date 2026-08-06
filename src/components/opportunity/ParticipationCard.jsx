@@ -1,18 +1,36 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Building2, Clock, MapPin, LogOut } from "lucide-react";
+import { Building2, CalendarClock, Clock, MapPin, LogOut, PlayCircle } from "lucide-react";
 import Button from "../ui/Button";
 import ParticipationStatusBadge from "./ParticipationStatusBadge";
 import { useWithdrawParticipationMutation } from "../../hooks/queries/useWithdrawParticipationMutation";
 import { PARTICIPATION_STATUS } from "../../constants/participationStatus";
+import { OPPORTUNITY_STATUS } from "../../constants/opportunityStatus";
 import { ROUTES } from "../../constants/paths";
 import { CARD_BASE } from "../../utils/surfaceStyles";
-import { isRegistrationOpen } from "../../utils/opportunityStatus";
+import { isRegistrationOpen, getDaysUntilStart } from "../../utils/opportunityStatus";
 
 export default function ParticipationCard({ participation }) {
   const { opportunity, status, committedHours, hoursLogged, joinedDate } = participation;
   const withdrawMutation = useWithdrawParticipationMutation();
   const [error, setError] = useState("");
+
+  // نفس الدالة الموحّدة المستخدمة بالضبط بـ
+  // buildUpcomingOpportunityReminderItems (services/notifications.js)
+  // — مؤشر تكميلي هون على البطاقة نفسها، حتى لو المتطوع ما فتح جرس
+  // الإشعارات بالنافذة الضيقة (يومين)، بيشوف نفس المعلومة أول ما يراجع
+  // صفحة "My Volunteering" أصلًا
+  const daysUntilStart =
+    status === PARTICIPATION_STATUS.ACCEPTED ? getDaysUntilStart(opportunity?.startDate) : null;
+
+  // ⚠️ opportunity.status هون هي الحالة الفعلية المحسوبة أصلًا (راجع
+  // attachComputedStatus بـ services/opportunities.js)، مش قيمة خام —
+  // فمقارنتها مباشرة بـ IN_PROGRESS دقيقة بدون أي حساب إضافي هون.
+  // شارة "بدأت الفرصة" مستقلة تمامًا عن شارة "Starts in X days" فوق —
+  // الاثنتان لا تظهران سوا أبدًا (لو بدأت فعليًا، daysUntilStart
+  // بترجع null تلقائيًا من نفس الدالة)
+  const hasStarted =
+    status === PARTICIPATION_STATUS.ACCEPTED && opportunity?.status === OPPORTUNITY_STATUS.IN_PROGRESS;
 
   // hoursLogged بيضل null لحد ما المنظمة تأكد/تعدّل الرقم النهائي بعد
   // انتهاء الفرصة فعليًا (راجع updateParticipationHours) — بعد التأكيد
@@ -82,6 +100,7 @@ export default function ParticipationCard({ participation }) {
             size="small"
             onClick={handleWithdraw}
             disabled={withdrawMutation.isPending}
+            title="Available until this opportunity's registration closes"
             className="flex items-center gap-1 !px-3 !py-1.5 !text-sm text-danger hover:bg-danger/10 shrink-0"
           >
             <LogOut size={14} />
@@ -90,7 +109,32 @@ export default function ParticipationCard({ participation }) {
         )}
       </div>
 
+      {/* تلميح سياقي: يظهر فقط لما الانسحاب كان ممكنًا نظريًا (الحالة
+          نفسها Pending/Accepted) لكن اختفى الزر لأن تسجيل الفرصة أُغلق —
+          بدون هذا السطر، اختفاء الزر بدون تفسير قد يبدو خطأ بالواجهة
+          للمتطوع، بدل قاعدة منصة مقصودة */}
+      {!canWithdraw &&
+        (status === PARTICIPATION_STATUS.PENDING || status === PARTICIPATION_STATUS.ACCEPTED) && (
+          <p className="mt-2 text-xs text-heading/40">
+            Withdrawal is no longer available — registration for this opportunity has closed.
+          </p>
+        )}
+
       {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+
+      {daysUntilStart !== null && (
+        <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-sky-500/10 px-3 py-2 text-sm font-medium text-sky-600 w-fit">
+          <CalendarClock size={14} aria-hidden="true" />
+          Starts in {daysUntilStart} day{daysUntilStart === 1 ? "" : "s"}
+        </div>
+      )}
+
+      {hasStarted && (
+        <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-600 w-fit">
+          <PlayCircle size={14} aria-hidden="true" />
+          Opportunity in progress
+        </div>
+      )}
     </div>
   );
 }
