@@ -49,9 +49,8 @@ export default function VerificationStatusBanner({ status, rejectionReason, hasL
       <div>
         <p className="font-semibold">{meta.label}</p>
         <p className="text-sm mt-1">{meta.message}</p>
-        {status === ORGANIZATION_STATUS.REJECTED && rejectionReason && (
-          <p className="text-sm mt-2 italic">"{rejectionReason}"</p>
-        )}
+        {(status === ORGANIZATION_STATUS.REJECTED || status === ORGANIZATION_STATUS.SUSPENDED) &&
+          rejectionReason && <p className="text-sm mt-2 italic">"{rejectionReason}"</p>}
       </div>
     </div>
   )

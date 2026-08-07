@@ -14,19 +14,33 @@ const DEFAULT_MOCK_ADMIN = {
   lastName: 'Admin',
 }
 
+// ⚠️ حارس أمان ثانٍ ومستقل — لا نعتمد فقط على VITE_API_MODE (متغير
+// بيئة قابل للنسيان عند النشر: لو نُسي ضبطه بالخادم، isMockMode()
+// ترجع mock افتراضيًا وحساب الأدمن هذا يصير فعليًا شغّالًا على موقع
+// حقيقي منشور). import.meta.env.DEV علم مدمج بـ Vite نفسه، يساوي
+// true فقط بوضع التطوير المحلي (npm run dev)، وfalse تلقائيًا بأي
+// Build إنتاجي حقيقي (npm run build) بغض النظر عن أي متغير بيئة آخر —
+// فحتى لو نُسي ضبط VITE_API_MODE، هذا الحساب لا يمكن أن يظهر بأي بناء
+// إنتاجي مطلقًا
+const IS_LOCAL_DEV = Boolean(import.meta.env.DEV)
+
 // قراءة قائمة المستخدمين الوهميين من التخزين المحلي — نضمن دايمًا
 // وجود حساب أدمن واحد بالقائمة حتى لو التخزين فاضي بالكامل أو ما
 // فيه أدمن بعد (بدون تخزينه فعليًا بـ localStorage، فقط نُلحقه لحظة
-// القراءة، فهو موجود دايمًا وجاهز للاختبار)
+// القراءة، فهو موجود دايمًا وجاهز للاختبار) — لكن فقط بوضع التطوير
+// المحلي، راجع تعليق IS_LOCAL_DEV أعلاه
 export function loadMockUsers() {
   try {
     const raw = localStorage.getItem(MOCK_USERS_STORAGE_KEY)
     const parsed = raw ? JSON.parse(raw) : []
     const users = Array.isArray(parsed) ? parsed : []
+
+    if (!IS_LOCAL_DEV) return users
+
     const hasAdmin = users.some((user) => user.accountType === ACCOUNT_TYPES.ADMIN)
     return hasAdmin ? users : [...users, DEFAULT_MOCK_ADMIN]
   } catch {
-    return [DEFAULT_MOCK_ADMIN]
+    return IS_LOCAL_DEV ? [DEFAULT_MOCK_ADMIN] : []
   }
 }
 

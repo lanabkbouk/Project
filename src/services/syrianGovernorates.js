@@ -14,20 +14,20 @@
  * slug   : معرف نصي مختصر (مفيد للروابط أو الفلترة في الـ URL)
  */
 export const syrianGovernorates = [
-  { id: 1, nameAr: "دمشق", nameEn: "Damascus", slug: "damascus" },
-  { id: 2, nameAr: "ريف دمشق", nameEn: "Rural Damascus", slug: "rural-damascus" },
-  { id: 3, nameAr: "حلب", nameEn: "Aleppo", slug: "aleppo" },
-  { id: 4, nameAr: "حمص", nameEn: "Homs", slug: "homs" },
-  { id: 5, nameAr: "حماة", nameEn: "Hama", slug: "hama" },
-  { id: 6, nameAr: "اللاذقية", nameEn: "Latakia", slug: "latakia" },
-  { id: 7, nameAr: "طرطوس", nameEn: "Tartus", slug: "tartus" },
-  { id: 8, nameAr: "إدلب", nameEn: "Idlib", slug: "idlib" },
-  { id: 9, nameAr: "درعا", nameEn: "Daraa", slug: "daraa" },
-  { id: 10, nameAr: "السويداء", nameEn: "As-Suwayda", slug: "as-suwayda" },
-  { id: 11, nameAr: "القنيطرة", nameEn: "Quneitra", slug: "quneitra" },
-  { id: 12, nameAr: "دير الزور", nameEn: "Deir ez-Zor", slug: "deir-ez-zor" },
-  { id: 13, nameAr: "الرقة", nameEn: "Raqqa", slug: "raqqa" },
-  { id: 14, nameAr: "الحسكة", nameEn: "Al-Hasakah", slug: "al-hasakah" },
+  { id: 1,  nameEn: "Damascus", slug: "damascus" },
+  { id: 2,  nameEn: "Rural Damascus", slug: "rural-damascus" },
+  { id: 3,  nameEn: "Aleppo", slug: "aleppo" },
+  { id: 4,  nameEn: "Homs", slug: "homs" },
+  { id: 5,  nameEn: "Hama", slug: "hama" },
+  { id: 6,  nameEn: "Latakia", slug: "latakia" },
+  { id: 7,  nameEn: "Tartus", slug: "tartus" },
+  { id: 8,  nameEn: "Idlib", slug: "idlib" },
+  { id: 9,  nameEn: "Daraa", slug: "daraa" },
+  { id: 10, nameEn: "As-Suwayda", slug: "as-suwayda" },
+  { id: 11, nameEn: "Quneitra", slug: "quneitra" },
+  { id: 12, nameEn: "Deir ez-Zor", slug: "deir-ez-zor" },
+  { id: 13, nameEn: "Raqqa", slug: "raqqa" },
+  { id: 14, nameEn: "Al-Hasakah", slug: "al-hasakah" },
 ];
 
 /**

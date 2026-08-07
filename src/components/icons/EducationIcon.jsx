@@ -1,54 +1,54 @@
-export default function SocialIcon({ className = "w-8 h-8 text-orange-500", ...props }) {
+export default function EducationIcon({ className = "", size = 24, ...props }) {
   return (
     <svg
+      width={size}
+      height={size}
       viewBox="0 0 48 48"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       {...props}
     >
-      <path
-        d="M32.8208 4.3999C29.4644 4.3999 26.3896 5.60168 24 7.59678C21.6105 5.60168 18.5356 4.3999 15.1793 4.3999C7.57256 4.3999 1.40625 10.5663 1.40625 18.173C1.40625 21.4197 2.61019 24.3421 4.40906 26.7586C7.81866 31.3389 24 43.2596 24 43.2596C24 43.2596 40.1813 31.3389 43.5909 26.7585C45.3898 24.342 46.5938 21.4197 46.5938 18.1729C46.5938 10.5663 40.4274 4.3999 32.8208 4.3999Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeMiterlimit="10"
-      />
-      <path
-        d="M13.8734 22.8063C16.9705 22.8063 19.4811 20.2956 19.4811 17.1986C19.4811 14.1015 16.9705 11.5908 13.8734 11.5908C10.7763 11.5908 8.26562 14.1015 8.26562 17.1986C8.26562 20.2956 10.7763 22.8063 13.8734 22.8063Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeMiterlimit="10"
-      />
-      <path
-        d="M20.8203 28.4972C20.1732 25.2518 17.3087 22.8062 13.8732 22.8062C9.96072 22.8062 6.78906 25.9778 6.78906 29.8903"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeMiterlimit="10"
-      />
-      <path
-        d="M34.1273 22.8063C37.2244 22.8063 39.735 20.2956 39.735 17.1986C39.735 14.1015 37.2244 11.5908 34.1273 11.5908C31.0302 11.5908 28.5195 14.1015 28.5195 17.1986C28.5195 20.2956 31.0302 22.8063 34.1273 22.8063Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeMiterlimit="10"
-      />
-      <path
-        d="M27.1797 28.4972C27.8268 25.2519 30.6913 22.8062 34.1268 22.8062C38.0393 22.8062 41.211 25.9778 41.211 29.8903"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeMiterlimit="10"
-      />
-      <path
-        d="M24.0003 27.7443C27.0974 27.7443 29.6081 25.2336 29.6081 22.1366C29.6081 19.0395 27.0974 16.5288 24.0003 16.5288C20.9033 16.5288 18.3926 19.0395 18.3926 22.1366C18.3926 25.2336 20.9033 27.7443 24.0003 27.7443Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeMiterlimit="10"
-      />
-      <path
-        d="M31.0843 37.9069V34.8283C31.0843 30.9158 27.9126 27.7441 24.0001 27.7441C20.0877 27.7441 16.916 30.9158 16.916 34.8283V37.9069"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeMiterlimit="10"
-      />
+      <g clipPath="url(#clip0)">
+        <mask
+          id="mask0"
+          style={{ maskType: "luminance" }}
+          maskUnits="userSpaceOnUse"
+          x="0"
+          y="0"
+          width="48"
+          height="48"
+        >
+          <path d="M0 0H48V48H0V0Z" fill="white" />
+        </mask>
+
+        <g mask="url(#mask0)">
+          <path
+            d="M7.03125 12.6563H1.40625V43.7813H14.3038C16.8505 43.7813 19.293 44.7929 21.0937 46.5938H26.9062C28.707 44.7929 31.1495 43.7813 33.6962 43.7813H46.5937V15.4688H40.9687"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeMiterlimit="10"
+          />
+          <path
+            d="M24 12.6563H24.8813C27.4406 10.828 30.4782 9.84375 33.6843 9.84375H40.9687V38.1563H33.6843C30.4782 38.1563 27.4406 39.1405 24.8813 40.9688H23.1187C20.5594 39.1405 17.5218 38.1563 14.3157 38.1563H7.03125V7.03125H12.6562"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeMiterlimit="10"
+          />
+          <path
+            d="M12.6562 1.40625V29.7188C18.8695 29.7188 24 34.7555 24 40.9688V12.6563C24 6.44297 18.8695 1.40625 12.6562 1.40625Z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeMiterlimit="10"
+          />
+        </g>
+      </g>
+
+      <defs>
+        <clipPath id="clip0">
+          <rect width="48" height="48" fill="white" />
+        </clipPath>
+      </defs>
     </svg>
   );
 }

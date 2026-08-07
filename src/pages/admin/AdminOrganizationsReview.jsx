@@ -59,6 +59,7 @@ export default function AdminOrganizationsReview() {
   const [selectedOrganization, setSelectedOrganization] = useState(null)
   const [organizationToApprove, setOrganizationToApprove] = useState(null)
   const [organizationToReject, setOrganizationToReject] = useState(null)
+  const [organizationToSuspend, setOrganizationToSuspend] = useState(null)
 
   const filteredOrganizations = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase()
@@ -94,9 +95,16 @@ export default function AdminOrganizationsReview() {
     pending: organizations.filter((organization) => organization.status === ORGANIZATION_STATUS.PENDING).length,
     approved: organizations.filter((organization) => organization.status === ORGANIZATION_STATUS.VERIFIED).length,
     rejected: organizations.filter((organization) => organization.status === ORGANIZATION_STATUS.REJECTED).length,
+    suspended: organizations.filter((organization) => organization.status === ORGANIZATION_STATUS.SUSPENDED).length,
   }
 
   const updatingId = reviewMutation.isPending ? reviewMutation.variables?.organizationId : null
+
+  const SUCCESS_MESSAGES = {
+    [ORGANIZATION_STATUS.VERIFIED]: 'Organization approved.',
+    [ORGANIZATION_STATUS.REJECTED]: 'Organization rejected.',
+    [ORGANIZATION_STATUS.SUSPENDED]: 'Organization suspended.',
+  }
 
   const submitDecision = async ({ organizationId, status, reason }) => {
     const result = await reviewMutation.mutateAsync({ organizationId, status, reason })
@@ -106,7 +114,7 @@ export default function AdminOrganizationsReview() {
       return false
     }
 
-    showSuccess(status === ORGANIZATION_STATUS.VERIFIED ? 'Organization approved.' : 'Organization rejected.')
+    showSuccess(SUCCESS_MESSAGES[status] || 'Decision submitted.')
     setSelectedOrganization(null)
     return true
   }
@@ -119,6 +127,11 @@ export default function AdminOrganizationsReview() {
   const handleReject = (organization) => {
     setSelectedOrganization(null)
     setOrganizationToReject(organization)
+  }
+
+  const handleSuspend = (organization) => {
+    setSelectedOrganization(null)
+    setOrganizationToSuspend(organization)
   }
 
   const handleConfirmApproval = async () => {
@@ -142,6 +155,18 @@ export default function AdminOrganizationsReview() {
     })
 
     if (success) setOrganizationToReject(null)
+  }
+
+  const handleConfirmSuspension = async (reason) => {
+    if (!organizationToSuspend) return
+
+    const success = await submitDecision({
+      organizationId: organizationToSuspend.id,
+      status: ORGANIZATION_STATUS.SUSPENDED,
+      reason,
+    })
+
+    if (success) setOrganizationToSuspend(null)
   }
 
   return (
@@ -169,11 +194,12 @@ export default function AdminOrganizationsReview() {
             </Typography>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-4">
+          <div className="grid gap-2 sm:grid-cols-5">
             <Badge label={`All ${totals.all}`} tone="neutral" />
             <Badge label={`Pending ${totals.pending}`} tone="warning" />
             <Badge label={`Approved ${totals.approved}`} tone="success" />
             <Badge label={`Rejected ${totals.rejected}`} tone="danger" />
+            <Badge label={`Suspended ${totals.suspended}`} tone="danger" />
           </div>
         </div>
 
@@ -212,6 +238,7 @@ export default function AdminOrganizationsReview() {
                 onViewDetails={setSelectedOrganization}
                 onApprove={handleApprove}
                 onReject={handleReject}
+                onSuspend={handleSuspend}
               />
             ))}
           </div>
@@ -231,8 +258,18 @@ export default function AdminOrganizationsReview() {
       <VerificationDecisionModal
         open={Boolean(organizationToReject)}
         organizationName={organizationToReject?.name}
+        mode="reject"
         onClose={() => setOrganizationToReject(null)}
         onConfirm={handleConfirmRejection}
+        isSubmitting={reviewMutation.isPending}
+      />
+
+      <VerificationDecisionModal
+        open={Boolean(organizationToSuspend)}
+        organizationName={organizationToSuspend?.name}
+        mode="suspend"
+        onClose={() => setOrganizationToSuspend(null)}
+        onConfirm={handleConfirmSuspension}
         isSubmitting={reviewMutation.isPending}
       />
 

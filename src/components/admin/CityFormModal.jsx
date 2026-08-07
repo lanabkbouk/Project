@@ -53,16 +53,6 @@ export default function CityFormModal({ open, city, onClose, onSubmit, isSubmitt
           onChange={handleChange('nameEn')}
           placeholder="e.g. Damascus"
         />
-
-        <Input
-          label="Name (Arabic)"
-          name="nameAr"
-          required
-          dir="rtl"
-          value={form.nameAr}
-          onChange={handleChange('nameAr')}
-          placeholder="مثال: دمشق"
-        />
       </div>
     </Modal>
   )

@@ -6,7 +6,7 @@ import Chip from "../ui/Chip";
 import Button from "../ui/Button";
 import OpportunityStatusBadge from "../opportunity/OpportunityStatusBadge";
 import { OPPORTUNITY_STATUS } from "../../constants/opportunityStatus";
-import { CATEGORY_COLORS, CATEGORY_ICONS } from "../../utils/categoryStyles";
+import { CATEGORY_COLORS, CATEGORY_ICONS, getCategoryLabel } from "../../utils/categoryStyles";
 import { ROUTES } from "../../constants/paths";
 
 // نفس منطق حساب المقاعد المتبقية المستخدم في OpportunityCard (بدون تكراره حرفيًا لأن
@@ -97,7 +97,7 @@ export default function MyCauseCard({ opportunity, onDelete, onToggleStatus, isV
 
       {opportunity.category ? (
         <Chip customStyle={categoryStyle} className="mb-4 inline-block w-fit">
-          {opportunity.category.name}
+          {getCategoryLabel(opportunity.category.name)}
         </Chip>
       ) : null}
 

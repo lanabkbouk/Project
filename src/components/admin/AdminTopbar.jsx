@@ -32,7 +32,8 @@ export default function AdminTopbar({ onOpenSidebar }) {
   ]
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-heading/10 bg-field/95 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
+    
+    <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-heading/10 bg-white/90 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
       <button
         type="button"
         onClick={onOpenSidebar}

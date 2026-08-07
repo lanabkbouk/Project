@@ -23,6 +23,7 @@ import { useCreateSkillMutation } from '../../hooks/queries/useCreateSkillMutati
 import { useUpdateSkillMutation } from '../../hooks/queries/useUpdateSkillMutation'
 import { useDeleteSkillMutation } from '../../hooks/queries/useDeleteSkillMutation'
 import { useToast } from '../../hooks/useToast'
+import { getCategoryLabel } from '../../utils/categoryStyles'
 
 function normalizeName(value) {
   return String(value || '')
@@ -195,7 +196,7 @@ export default function AdminCatalogManagement() {
   return (
     <AdminLayout
       eyebrow="Administrative workspace"
-      title="Categories & skills"
+      title="Categories & Skills"
       description="Manage the shared categories used across opportunities, and the skills volunteers and opportunities are matched on. Duplicate names are blocked before saving."
     >
       {/* ===========================
@@ -340,7 +341,7 @@ export default function AdminCatalogManagement() {
       <Modal
         open={Boolean(categoryToDelete)}
         onClose={() => setCategoryToDelete(null)}
-        title={`Delete ${categoryToDelete?.name || 'category'}?`}
+        title={`Delete ${categoryToDelete?.name ? getCategoryLabel(categoryToDelete.name) : 'category'}?`}
         footer={
           <>
             <Button variant="ghost" onClick={() => setCategoryToDelete(null)} disabled={deleteCategoryMutation.isPending}>

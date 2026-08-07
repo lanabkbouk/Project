@@ -2,13 +2,14 @@ import { Pencil, Trash2 } from 'lucide-react'
 import Button from '../ui/Button'
 import Chip from '../ui/Chip'
 import { CARD_BASE } from '../../utils/surfaceStyles'
+import { getCategoryLabel } from '../../utils/categoryStyles'
 
 export default function SkillRow({ skill, onEdit, onDelete, isDeleting }) {
   return (
     <div className={`${CARD_BASE} flex items-center justify-between gap-4`}>
       <div className="flex items-center gap-2 min-w-0">
         <h3 className="font-semibold text-heading truncate">{skill.name}</h3>
-        {skill.category?.name && <Chip color="blue">{skill.category.name}</Chip>}
+        {skill.category?.name && <Chip color="blue">{getCategoryLabel(skill.category.name)}</Chip>}
       </div>
 
       <div className="flex items-center gap-2 shrink-0">

@@ -16,10 +16,13 @@
   --color-body: rgba(26, 20, 16, 0.65);
   --color-danger: #ef4444;
   --color-dangerHover:#f87171;
-  /* لون موحّد لخلفية كل حقول الإدخال (Input, Dropdown, Textarea) بمكان واحد */
   --color-field: #ffffff;
-     --font-display: 'Tajawal', system-ui, sans-serif;
-  /* --font-display: 'Cairo', system-ui, sans-serif; */
+
+  /* 👇 جديد — خلفية محايدة خفيفة جدًا، خاصة بلوحة الأدمن فقط،
+     لخلق فرق بصري بينها وبين البطاقات البيضاء فوقها */
+  --color-adminBg: #F7F6F4;
+
+  --font-display: 'Cairo', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, sans-serif;
 }
 

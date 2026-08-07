@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useCallback, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Sparkles, SearchX, Loader2 } from "lucide-react";
 import Typography from "../../components/ui/Typography";
 import OpportunityCard from "../../components/opportunity/OpportunityCard";
@@ -8,25 +8,74 @@ import OpportunityTabs, { OPPORTUNITY_TABS } from "../../components/opportunity/
 import CardSkeleton from "../../components/ui/CardSkeleton";
 import EmptyState from "../../components/common/EmptyState";
 import { useCategoriesQuery } from "../../hooks/queries/useCategoriesQuery";
+import { useSkillsQuery } from "../../hooks/queries/useSkillsQuery";
 import { useOpportunitiesQuery } from "../../hooks/queries/useOpportunitiesQuery";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { useAuth } from "../../context/AuthContext";
 import { ACCOUNT_TYPES } from "../../constants/auth/accountTypes";
 import { OPPORTUNITY_STATUS } from "../../constants/opportunityStatus";
 
+// تحويل "id1,id2,id3" من الـ URL لمصفوفة نظيفة (بدون قيم فاضية ناتجة
+// عن فاصلة زائدة أو باراميتر غير موجود أصلًا)
+function parseIdsParam(value) {
+  return value ? value.split(",").filter(Boolean) : [];
+}
+
 export default function OpportunitiesListPage() {
   const { isAuthenticated, accountType, user } = useAuth();
   const isVolunteer = isAuthenticated && accountType === ACCOUNT_TYPES.VOLUNTEER;
-  const location = useLocation();
 
-  const [search, setSearch] = useState("");
-  // لو وصلنا هون من زر تصنيف بصفحة تفاصيل فرصة (CategorySidebar هناك)،
-  // categoryId بيوصل عبر location.state — نفس نمط تمرير guardMessage
-  // المستخدم بصفحة volunteerProfile. state initializer (function) عشان
-  // القراءة تصير مرة وحدة بس عند أول mount، مش بكل re-render
-  const [activeCategoryId, setActiveCategoryId] = useState(
-    () => location.state?.categoryId || "",
+  // ⚠️ الفلترة كلها مصدرها الوحيد الآن هو الـ URL نفسه (searchParams)،
+  // مش useState منفصلة — هيك تحديث الصفحة، أو مشاركة الرابط لصديق،
+  // أو زر رجوع المتصفح، كلها بترجّع نفس الفلاتر بالضبط تلقائيًا،
+  // بدل ما تُفقد لحظة أي تنقّل. replace:true (مش push) عند كل تغيير
+  // فلتر، حتى ما نملي سجل المتصفح بخطوة رجوع منفصلة لكل ضغطة تصنيف
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const selectedCategoryIds = useMemo(
+    () => parseIdsParam(searchParams.get("categories")),
+    [searchParams],
   );
+  const selectedSkillIds = useMemo(() => parseIdsParam(searchParams.get("skills")), [searchParams]);
+  const search = searchParams.get("q") || "";
+
+  const updateParam = useCallback(
+    (key, value) => {
+      setSearchParams(
+        (params) => {
+          if (value) params.set(key, value);
+          else params.delete(key);
+          return params;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  const toggleIdInParam = useCallback(
+    (key, currentIds, id) => {
+      const next = currentIds.includes(id)
+        ? currentIds.filter((existingId) => existingId !== id)
+        : [...currentIds, id];
+      updateParam(key, next.join(","));
+    },
+    [updateParam],
+  );
+
+  const setSearch = (value) => updateParam("q", value);
+  const toggleCategory = (id) => toggleIdInParam("categories", selectedCategoryIds, id);
+  const toggleSkill = (id) => toggleIdInParam("skills", selectedSkillIds, id);
+  const clearAllFilters = () =>
+    setSearchParams(
+      (params) => {
+        params.delete("categories");
+        params.delete("skills");
+        return params;
+      },
+      { replace: true },
+    );
+
   // التبويب متاح بس للمتطوعين — الزائر والمنظمة بيشوفوا "كل الفرص" دايمًا
   const [activeTab, setActiveTab] = useState(OPPORTUNITY_TABS.ALL);
   const isSuggestedTab = isVolunteer && activeTab === OPPORTUNITY_TABS.SUGGESTED;
@@ -36,14 +85,17 @@ export default function OpportunitiesListPage() {
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const categoriesQuery = useCategoriesQuery();
+  const skillsQuery = useSkillsQuery();
   const opportunitiesQuery = useOpportunitiesQuery({
     isSuggestedTab,
     search: debouncedSearch,
-    categoryId: activeCategoryId,
+    categoryIds: selectedCategoryIds,
+    skillIds: selectedSkillIds,
     user,
   });
 
   const categories = categoriesQuery.data ?? [];
+  const skills = skillsQuery.data ?? [];
   const opportunities = opportunitiesQuery.data;
   // قرار: صفحة الاستكشاف (زائر أو متطوع، سواء) بتعرض بس الفرص المفتوحة
   // للتسجيل فعليًا. أي حالة تانية (مقفولة/شغالة/منتهية) ما إلها قيمة
@@ -108,10 +160,14 @@ export default function OpportunitiesListPage() {
         {!isSuggestedTab ? (
           <CategorySidebar
             categories={categories}
-            activeCategoryId={activeCategoryId}
-            onSelectCategory={setActiveCategoryId}
+            selectedCategoryIds={selectedCategoryIds}
+            onToggleCategory={toggleCategory}
+            skills={skills}
+            selectedSkillIds={selectedSkillIds}
+            onToggleSkill={toggleSkill}
             searchValue={search}
             onSearchChange={setSearch}
+            onClearAll={clearAllFilters}
           />
         ) : null}
 

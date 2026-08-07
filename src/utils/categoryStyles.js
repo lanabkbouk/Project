@@ -20,12 +20,12 @@
 
 import {
   HeartPulse,
-  GraduationCap,
-  Users,
   Dumbbell,
   Leaf,
   Cpu,
 } from "lucide-react";
+import EducationIcon from "../components/icons/EducationIcon";
+import SocialIcon from "../components/icons/SocialIcon";
 
 // -----------------------------
 // Category Icons (الأيقونة تبقى مبسّطة: أيقونة مخصّصة لأول 6 فئات
@@ -34,8 +34,8 @@ import {
 // -----------------------------
 export const CATEGORY_ICONS = {
   Health: HeartPulse,
-  Education: GraduationCap,
-  Social: Users,
+  Education: EducationIcon,
+  Social: SocialIcon,
   Sport: Dumbbell,
   Environment: Leaf,
   Technical: Cpu,
@@ -133,3 +133,17 @@ export const CATEGORY_SELECTED_COLORS = new Proxy(CATEGORY_SELECTED_COLORS_BASE,
     return target[prop] || getCategoryTheme(prop).selected;
   },
 });
+
+// -----------------------------
+// تسمية العرض فقط — لا تُستخدم إطلاقًا كمفتاح بحث/فلترة/API. اسم
+// الفئة الداخلي (category.name) يبقى كما هو دايمًا (مثلًا "Social")؛
+// هاي الخريطة بس لأي نص يُعرض للمستخدم.
+// -----------------------------
+const CATEGORY_LABELS = {
+  Social: "Communities",
+};
+
+export function getCategoryLabel(categoryName) {
+  const name = String(categoryName || "");
+  return CATEGORY_LABELS[name] || name;
+}

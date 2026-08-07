@@ -13,7 +13,7 @@ import { MapPin, Clock, Users, Eye } from "lucide-react";
 import Card from "../ui/Card";
 import Chip from "../ui/Chip";
 import Button from "../ui/Button";
-import { CATEGORY_COLORS, CATEGORY_ICONS } from "../../utils/categoryStyles";
+import { CATEGORY_COLORS, CATEGORY_ICONS, getCategoryLabel } from "../../utils/categoryStyles";
 
 export default function OpportunityPreviewCard({
   title,
@@ -68,7 +68,7 @@ export default function OpportunityPreviewCard({
 
       {categoryName && (
         <Chip customStyle={categoryStyle} className="mb-4 inline-block w-fit">
-          {categoryName}
+          {getCategoryLabel(categoryName)}
         </Chip>
       )}
 

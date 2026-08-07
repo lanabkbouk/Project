@@ -14,8 +14,14 @@ export default function DashboardStatsGrid({ data }) {
     { number: data.completionRate, label: "Completion Rate", suffix: "%" },
     // مجموع "الالتزام"، مش الساعات المؤكدة نهائيًا لكل فرصة — راجع
     // التعليق بـ services/dashboard.js لتوضيح الفرق بين committedHours
-    // وhoursLogged
-    { number: data.totalHoursPledged, label: "Hours Pledged", suffix: "" },
+    // وhoursLogged. التلميح هون يعكس نفس التوضيح للمستخدم نفسه، مش
+    // للمطوّر بس
+    {
+      number: data.totalHoursPledged,
+      label: "Hours Pledged",
+      suffix: "",
+      hint: "Hours volunteers committed to when they joined — not yet confirmed by you after each opportunity ends.",
+    },
   ];
 
   return (

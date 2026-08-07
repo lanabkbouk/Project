@@ -15,7 +15,7 @@ export default function AdminLayout({ eyebrow, title, description, actions, chil
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-field">
+    <div className="min-h-screen bg-adminBg">
       <AdminSidebar isMobileOpen={isMobileSidebarOpen} onCloseMobile={() => setIsMobileSidebarOpen(false)} />
 
       <div className="lg:pl-72 xl:pl-80">

@@ -12,6 +12,7 @@ import {
   CATEGORY_ICONS,
   CATEGORY_COLORS,
   CATEGORY_SELECTED_COLORS,
+  getCategoryLabel,
 } from "../../utils/categoryStyles";
 
 export default function SkillsSelector({
@@ -76,7 +77,7 @@ export default function SkillsSelector({
                         className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-md border ${color}`}
                       >
                         {Icon && <Icon size={14} />}
-                        {category}
+                        {getCategoryLabel(category)}
                       </span>
                       <div className="h-px flex-1 bg-heading/10"></div>
                     </div>

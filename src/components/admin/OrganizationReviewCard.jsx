@@ -1,4 +1,4 @@
-import { Building2, Eye, Mail, Phone } from 'lucide-react'
+import { Ban, Building2, Eye, Mail, Phone } from 'lucide-react'
 
 import Badge from '../common/Badge'
 import Button from '../ui/Button'
@@ -9,13 +9,14 @@ import { formatDateTime } from '../../utils/formatDateTime'
 
 function getStatusTone(status) {
   if (status === ORGANIZATION_STATUS.VERIFIED) return 'success'
-  if (status === ORGANIZATION_STATUS.REJECTED) return 'danger'
+  if (status === ORGANIZATION_STATUS.REJECTED || status === ORGANIZATION_STATUS.SUSPENDED) return 'danger'
   return 'warning'
 }
 
 function getStatusLabel(status) {
   if (status === ORGANIZATION_STATUS.VERIFIED) return 'Approved'
   if (status === ORGANIZATION_STATUS.REJECTED) return 'Rejected'
+  if (status === ORGANIZATION_STATUS.SUSPENDED) return 'Suspended'
   return 'Pending'
 }
 
@@ -23,6 +24,7 @@ export default function OrganizationReviewCard({
   organization,
   onApprove,
   onReject,
+  onSuspend,
   onViewDetails,
   isUpdating,
 }) {
@@ -94,6 +96,20 @@ export default function OrganizationReviewCard({
           >
             Reject verification
           </Button>
+          {/* التعليق منطقي فقط لمنظمة موثَّقة أصلًا — منظمة pending
+              أو rejected أصلًا خارج نظام النشر، تعليقها بلا معنى */}
+          {isVerified && (
+            <Button
+              variant="ghost"
+              size="small"
+              disabled={isUpdating}
+              onClick={() => onSuspend(organization)}
+              className="flex items-center gap-1 text-heading/60 hover:bg-heading/5"
+            >
+              <Ban size={16} />
+              Suspend
+            </Button>
+          )}
         </div>
       </div>
     </article>

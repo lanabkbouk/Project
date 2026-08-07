@@ -1,17 +1,50 @@
-// مودال تأكيد رفض توثيق منظمة، مع سبب إلزامي يرافق القرار. القبول
-// يُدار بمودال منفصل في صفحة المراجعة حتى يبقى التدفق واضحًا.
+// مودال تأكيد قرار سلبي بحق منظمة (رفض توثيق، أو تعليق منظمة موثّقة
+// أصلًا) — سبب إلزامي يرافق القرار بكلتا الحالتين. القبول يُدار
+// بمودال منفصل في صفحة المراجعة حتى يبقى التدفق واضحًا.
 
 import { useState } from 'react'
 import Modal from '../ui/Modal'
 import Textarea from '../ui/Textarea'
 import Button from '../ui/Button'
 
-export default function VerificationDecisionModal({ open, organizationName, onClose, onConfirm, isSubmitting }) {
+const MODE_COPY = {
+  reject: {
+    title: (name) => `Reject ${name || 'organization'}?`,
+    description:
+      'The organization stays visible in the review list, but its status will change to rejected. Add a short reason so the team knows what to fix before requesting verification again.',
+    confirmLabel: 'Confirm rejection',
+    loadingText: 'Submitting...',
+    placeholder: 'e.g. The uploaded document is unreadable, please re-upload a clearer copy.',
+    errorMessage: 'Rejection reason is required.',
+  },
+  suspend: {
+    title: (name) => `Suspend ${name || 'organization'}?`,
+    description:
+      "The organization will no longer be able to publish or manage opportunities until reinstated. Add a short reason for the record — it will be shown to the organization.",
+    confirmLabel: 'Confirm suspension',
+    loadingText: 'Suspending...',
+    placeholder: 'e.g. Multiple reports of misleading opportunity listings.',
+    errorMessage: 'Suspension reason is required.',
+  },
+}
+
+/**
+ * @param {'reject'|'suspend'} [mode]
+ */
+export default function VerificationDecisionModal({
+  open,
+  organizationName,
+  mode = 'reject',
+  onClose,
+  onConfirm,
+  isSubmitting,
+}) {
   const [reason, setReason] = useState('')
   const [hasAttemptedConfirm, setHasAttemptedConfirm] = useState(false)
+  const copy = MODE_COPY[mode] ?? MODE_COPY.reject
 
   const trimmedReason = reason.trim()
-  const reasonError = hasAttemptedConfirm && !trimmedReason ? 'Rejection reason is required.' : ''
+  const reasonError = hasAttemptedConfirm && !trimmedReason ? copy.errorMessage : ''
 
   const handleConfirm = () => {
     setHasAttemptedConfirm(true)
@@ -33,7 +66,7 @@ export default function VerificationDecisionModal({ open, organizationName, onCl
     <Modal
       open={open}
       onClose={handleClose}
-      title={`Reject ${organizationName || 'organization'}?`}
+      title={copy.title(organizationName)}
       footer={
         <>
           <Button variant="ghost" onClick={handleClose} disabled={isSubmitting}>
@@ -44,21 +77,18 @@ export default function VerificationDecisionModal({ open, organizationName, onCl
             onClick={handleConfirm}
             disabled={isSubmitting || !trimmedReason}
             isLoading={isSubmitting}
-            loadingText="Submitting..."
+            loadingText={copy.loadingText}
           >
-            Confirm rejection
+            {copy.confirmLabel}
           </Button>
         </>
       }
     >
-      <p className="mb-4 text-body">
-        The organization stays visible in the review list, but its status will change to rejected.
-        Add a short reason so the team knows what to fix before requesting verification again.
-      </p>
+      <p className="mb-4 text-body">{copy.description}</p>
 
       <Textarea
-        name="rejectionReason"
-        placeholder="e.g. The uploaded document is unreadable, please re-upload a clearer copy."
+        name="decisionReason"
+        placeholder={copy.placeholder}
         rows={4}
         value={reason}
         onChange={(event) => setReason(event.target.value)}

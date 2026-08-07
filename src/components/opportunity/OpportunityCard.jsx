@@ -4,7 +4,7 @@ import Card from "../ui/Card";
 import Chip from "../ui/Chip";
 import Button from "../ui/Button";
 import OpportunityStatusBadge from "./OpportunityStatusBadge";
-import { CATEGORY_COLORS, CATEGORY_ICONS } from "../../utils/categoryStyles";
+import { CATEGORY_COLORS, CATEGORY_ICONS, getCategoryLabel } from "../../utils/categoryStyles";
 import { ROUTES } from "../../constants/paths";
 
 export default function OpportunityCard({
@@ -74,7 +74,7 @@ export default function OpportunityCard({
 
       {opportunity.category && showCategoryChip ? (
         <Chip customStyle={categoryStyle} className="mb-4 inline-block w-fit">
-          {opportunity.category.name}
+          {getCategoryLabel(opportunity.category.name)}
         </Chip>
       ) : null}
 

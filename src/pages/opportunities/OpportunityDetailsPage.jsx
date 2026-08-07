@@ -329,13 +329,14 @@ export default function OpportunityDetailsPage() {
         <div className="w-full lg:w-72 shrink-0 flex flex-col gap-6">
           <CategorySidebar
             categories={categories}
-            activeCategoryId={opportunity.category?.id || ""}
-            // كانت هون بتتجاهل categoryId بالكامل وتنقل دايمًا لصفحة
-            // فرص عامة بدون فلترة — تصليحها: نمرر categoryId فعليًا عبر
-            // location.state (نفس نمط guardMessage بصفحة volunteerProfile)
-            // وصفحة القائمة بتقرأه كقيمة ابتدائية لفلترها
-            onSelectCategory={(categoryId) =>
-              navigate(ROUTES.OPPORTUNITIES, { state: { categoryId } })
+            // هون مش سياق فلترة فعلي (بس اقتراح تصفّح فرص من نفس
+            // التصنيف) — نظهر تصنيف الفرصة الحالية كـ"محدَّد" بصريًا
+            // فقط، والضغط عليه أو على أي تصنيف تانٍ ينقل لصفحة القائمة
+            // بفلترة حقيقية عبر رابط URL مباشر (نفس النظام الموحّد
+            // المستخدم بصفحة التصفح نفسها الآن)
+            selectedCategoryIds={opportunity.category?.id ? [opportunity.category.id] : []}
+            onToggleCategory={(categoryId) =>
+              navigate(`${ROUTES.OPPORTUNITIES}?categories=${categoryId}`)
             }
           />
         </div>

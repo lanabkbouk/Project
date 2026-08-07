@@ -1,6 +1,8 @@
-export default function SocialIcon({ className = "w-8 h-8 text-orange-500", ...props }) {
+export default function SocialIcon({ className = "", size = 24, ...props }) {
   return (
     <svg
+      width={size}
+      height={size}
       viewBox="0 0 48 48"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"

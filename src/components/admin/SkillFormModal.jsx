@@ -5,6 +5,7 @@ import { useState } from 'react'
 import Modal from '../ui/Modal'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
+import { getCategoryLabel } from '../../utils/categoryStyles'
 
 const EMPTY_FORM = { name: '', categoryId: '' }
 
@@ -19,7 +20,7 @@ export default function SkillFormModal({ open, skill, categories, onClose, onSub
 
   const handleSubmit = () => onSubmit(form)
 
-  const categoryOptions = categories.map((category) => ({ label: category.name, value: category.id }))
+  const categoryOptions = categories.map((category) => ({ label: getCategoryLabel(category.name), value: category.id }))
 
   return (
     <Modal

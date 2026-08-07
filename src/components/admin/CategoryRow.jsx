@@ -2,7 +2,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 import Button from '../ui/Button'
 import Badge from '../common/Badge'
 import { CARD_BASE } from '../../utils/surfaceStyles'
-import { getCategoryTheme } from '../../utils/categoryStyles'
+import { getCategoryTheme, getCategoryLabel } from '../../utils/categoryStyles'
 
 export default function CategoryRow({ category, onEdit, onDelete, isDeleting }) {
   const opportunitiesCount = category.opportunitiesCount ?? 0
@@ -19,7 +19,7 @@ export default function CategoryRow({ category, onEdit, onDelete, isDeleting }) 
             className={`h-2.5 w-2.5 rounded-full shrink-0 ${theme.dot}`}
             aria-hidden="true"
           />
-          <h3 className="text-base font-semibold text-heading">{category.name}</h3>
+          <h3 className="text-base font-semibold text-heading">{getCategoryLabel(category.name)}</h3>
           <Badge
             label={`${opportunitiesCount} opportunit${opportunitiesCount === 1 ? 'y' : 'ies'}`}
             tone="neutral"
@@ -36,7 +36,7 @@ export default function CategoryRow({ category, onEdit, onDelete, isDeleting }) 
           variant="ghost"
           size="small"
           onClick={() => onEdit(category)}
-          aria-label={`Edit ${category.name}`}
+          aria-label={`Edit ${getCategoryLabel(category.name)}`}
         >
           <Pencil size={16} />
         </Button>
@@ -46,7 +46,7 @@ export default function CategoryRow({ category, onEdit, onDelete, isDeleting }) 
           disabled={isDeleting}
           onClick={() => onDelete(category)}
           className="text-danger hover:bg-danger/10"
-          aria-label={`Delete ${category.name}`}
+          aria-label={`Delete ${getCategoryLabel(category.name)}`}
         >
           <Trash2 size={16} />
         </Button>

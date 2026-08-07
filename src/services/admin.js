@@ -107,13 +107,19 @@ export async function fetchPendingOrganizations() {
  * استثناء، لأنه فشل قرار واحد ما لازم يكسر باقي القائمة المعروضة.
  *
  * @param {string|number} organizationId
- * @param {{status: 'verified'|'rejected', reason?: string}} decision
+ * @param {{status: 'verified'|'rejected'|'suspended', reason?: string}} decision
  */
 export async function reviewOrganization(organizationId, decision) {
   const trimmedReason = String(decision?.reason || '').trim()
 
-  if (decision?.status === ORGANIZATION_STATUS.REJECTED && !trimmedReason) {
-    return { success: false, error: 'Rejection reason is required' }
+  // السبب إلزامي لأي قرار سلبي (رفض أو تعليق) — وليس القبول، بنفس
+  // منطق VerificationDecisionModal.jsx بالضبط
+  const requiresReason =
+    decision?.status === ORGANIZATION_STATUS.REJECTED || decision?.status === ORGANIZATION_STATUS.SUSPENDED
+
+  if (requiresReason && !trimmedReason) {
+    const label = decision.status === ORGANIZATION_STATUS.SUSPENDED ? 'Suspension' : 'Rejection'
+    return { success: false, error: `${label} reason is required` }
   }
 
   if (MOCK_MODE) {
@@ -125,7 +131,7 @@ export async function reviewOrganization(organizationId, decision) {
     const reviewedAt = new Date().toISOString()
     updateMockUser(mockUser.email, {
       status: decision.status,
-      rejectionReason: decision.status === ORGANIZATION_STATUS.REJECTED ? trimmedReason : '',
+      rejectionReason: requiresReason ? trimmedReason : '',
       reviewedAt,
     })
 

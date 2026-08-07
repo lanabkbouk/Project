@@ -7,6 +7,7 @@ import Button from "../ui/Button";
 import Typography from "../ui/Typography";
 import SkillsSelector from "../common/SkillsSelector";
 import { SYRIAN_GOVERNORATES } from "../../services/syrianGovernorates";
+import { getCategoryLabel } from "../../utils/categoryStyles";
 
 const GOVERNORATE_ITEMS = SYRIAN_GOVERNORATES.map(({ nameEn }) => ({
   name: nameEn,
@@ -51,7 +52,7 @@ export default function CauseForm({
   } = useFormContext();
 
   const categoryItems = categories.map((category) => ({
-    name: category.name,
+    name: getCategoryLabel(category.name),
     value: category.id,
   }));
 
