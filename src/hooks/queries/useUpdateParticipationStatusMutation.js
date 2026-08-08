@@ -12,7 +12,7 @@ export function useUpdateParticipationStatusMutation(opportunityId) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ applicantId, status }) => updateParticipationStatus(applicantId, status),
+    mutationFn: ({ applicantId, status, reason }) => updateParticipationStatus(applicantId, status, reason),
     onSuccess: (result, { applicantId, status }) => {
       if (!result?.success) return
 

@@ -7,10 +7,10 @@
 // ⚠️ لا لون مستقل أو مكتوب يدويًا بهاد الملف إطلاقًا — كل لون/أيقونة
 // لمرحلة تمثّل حالة حقيقية مسحوبة من المصدر المركزي (getDisplayStatusMeta
 // في utils/participationDisplayStatus.js) بالضبط، فأي تعديل مستقبلي
-// على لون حالة معيّنة بالمصدر المركزي بينعكس هون تلقائيًا. المراحل يلي
-// مالها حالة مخزّنة فعليًا بالنظام هلق (Applied، Certificate Issued)
-// بتاخد نمط "قادم/غير مفعّل بعد" محايد (حدود متقطّعة + شفافية أخف +
-// أيقونة دائرة فاضية) بدل أي لون يوحي إنها حالة نشطة فعليًا.
+// على لون حالة معيّنة بالمصدر المركزي بينعكس هون تلقائيًا. المرحلة يلي
+// مالها حالة مخزّنة فعليًا بالنظام هلق (Applied) بتاخد نمط "قادم/غير
+// مفعّل بعد" محايد (حدود متقطّعة + شفافية أخف + أيقونة دائرة فاضية) بدل
+// أي لون يوحي إنها حالة نشطة فعليًا.
 //
 // لا يوجد مكوّن Steps/Stepper جاهز بالمشروع، فهاد أول واحد — بسيط وقابل
 // لإعادة الاستخدام (props بس، بدون أي منطق خاص بصفحة معيّنة).
@@ -25,17 +25,15 @@ import { getDisplayStatusMeta, PARTICIPATION_DISPLAY_STATUS } from "../../utils/
 // كل مرحلة بمصدر لونها/أيقونتها الحقيقي: Under Review/Accepted حالتا
 // مشاركة حقيقيتان (PARTICIPATION_STATUS_META عبر getDisplayStatusMeta)،
 // Active/Completed مُشتقّتان من حالة الفرصة نفسها (OPPORTUNITY_STATUS_META
-// — نفس قرار getParticipationStatusMeta بالضبط). Applied وCertificate
-// Issued ما إلهم قيمة PARTICIPATION_STATUS مخزّنة فعليًا هلق (التقديم
-// نفسه بيصير pending فورًا، والشهادات مش ميزة مفعّلة بعد) فـ meta بترجع
-// null قصدًا، فيوخدوا النمط المحايد تحت
+// — نفس قرار getParticipationStatusMeta بالضبط). Applied ما إلها قيمة
+// PARTICIPATION_STATUS مخزّنة فعليًا هلق (التقديم نفسه بيصير pending
+// فورًا) فـ meta بترجع null قصدًا، فتاخد النمط المحايد تحت
 const LIFECYCLE_STEPS = [
   { label: "Applied", meta: null },
   { label: "Under Review", meta: getDisplayStatusMeta(PARTICIPATION_DISPLAY_STATUS.PENDING) },
   { label: "Accepted", meta: getDisplayStatusMeta(PARTICIPATION_DISPLAY_STATUS.ACCEPTED) },
   { label: "Active", meta: getDisplayStatusMeta(PARTICIPATION_DISPLAY_STATUS.ACTIVE) },
   { label: "Completed", meta: getDisplayStatusMeta(PARTICIPATION_DISPLAY_STATUS.COMPLETED) },
-  { label: "Certificate Issued", meta: null },
 ];
 
 function StepChip({ label, meta }) {

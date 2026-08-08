@@ -25,8 +25,16 @@
 //   1) phone: موجود فعليًا بجدول users (عمود phone_number)، بس
 //      OrganizationResource ما بيرجعه إطلاقًا. لحد ما يُضاف، بيرجع undefined دايمًا.
 //   2) status: عمود "status" مش موجود إطلاقًا بجدول organizations —
-//      بيرجع null دايمًا بغض النظر عن حالة التوثيق الفعلية. أي منطق
-//      اعتماد على "موثّقة/غير موثّقة" هون معطّل مؤقتًا لحد ما الباك يضيف العمود.
+//      بيرجع null دايمًا بغض النظر عن حالة التوثيق الفعلية.
+//
+// ⚠️ فلترة "الموثّقة فقط" (راجع isVerifiedOrStatusUnavailable تحت):
+// الدليل العام لازم يعرض المنظمات الموثّقة (verified) فقط، لكن حقل
+// status نفسه غير مضمون الوصول من الباك اند حاليًا (دايمًا null، راجع
+// الملاحظة فوق). الفلترة مصمَّمة عشان تشتغل بأمان بالحالتين: لو الحقل
+// وصل فعليًا بقيمة حقيقية، نفلتر عليه؛ ولو ما وصل (undefined أو null)،
+// نعرض القائمة كاملة بدون فلترة بدل ما نكسر الصفحة أو نعرضها فاضية
+// بالغلط. فور ما الباك اند يضيف العمود ويرجّع قيمة حقيقية، الفلترة
+// بتصير فعّالة تلقائيًا بدون أي تعديل إضافي هون.
 
 import { apiClient, getApiErrorMessage } from './api/client'
 import { isMockMode } from './api/mockMode'
@@ -37,10 +45,9 @@ const MOCK_MODE = isMockMode()
 
 // نفس المنظمات المرجعية المستخدمة أصلاً داخل MOCK_OPPORTUNITIES
 // (org1..org4) حتى تبقى الفرص المعروضة بصفحة تفاصيل كل منظمة متسقة
-// مع بيانات الفرص الفعلية.
-// ⚠️ الدليل حاليًا يعرض كل المنظمات بغض النظر عن التوثيق (راجع TODO
-// بـ fetchOrganizations تحت) — status هون VERIFIED بس لأنها بيانات mock،
-// مش لأنه في فلترة فعلية عليها.
+// مع بيانات الفرص الفعلية. org5 إضافية هون فقط (status=PENDING، بدون
+// أي فرصة مرتبطة بها — منظمة غير موثّقة أصلًا ما بتقدر تنشر فرص) لإثبات
+// إن فلترة "الموثّقة فقط" بوضع mock فعلًا تستبعدها من الدليل العام.
 const MOCK_ORGANIZATIONS = [
   {
     id: 'org1',
@@ -86,7 +93,36 @@ const MOCK_ORGANIZATIONS = [
     profileImageUrl: null,
     status: ORGANIZATION_STATUS.VERIFIED,
   },
+  {
+    id: 'org5',
+    name: 'New Hope Collective',
+    description: 'Recently registered — still awaiting verification by the platform admins.',
+    city: 'Utrecht, Netherlands',
+    phone: '+31655555555',
+    website: 'https://newhope.example.org',
+    contactPerson: 'Rana Idris',
+    profileImageUrl: null,
+    status: ORGANIZATION_STATUS.PENDING,
+  },
 ]
+
+/**
+ * فلترة دفاعية لـ"الموثّقة فقط" على بيانات الباك اند الخام (قبل أي
+ * تطبيع عبر mapOrganizationFromApi، لأن تلك الدالة بترجّع status
+ * افتراضي PENDING لو الحقل غايب أصلًا — فلو فلترنا بعد التطبيع كنا رح
+ * نخسر القدرة على التفريق بين "غير موثّقة فعليًا" و"الحقل غير متوفر").
+ *
+ * - status غير موجود إطلاقًا (undefined) أو null (سلوك الباك اند
+ *   الحقيقي حاليًا — راجع الملاحظة أعلى الملف): نعتبره "غير متاح بعد"
+ *   ونُبقي المنظمة، بدون أي فلترة، تمامًا كالسلوك الحالي قبل هالتعديل.
+ * - status وصل فعليًا بقيمة حقيقية: نُبقي المنظمة فقط لو كانت verified.
+ * @param {{status?: string|null}} raw
+ */
+function isVerifiedOrStatusUnavailable(raw) {
+  const status = raw?.status
+  if (typeof status === 'undefined' || status === null) return true
+  return status === ORGANIZATION_STATUS.VERIFIED
+}
 
 /**
  * يحوّل استجابة OrganizationResource الخام (snake_case، owner متداخل)
@@ -112,9 +148,10 @@ function mapOrganizationFromApi(raw) {
 }
 
 /**
- * يجلب قائمة المنظمات (فلترة الاسم/المدينة تصير هون بوضع الـ mock،
- * وبتنتقل لـ query param ?search= بوضع real). فلترة "الموثّقة فقط"
- * معطّلة مؤقتًا — راجع TODO تحت.
+ * يجلب قائمة المنظمات **الموثّقة فقط** (فلترة الاسم/المدينة تصير هون
+ * بوضع الـ mock، وبتنتقل لـ query param ?search= بوضع real). فلترة
+ * "الموثّقة فقط" مفعّلة بالوضعين — راجع isVerifiedOrStatusUnavailable
+ * أعلى الملف لتفاصيل السلوك الدفاعي بوضع real لما status ما يكون متاحًا.
  * @param {{search?: string}} filters
  * @returns {Promise<Array<object>>}
  */
@@ -122,17 +159,18 @@ export async function fetchOrganizations({ search = '' } = {}) {
   if (MOCK_MODE) {
     await wait()
 
-    // TODO: عمود status غير متوفر من الباك اند حاليًا — إعادة التفعيل
-    // بعد إضافته لجدول organizations (راجع مع مطور الباك اند). فلترة
-    // "الموثّقة فقط" هون كانت بتعتمد على org.status، يلي دايمًا null
-    // بوضع real (راجع mapOrganizationFromApi تحت) — فلو طبّقنا نفس
-    // الفلترة بوضع mock كمان، القائمة كانت رح تختلف بصمت بين الوضعين
-    // (مليانة بmock، فاضية بreal) بدون أي رسالة توضّح السبب. لحد ما
-    // الحقل يتوفر فعليًا، القائمة بتعرض كل المنظمات بغض النظر عن التوثيق.
-    const normalizedSearch = search.trim().toLowerCase()
-    if (!normalizedSearch) return MOCK_ORGANIZATIONS
+    // بوضع mock الحقل status موجود ومضمون دايمًا (بيانات محلية ثابتة)،
+    // فالفلترة هون مباشرة وأكيدة 100% — بعكس وضع real تحت يلي بيحتاج
+    // فحص دفاعي لأن الباك اند لسا ما بيرجّع status حقيقي (راجع الملاحظة
+    // أعلى الملف)
+    const verifiedOrganizations = MOCK_ORGANIZATIONS.filter(
+      (organization) => organization.status === ORGANIZATION_STATUS.VERIFIED,
+    )
 
-    return MOCK_ORGANIZATIONS.filter(
+    const normalizedSearch = search.trim().toLowerCase()
+    if (!normalizedSearch) return verifiedOrganizations
+
+    return verifiedOrganizations.filter(
       (organization) =>
         organization.name.toLowerCase().includes(normalizedSearch) ||
         organization.city.toLowerCase().includes(normalizedSearch),
@@ -140,12 +178,24 @@ export async function fetchOrganizations({ search = '' } = {}) {
   }
 
   try {
-    const response = await apiClient.get('/organizations', { params: { search } })
+    // نرسل ?status=verified تحسّبًا لدعم الباك اند لها مستقبلًا (حتى لو
+    // متجاهلها حاليًا بما إنه index() بدون أي منطق فلترة فعليًا — راجع
+    // الملاحظة أعلى الملف) — فور ما يُضاف الدعم فعليًا بالخادم، الفلترة
+    // بتشتغل من هناك مباشرة بدون أي تعديل هون
+    const response = await apiClient.get('/organizations', {
+      params: { search, status: ORGANIZATION_STATUS.VERIFIED },
+    })
     // الباك اند بيرجّع النتيجة مُصفّحة (paginate) — بعد فك تغليف Laravel
     // بـ client.js، response.data بيصير { data: [...], links, meta }
     // مش array مباشرة، فلازم ندخل مستوى إضافي هون تحديدًا
     const list = Array.isArray(response.data) ? response.data : response.data?.data || []
-    return list.map(mapOrganizationFromApi)
+
+    // طبقة أمان إضافية محليًا (Defensive) على الخام قبل التطبيع — لو
+    // الباك اند تجاهل ?status= فوق (أو لسا ما بيدعمها إطلاقًا)، نصفّي
+    // هون بدل ما نعرض منظمات غير موثّقة بالغلط. لو حقل status نفسه غير
+    // متوفر إطلاقًا بالاستجابة، ما بنطبّق أي فلترة ونعرض القائمة كاملة
+    // (سلوك الوضع الحالي بالضبط) بدل ما نكسر الصفحة أو نعرضها فاضية
+    return list.filter(isVerifiedOrStatusUnavailable).map(mapOrganizationFromApi)
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load organizations'), { cause: error })
   }

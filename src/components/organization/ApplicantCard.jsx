@@ -7,6 +7,7 @@ import Button from "../ui/Button";
 import SkillChipsPreview from "../common/SkillChipsPreview";
 import ParticipationStatusBadge from "../opportunity/ParticipationStatusBadge";
 import VolunteerProfilePreviewModal from "./VolunteerProfilePreviewModal";
+import RejectionReasonModal from "../common/RejectionReasonModal";
 import { PARTICIPATION_STATUS } from "../../constants/participationStatus";
 import { CARD_BASE } from "../../utils/surfaceStyles";
 
@@ -27,10 +28,19 @@ export default function ApplicantCard({
   const isExpired = status === PARTICIPATION_STATUS.EXPIRED;
   const isWithdrawn = status === PARTICIPATION_STATUS.WITHDRAWN;
   const [isProfilePreviewOpen, setIsProfilePreviewOpen] = useState(false);
+  // مودال سبب الرفض هو التأكيد الوحيد الآن (بدل window.confirm سابقًا
+  // بـ applicantsList.jsx) — سبب إلزامي بحد ذاته كافٍ كخطوة تأكيد،
+  // فما في داعي لتأكيدين متتاليين على نفس القرار
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   // "إدارة الساعات" تظهر فقط لمتطوع مقبول بعد ما الفرصة تخلص فعليًا —
   // المرفوض والمعلّق ما التزموا فعليًا فما في داعي نسألهم عن ساعات
   const canManageHours = isAccepted && opportunityHasEnded;
   const hasConfirmedHours = hoursLogged !== null && hoursLogged !== undefined;
+
+  const handleConfirmReject = async (reason) => {
+    await onReject(applicant.id, reason);
+    setIsRejectModalOpen(false);
+  };
 
   if (!volunteer) return null;
 
@@ -119,7 +129,7 @@ export default function ApplicantCard({
                 variant="ghost"
                 size="small"
                 disabled={isUpdating || !isVerified}
-                onClick={() => onReject(applicant.id)}
+                onClick={() => setIsRejectModalOpen(true)}
                 className="flex items-center gap-1 !px-3 !py-1.5 !text-sm text-danger hover:bg-danger/10"
                 title={!isVerified ? "Available once your organization is verified" : undefined}
               >
@@ -160,6 +170,16 @@ export default function ApplicantCard({
         open={isProfilePreviewOpen}
         onClose={() => setIsProfilePreviewOpen(false)}
         volunteer={volunteer}
+      />
+
+      <RejectionReasonModal
+        open={isRejectModalOpen}
+        title={`Reject ${volunteer.name || "this applicant"}?`}
+        description="This decision is final and can't be reversed. Add a short reason so the volunteer understands why their application wasn't accepted."
+        placeholder="e.g. We've already reached full capacity for this role."
+        onClose={() => setIsRejectModalOpen(false)}
+        onConfirm={handleConfirmReject}
+        isSubmitting={isUpdating}
       />
     </div>
   );

@@ -146,17 +146,25 @@ export async function fetchApplicantsForOpportunity(opportunityId) {
  * نقطة موحّدة لتغيير حالة طلب مشاركة — تُستخدم من طرف المنظمة (accepted/rejected).
  * @param {string} participationId
  * @param {string} status
+ * @param {string} [reason] - سبب الرفض (إلزامي بالواجهة عبر RejectionReasonModal
+ *   لما status === 'rejected'، راجع ApplicantCard.jsx). يُخزَّن كـ
+ *   participation.rejectionReason، وهو الحقل يلي ParticipationCard.jsx
+ *   بجهة المتطوع بتعرضه أصلًا (راجع fetchMyParticipations أعلى الملف)
  */
-export async function updateParticipationStatus(participationId, status) {
+export async function updateParticipationStatus(participationId, status, reason) {
   if (MOCK_MODE) {
     await wait()
     const participation = MOCK_PARTICIPATIONS.find((item) => item.id === participationId)
-    if (participation) participation.status = status
+    if (participation) {
+      participation.status = status
+      // السبب بس بيتخزّن لما القرار فعليًا رفض — قبول ما إله سبب
+      if (status === PARTICIPATION_STATUS.REJECTED) participation.rejectionReason = reason
+    }
     return { success: true }
   }
 
   try {
-    await apiClient.put(`/participations/${participationId}`, { status })
+    await apiClient.put(`/participations/${participationId}`, { status, rejection_reason: reason })
     return { success: true }
   } catch (error) {
     return { success: false, error: getApiErrorMessage(error, 'Failed to update this request') }

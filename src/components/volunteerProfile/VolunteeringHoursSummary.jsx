@@ -17,7 +17,6 @@ import EmptyState from "../common/EmptyState";
 import Skeleton from "../ui/Skeleton";
 import Typography from "../ui/Typography";
 import { useVolunteerHoursSummaryQuery } from "../../hooks/queries/useVolunteerHoursSummaryQuery";
-import { useAuth } from "../../context/AuthContext";
 import { ROUTES } from "../../constants/paths";
 
 // أعلى 4 منظمات فقط بالملخّص — التفصيل الكامل موجود بصفحة My Volunteering
@@ -25,7 +24,6 @@ const MAX_ORGANIZATIONS_SHOWN = 4;
 
 export default function VolunteeringHoursSummary() {
   const hoursSummaryQuery = useVolunteerHoursSummaryQuery();
-  const { user } = useAuth();
   const summary = hoursSummaryQuery.data;
   const loading = hoursSummaryQuery.isPending;
   const hasError = hoursSummaryQuery.isError;
@@ -62,8 +60,6 @@ export default function VolunteeringHoursSummary() {
   }
 
   const topOrganizations = summary.byOrganization.slice(0, MAX_ORGANIZATIONS_SHOWN);
-  const certificatesCount =
-    typeof user?.certificatesCount === "number" && user.certificatesCount > 0 ? user.certificatesCount : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -105,13 +101,6 @@ export default function VolunteeringHoursSummary() {
           <strong className="text-heading">{summary.totalConfirmedHours}</strong> confirmed hours across{" "}
           <strong className="text-heading">{summary.organizationsCount}</strong> organization
           {summary.organizationsCount === 1 ? "" : "s"}.
-          {certificatesCount !== null && (
-            <>
-              {" "}
-              You've earned <strong className="text-heading">{certificatesCount}</strong> certificate
-              {certificatesCount === 1 ? "" : "s"}.
-            </>
-          )}
         </p>
       </div>
 

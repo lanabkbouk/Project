@@ -71,23 +71,14 @@ export default function ApplicantsList() {
     ? updateStatusMutation.variables?.applicantId
     : null;
 
-  const handleStatusChange = async (applicantId, newStatus) => {
+  const handleStatusChange = async (applicantId, newStatus, reason) => {
     if (!isVerified) return;
 
-    // تأكيد فقط عند الرفض — قرار نهائي بلا رجعة بالواجهة الحالية
-    // (نفس نمط تأكيد الانسحاب بالضبط، راجع ParticipationCard.jsx).
-    // القبول ما بحتاج تأكيد: أثره أقل خطورة (لا يمنع المتطوع من أي
-    // شيء)، وإضافة خطوة تأكيد لكل قبول كانت رح تبطّئ سير عمل المنظمة
-    // بلا داعٍ حقيقي
-    if (newStatus === PARTICIPATION_STATUS.REJECTED) {
-      const applicant = applicants.find((item) => item.id === applicantId);
-      const confirmed = window.confirm(
-        `Reject ${applicant?.volunteer?.name || "this applicant"}? This can't be undone.`,
-      );
-      if (!confirmed) return;
-    }
-
-    const result = await updateStatusMutation.mutateAsync({ applicantId, status: newStatus });
+    // التأكيد على الرفض ما عاد window.confirm منفصل — مودال سبب الرفض
+    // نفسه (RejectionReasonModal بـ ApplicantCard.jsx) هو التأكيد الآن،
+    // بما إنه سبب إلزامي فعليًا بحد ذاته. القبول لسا بلا أي تأكيد: أثره
+    // أقل خطورة (لا يمنع المتطوع من أي شيء)
+    const result = await updateStatusMutation.mutateAsync({ applicantId, status: newStatus, reason });
 
     if (!result.success) {
       showError(result.error || "Failed to update this request");
@@ -233,8 +224,8 @@ export default function ApplicantsList() {
                     onAccept={(applicantId) =>
                       handleStatusChange(applicantId, PARTICIPATION_STATUS.ACCEPTED)
                     }
-                    onReject={(applicantId) =>
-                      handleStatusChange(applicantId, PARTICIPATION_STATUS.REJECTED)
+                    onReject={(applicantId, reason) =>
+                      handleStatusChange(applicantId, PARTICIPATION_STATUS.REJECTED, reason)
                     }
                     onManageHours={setHoursModalApplicant}
                   />
