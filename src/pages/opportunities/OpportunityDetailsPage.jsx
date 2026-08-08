@@ -10,12 +10,10 @@ import OpportunityLifecycleCard from "../../components/opportunity/OpportunityLi
 import OpportunityStatusBadge from "../../components/opportunity/OpportunityStatusBadge";
 import StatusLegendPopover from "../../components/ui/StatusLegendPopover";
 import ParticipateHoursModal from "../../components/opportunity/ParticipateHoursModal";
-import CategorySidebar from "../../components/opportunity/CategorySidebar";
 import Skeleton from "../../components/ui/Skeleton";
 import { PANEL_SURFACE } from "../../utils/surfaceStyles";
 import { useOpportunityDetailsQuery } from "../../hooks/queries/useOpportunityDetailsQuery";
 import { useParticipateMutation } from "../../hooks/queries/useParticipateMutation";
-import { useCategoriesQuery } from "../../hooks/queries/useCategoriesQuery";
 import { useAuth } from "../../context/AuthContext";
 import { ACCOUNT_TYPES } from "../../constants/auth/accountTypes";
 import { ROUTES } from "../../constants/paths";
@@ -46,15 +44,10 @@ export default function OpportunityDetailsPage() {
   // نشغّل انتقال "Joining..." → "You're in! ✓"
   const prefersReducedMotion = useReducedMotion();
 
-  // نفس هوك التصنيفات المستخدم بصفحة قائمة الفرص — React Query بيتشارك
-  // نفس الكاش (['categories']) تلقائيًا، فما في طلب مكرر لو الصفحتين
-  // فُتحتا بنفس الجلسة
-  const categoriesQuery = useCategoriesQuery();
   const detailsQuery = useOpportunityDetailsQuery(id);
   const participateMutation = useParticipateMutation(id);
 
   const opportunity = detailsQuery.data?.opportunity ?? null;
-  const categories = categoriesQuery.data ?? [];
 
   const loading = detailsQuery.isPending;
   const loadError = detailsQuery.isError
@@ -77,30 +70,18 @@ export default function OpportunityDetailsPage() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="flex flex-col lg:flex-row gap-10">
-          <div className="flex-1 min-w-0">
-            <Skeleton className="h-9 w-2/3 mb-4" />
-            <Skeleton className="w-full aspect-video rounded-3xl mb-6" />
-            <Skeleton className="h-2 w-full rounded-full mb-6" />
-            <div className="flex flex-wrap gap-4 mb-6">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-40" />
-              <Skeleton className="h-4 w-32" />
-            </div>
-            <Skeleton className="h-24 w-full rounded-2xl mb-8" />
-            <Skeleton className="h-6 w-48 mb-3" />
-            <Skeleton className="h-4 w-full mb-2" />
-            <Skeleton className="h-4 w-5/6" />
-          </div>
-
-          <div className="w-full lg:w-72 shrink-0 flex flex-col gap-6">
-            <div className={`${PANEL_SURFACE} p-5 flex flex-col gap-3`}>
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-8 w-full rounded-lg" />
-              <Skeleton className="h-8 w-full rounded-lg" />
-            </div>
-          </div>
+        <Skeleton className="h-9 w-2/3 mb-4" />
+        <Skeleton className="w-full aspect-video rounded-3xl mb-6" />
+        <Skeleton className="h-2 w-full rounded-full mb-6" />
+        <div className="flex flex-wrap gap-4 mb-6">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-4 w-32" />
         </div>
+        <Skeleton className="h-24 w-full rounded-2xl mb-8" />
+        <Skeleton className="h-6 w-48 mb-3" />
+        <Skeleton className="h-4 w-full mb-2" />
+        <Skeleton className="h-4 w-5/6" />
       </div>
     );
   }
@@ -157,192 +138,182 @@ export default function OpportunityDetailsPage() {
         <span className="text-heading">{opportunity.title}</span>
       </nav>
 
-      <div className="flex flex-col lg:flex-row gap-10">
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <Typography variant="h1">
-              {opportunity.title}
-            </Typography>
-            <div className="flex items-center gap-2">
-              <OpportunityStatusBadge status={opportunity.status} />
-              <StatusLegendPopover />
-            </div>
+      {/* عمود المحتوى بقي بعرض الحاوية الكاملة (max-w-7xl) بعد ما شلنا
+          العمود الجانبي (CategorySidebar) — بدون تحديد عرض أضيق هون،
+          صندوق الصورة بالأسفل (aspect-video) بيمتد لعرض ~1280px وبالتالي
+          لارتفاع ضخم غير متناسق (نسبة 16:9 بعرض كبير = ارتفاع كبير) */}
+      <div className="max-w-3xl mx-auto">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <Typography variant="h1">
+            {opportunity.title}
+          </Typography>
+          <div className="flex items-center gap-2">
+            <OpportunityStatusBadge status={opportunity.status} />
+            <StatusLegendPopover />
           </div>
+        </div>
 
-          <div className="w-full aspect-video rounded-4xl overflow-hidden bg-heading/5 flex items-center justify-center mb-6">
-            {opportunity.image ? (
-              <img
-                src={opportunity.image}
-                alt={opportunity.title}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className={`flex w-full h-full items-center justify-center ${categoryStyle}`}>
-                <CategoryIcon size={48} aria-hidden="true" />
-              </div>
-            )}
-          </div>
-
-          <div className="mb-6">
-            <OpportunityProgressBar
-              current={opportunity.currentVolunteers}
-              max={opportunity.maxVolunteers}
+        {/* max-h-105 (420px) احترازي: حتى لو تغيّر عرض الصفحة لاحقًا (شاشة
+            4K، تعديل تخطيط آخر)، aspect-video ما يقدر يفرض ارتفاع ضخم
+            بالغلط من جديد */}
+        <div className="w-full aspect-video max-h-105 rounded-4xl overflow-hidden bg-heading/5 flex items-center justify-center mb-6">
+          {opportunity.image ? (
+            <img
+              src={opportunity.image}
+              alt={opportunity.title}
+              className="w-full h-full object-cover"
             />
-          </div>
-
-          <div className="flex flex-wrap gap-4 mb-6 text-sm text-body">
-            <span className="flex items-center gap-1">
-              <MapPin size={16} className="text-primary" aria-hidden="true" />
-              {opportunity.location}
-            </span>
-            <span className="flex items-center gap-1">
-              <Calendar size={16} className="text-primary" aria-hidden="true" />
-              {formatDate(opportunity.startDate)} - {formatDate(opportunity.endDate)}
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock size={16} className="text-primary" aria-hidden="true" />
-              {opportunity.minHours}-{opportunity.maxHours} hrs / session
-            </span>
-          </div>
-
-          {/* نافذة التسجيل — تُعرض بس أثناء مراحل التسجيل، وما إلها معنى
-              بعد ما تبدأ الفرصة فعليًا (in_progress/completed) */}
-          {(opportunity.status === OPPORTUNITY_STATUS.REGISTRATION_OPEN ||
-            opportunity.status === OPPORTUNITY_STATUS.REGISTRATION_CLOSED) &&
-          opportunity.registerEndAt ? (
-            <p className="mb-6 -mt-2 text-xs text-heading/50">
-              Registration {opportunity.status === OPPORTUNITY_STATUS.REGISTRATION_CLOSED ? "closed" : "closes"} on{" "}
-              {formatDate(opportunity.registerEndAt)}
-            </p>
-          ) : null}
-
-          {opportunity.skills.length > 0 ? (
-            <div className="flex flex-wrap gap-2 mb-8">
-              {opportunity.skills.map((skill) => (
-                <Chip key={skill.id} color="blue">
-                  {skill.name}
-                </Chip>
-              ))}
+          ) : (
+            <div className={`flex w-full h-full items-center justify-center ${categoryStyle}`}>
+              <CategoryIcon size={48} aria-hidden="true" />
             </div>
-          ) : null}
+          )}
+        </div>
 
-          <div className={`${PANEL_SURFACE} p-6 mb-8`}>
-            <p className="text-sm text-heading/50 mb-1">Organized by</p>
-            {opportunity.organization?.id ? (
-              <Link
-                to={`${ROUTES.ORGANIZATIONS}/${opportunity.organization.id}`}
-                className="font-semibold text-heading hover:text-primary rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              >
-                {opportunity.organization.name}
-              </Link>
-            ) : (
-              <p className="font-semibold text-heading">{opportunity.organization.name}</p>
-            )}
+        <div className="mb-6">
+          <OpportunityProgressBar
+            current={opportunity.currentVolunteers}
+            max={opportunity.maxVolunteers}
+          />
+        </div>
 
-            {opportunity.organization?.phone ? (
-              <a
-                href={`tel:${opportunity.organization.phone}`}
-                className="mt-2 flex items-center gap-2 text-sm text-body hover:text-primary w-fit rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              >
-                <Phone size={14} className="text-primary shrink-0" aria-hidden="true" />
-                {opportunity.organization.phone}
-              </a>
-            ) : null}
+        <div className="flex flex-wrap gap-4 mb-6 text-sm text-body">
+          <span className="flex items-center gap-1">
+            <MapPin size={16} className="text-primary" aria-hidden="true" />
+            {opportunity.location}
+          </span>
+          <span className="flex items-center gap-1">
+            <Calendar size={16} className="text-primary" aria-hidden="true" />
+            {formatDate(opportunity.startDate)} - {formatDate(opportunity.endDate)}
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock size={16} className="text-primary" aria-hidden="true" />
+            {opportunity.minHours}-{opportunity.maxHours} hrs / session
+          </span>
+        </div>
+
+        {/* نافذة التسجيل — تُعرض بس أثناء مراحل التسجيل، وما إلها معنى
+            بعد ما تبدأ الفرصة فعليًا (in_progress/completed) */}
+        {(opportunity.status === OPPORTUNITY_STATUS.REGISTRATION_OPEN ||
+          opportunity.status === OPPORTUNITY_STATUS.REGISTRATION_CLOSED) &&
+        opportunity.registerEndAt ? (
+          <p className="mb-6 -mt-2 text-xs text-heading/50">
+            Registration {opportunity.status === OPPORTUNITY_STATUS.REGISTRATION_CLOSED ? "closed" : "closes"} on{" "}
+            {formatDate(opportunity.registerEndAt)}
+          </p>
+        ) : null}
+
+        {opportunity.skills.length > 0 ? (
+          <div className="flex flex-wrap gap-2 mb-8">
+            {opportunity.skills.map((skill) => (
+              <Chip key={skill.id} color="blue">
+                {skill.name}
+              </Chip>
+            ))}
           </div>
+        ) : null}
 
-          <Typography variant="h4" className="mb-3">
-            About this opportunity
-          </Typography>
-          <Typography variant="body" className="text-body leading-relaxed mb-8">
-            {opportunity.description}
-          </Typography>
+        <div className={`${PANEL_SURFACE} p-6 mb-8`}>
+          <p className="text-sm text-heading/50 mb-1">Organized by</p>
+          {opportunity.organization?.id ? (
+            <Link
+              to={`${ROUTES.ORGANIZATIONS}/${opportunity.organization.id}`}
+              className="font-semibold text-heading hover:text-primary rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {opportunity.organization.name}
+            </Link>
+          ) : (
+            <p className="font-semibold text-heading">{opportunity.organization.name}</p>
+          )}
 
-          <OpportunityLifecycleCard />
-
-          <Button
-            variant="primary"
-            size="large"
-            onClick={
-              isGuest
-                ? () => navigate(ROUTES.REGISTER) // زائر: نحوّله مباشرة لإنشاء حساب، بلا رسالة وسيطة
-                : isVolunteer
-                  ? () => {
-                      setJoinError("");
-                      setIsHoursModalOpen(true);
-                    } // نفتح نافذة اختيار الساعات أولًا، مو انضمام مباشر
-                  : undefined
-            }
-            isLoading={false}
-            // الزر يتعطل بحالات: انضم فعلاً / التسجيل مو مفتوح فعليًا /
-            // حساب منظمة مسجّل دخوله. الزائر ما بينعطل الزر عندو،
-            // بينقله للتسجيل بدل ما يمنعه
-            disabled={
-              isNonVolunteerAccount ||
-              hasJoined ||
-              (!isGuest && !isRegistrationOpen)
-            }
-            loadingText="Joining..."
-          >
-            {/* AnimatePresence بـ mode="wait": الكلمة القديمة تخرج (fade+scale)
-                قبل ما الجديدة تدخل، بدل استبدال فجائي — "You're in! ✓"
-                بيوصل بإحساس احتفالي خفيف بدل مجرد تغيّر نص. mode="wait"
-                هون (مو "popLayout" أو غيره) لأنه الزر بحجم ثابت، ما في
-                داعي لأي حساب layout إضافي أثناء التبديل */}
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.span
-                key={participateLabel}
-                initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.9 }}
-                transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
-                className="inline-block"
-              >
-                {participateLabel}
-              </motion.span>
-            </AnimatePresence>
-          </Button>
-
-          {/* رسالة توضيحية واحدة بحسب سبب التعطيل — أولوية حساب المنظمة
-              أولًا (أوضح سبب)، ثم إغلاق التسجيل عمومًا */}
-          {isNonVolunteerAccount ? (
-            <p className="mt-2 text-sm text-heading/50">
-              Only volunteer accounts can join opportunities.
-            </p>
-          ) : !isGuest && !hasJoined && !isRegistrationOpen ? (
-            <p className="mt-2 text-sm text-heading/50">{registrationClosedReason}</p>
+          {opportunity.organization?.phone ? (
+            <a
+              href={`tel:${opportunity.organization.phone}`}
+              className="mt-2 flex items-center gap-2 text-sm text-body hover:text-primary w-fit rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <Phone size={14} className="text-primary shrink-0" aria-hidden="true" />
+              {opportunity.organization.phone}
+            </a>
           ) : null}
-
-          {joinError ? (
-            <p className="mt-2 rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
-              {joinError}
-            </p>
-          ) : null}
-
-          <ParticipateHoursModal
-            open={isHoursModalOpen}
-            onClose={() => setIsHoursModalOpen(false)}
-            onConfirm={handleParticipate}
-            minHours={opportunity.minHours}
-            maxHours={opportunity.maxHours}
-            submitting={participateMutation.isPending}
-            serverError={joinError}
-          />
         </div>
 
-        <div className="w-full lg:w-72 shrink-0 flex flex-col gap-6">
-          <CategorySidebar
-            categories={categories}
-            // هون مش سياق فلترة فعلي (بس اقتراح تصفّح فرص من نفس
-            // التصنيف) — نظهر تصنيف الفرصة الحالية كـ"محدَّد" بصريًا
-            // فقط، والضغط عليه أو على أي تصنيف تانٍ ينقل لصفحة القائمة
-            // بفلترة حقيقية عبر رابط URL مباشر (نفس النظام الموحّد
-            // المستخدم بصفحة التصفح نفسها الآن)
-            selectedCategoryId={opportunity.category?.id || null}
-            onSelectCategory={(categoryId) =>
-              navigate(categoryId ? `${ROUTES.OPPORTUNITIES}?categories=${categoryId}` : ROUTES.OPPORTUNITIES)
-            }
-          />
-        </div>
+        <Typography variant="h4" className="mb-3">
+          About this opportunity
+        </Typography>
+        <Typography variant="body" className="text-body leading-relaxed mb-8">
+          {opportunity.description}
+        </Typography>
+
+        <OpportunityLifecycleCard />
+
+        <Button
+          variant="primary"
+          size="large"
+          onClick={
+            isGuest
+              ? () => navigate(ROUTES.REGISTER) // زائر: نحوّله مباشرة لإنشاء حساب، بلا رسالة وسيطة
+              : isVolunteer
+                ? () => {
+                    setJoinError("");
+                    setIsHoursModalOpen(true);
+                  } // نفتح نافذة اختيار الساعات أولًا، مو انضمام مباشر
+                : undefined
+          }
+          isLoading={false}
+          // الزر يتعطل بحالات: انضم فعلاً / التسجيل مو مفتوح فعليًا /
+          // حساب منظمة مسجّل دخوله. الزائر ما بينعطل الزر عندو،
+          // بينقله للتسجيل بدل ما يمنعه
+          disabled={
+            isNonVolunteerAccount ||
+            hasJoined ||
+            (!isGuest && !isRegistrationOpen)
+          }
+          loadingText="Joining..."
+        >
+          {/* AnimatePresence بـ mode="wait": الكلمة القديمة تخرج (fade+scale)
+              قبل ما الجديدة تدخل، بدل استبدال فجائي — "You're in! ✓"
+              بيوصل بإحساس احتفالي خفيف بدل مجرد تغيّر نص. mode="wait"
+              هون (مو "popLayout" أو غيره) لأنه الزر بحجم ثابت، ما في
+              داعي لأي حساب layout إضافي أثناء التبديل */}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={participateLabel}
+              initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.9 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
+              className="inline-block"
+            >
+              {participateLabel}
+            </motion.span>
+          </AnimatePresence>
+        </Button>
+
+        {/* رسالة توضيحية واحدة بحسب سبب التعطيل — أولوية حساب المنظمة
+            أولًا (أوضح سبب)، ثم إغلاق التسجيل عمومًا */}
+        {isNonVolunteerAccount ? (
+          <p className="mt-2 text-sm text-heading/50">
+            Only volunteer accounts can join opportunities.
+          </p>
+        ) : !isGuest && !hasJoined && !isRegistrationOpen ? (
+          <p className="mt-2 text-sm text-heading/50">{registrationClosedReason}</p>
+        ) : null}
+
+        {joinError ? (
+          <p className="mt-2 rounded-lg border border-danger bg-danger/5 px-3 py-2 text-sm text-danger">
+            {joinError}
+          </p>
+        ) : null}
+
+        <ParticipateHoursModal
+          open={isHoursModalOpen}
+          onClose={() => setIsHoursModalOpen(false)}
+          onConfirm={handleParticipate}
+          minHours={opportunity.minHours}
+          maxHours={opportunity.maxHours}
+          submitting={participateMutation.isPending}
+          serverError={joinError}
+        />
       </div>
     </div>
   );

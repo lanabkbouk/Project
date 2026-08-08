@@ -17,8 +17,11 @@ import { isRegistrationOpen } from "./opportunityStatus";
  *     زي committedHours وhoursLogged، مش snake_case)، نستخدمه مباشرة
  *     كمصدر الحقيقة بدون أي حساب إضافي.
  * (ب) غير هيك: pending أو accepted، وبس لو تسجيل الفرصة لسا مفتوح فعليًا
- *     (يعني قبل ما تبدأ الفرصة — isRegistrationOpen بترجع false تلقائيًا
- *     أول ما تبدأ، راجع utils/opportunityStatus.js)
+ *     (isRegistrationOpen). الفيصل هون هو حالة التسجيل نفسها — مفتوح أو
+ *     مغلق — وليس تاريخ بداية الفرصة إطلاقًا. هذا قرار منتج مقصود
+ *     ومؤكَّد: بمجرد ما تصير الفرصة registration_closed (امتلأت، أو
+ *     انتهت register_end_at، أو أغلقتها المنظمة يدويًا)، ينتهي حق
+ *     الانسحاب فورًا، حتى لو start_date لسا أسابيع قدام.
  */
 export function canWithdraw(participation) {
   if (typeof participation?.canWithdraw === "boolean") return participation.canWithdraw;
@@ -36,13 +39,14 @@ export const WITHDRAWAL_POLICY_META = [
     displayStatus: PARTICIPATION_DISPLAY_STATUS.PENDING,
     label: "Pending",
     allowed: true,
-    description: "Allowed — you can withdraw while your application is awaiting review.",
+    description: "Allowed — you can withdraw while registration for this opportunity is still open.",
   },
   {
     displayStatus: PARTICIPATION_DISPLAY_STATUS.ACCEPTED,
-    label: "Accepted (before start)",
+    label: "Accepted (while registration is open)",
     allowed: true,
-    description: "Allowed — you can withdraw any time before the opportunity starts.",
+    description:
+      "Allowed — but only while registration is still open. Once registration closes (the opportunity is full, the registration window has passed, or the organization closed it manually), withdrawal is no longer possible, even if the opportunity hasn't started yet.",
   },
   {
     displayStatus: PARTICIPATION_DISPLAY_STATUS.ACTIVE,

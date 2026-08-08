@@ -22,6 +22,7 @@ export const MOCK_OPPORTUNITIES = [
     maxHours: 6,
     totalHours: 120,
     currentVolunteers: 14,
+    minVolunteers: 20,
     maxVolunteers: 30,
     category: { id: 'c1', name: 'Health' },
     skills: [{ id: 's1', name: 'First Aid' }, { id: 's7', name: 'Communication' }],
@@ -41,6 +42,7 @@ export const MOCK_OPPORTUNITIES = [
     maxHours: 4,
     totalHours: 80,
     currentVolunteers: 9,
+    minVolunteers: 10,
     maxVolunteers: 15,
     category: { id: 'c2', name: 'Education' },
     skills: [{ id: 's4', name: 'Teaching' }, { id: 's5', name: 'Tutoring' }],
@@ -60,6 +62,7 @@ export const MOCK_OPPORTUNITIES = [
     maxHours: 5,
     totalHours: 40,
     currentVolunteers: 22,
+    minVolunteers: 26,
     maxVolunteers: 40,
     category: { id: 'c5', name: 'Environment' },
     skills: [{ id: 's12', name: 'Environmental Awareness' }],
@@ -79,6 +82,7 @@ export const MOCK_OPPORTUNITIES = [
     maxHours: 6,
     totalHours: 150,
     currentVolunteers: 30,
+    minVolunteers: 32,
     maxVolunteers: 50,
     category: { id: 'c3', name: 'Social' },
     skills: [{ id: 's8', name: 'Event Management' }],
@@ -98,6 +102,7 @@ export const MOCK_OPPORTUNITIES = [
     maxHours: 4,
     totalHours: 200,
     currentVolunteers: 25,
+    minVolunteers: 16,
     maxVolunteers: 25,
     category: { id: 'c3', name: 'Social' },
     skills: [{ id: 's8', name: 'Event Management' }],
@@ -116,7 +121,14 @@ export const MOCK_OPPORTUNITIES = [
     minHours: 3,
     maxHours: 5,
     totalHours: 180,
-    currentVolunteers: 18,
+    // ⚠️ عمدًا currentVolunteers أقل من minVolunteers هون: هاي الفرصة
+    // منتهية فعليًا (endDate بالماضي، فـ status المحسوب COMPLETED) لكنها
+    // ما وصلت للعدد الأدنى المطلوب — سيناريو الاختبار الوحيد المتاح
+    // حاليًا يثبت إن isSuccessfulOpportunity() (utils/opportunityStatus.js)
+    // فعليًا بتستبعدها من "Success Stories"، بعكس فلتر status القديم
+    // يلي كان رح يعرضها بالغلط كقصة نجاح
+    currentVolunteers: 8,
+    minVolunteers: 12,
     maxVolunteers: 18,
     category: { id: 'c2', name: 'Education' },
     skills: [{ id: 's4', name: 'Teaching' }],

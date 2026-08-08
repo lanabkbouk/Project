@@ -9,14 +9,26 @@
 
 export default function Tabs({ tabs, activeTab, onChange, ariaLabel = "View" }) {
   return (
-    // overflow-x-auto بدل ما تنضغط التبويبات أو تنكسر لسطر جديد لما
-    // عددها كبير على شاشة موبايل ضيقة (مثلًا 7 تبويبات حالة المشاركة) —
-    // كل تبويب shrink-0 حتى يحافظ على حجمه الكامل ويصير قابل للسحب أفقيًا
-    <div className="mb-6 overflow-x-auto">
+    // flex-wrap بدل overflow-x-auto: لما عددها كبير على شاشة موبايل ضيقة
+    // (مثلًا 7 تبويبات حالة المشاركة)، التبويبات تلتف لسطر ثانٍ (أو أكثر)
+    // بدل التمرير الأفقي — كل التبويبات تضل مرئية فورًا بلا أي تفاعل
+    // إضافي (سحب/تمرير) لاكتشاف تبويبات مخفية خارج حدود الشاشة
+    //
+    // w-fit تحديدًا (مش w-max ومش w-full): عنصر flex (غير inline) بيمتد
+    // افتراضيًا ليأخذ كامل عرض حاويته الأب لو ما في قيد عرض صريح — w-full
+    // بالضبط هيك (امتداد كامل، وهي المشكلة يلي صارت). w-max كانت تجبر
+    // العرض على حجم المحتوى الفعلي دايمًا حتى لو تجاوز عرض الحاوية الأب
+    // (بيطلع برّا الحاوية بدل ما يلتف). w-fit هي الوسط الصحيح: تنكمش
+    // حول المحتوى تمامًا متل w-max بالحالة العادية (تابين قصيرين مثلًا
+    // ما بيمتدوا لعرض الصفحة)، لكن لما المحتوى أعرض من الحاوية الأب،
+    // بتتقيّد بعرض الحاوية وتترك flex-wrap يلتف التابات لسطر تانٍ بدل
+    // ما تفيض برّا — تجمع بين "الانكماش حول المحتوى" و"القدرة على
+    // الالتفاف عند الحاجة" بنفس الوقت
+    <div className="mb-6">
       <div
         role="tablist"
         aria-label={ariaLabel}
-        className="inline-flex w-max rounded-2xl bg-heading/5 border border-heading/10 p-1"
+        className="flex flex-wrap w-fit gap-2 rounded-2xl bg-heading/5 border border-heading/10 p-1"
       >
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -29,7 +41,7 @@ export default function Tabs({ tabs, activeTab, onChange, ariaLabel = "View" }) 
               role="tab"
               aria-selected={isActive}
               onClick={() => onChange(tab.id)}
-              className={`flex shrink-0 items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
                 isActive ? "bg-field text-primary shadow-sm" : "text-heading/60 hover:text-heading"
               }`}
             >

@@ -14,6 +14,15 @@ import { getEffectiveParticipationStatus, PARTICIPATION_STATUS } from '../consta
 import { MOCK_PARTICIPATIONS, MOCK_VOLUNTEER_PROFILES } from './mock/mockParticipationsStore'
 import { fetchVolunteerAchievements } from './achievements'
 import { buildVolunteerHoursSummary } from '../utils/volunteerHoursSummary'
+// ✅ بدون خطر Circular Import: participationPolicy.js يعتمد بس على
+// constants/participationStatus وutils/opportunityStatus وutils/participationDisplayStatus
+// (كلها utils/constants صرفة، ولا وحدة منهم بترجع تستورد من services)،
+// فاستيرادها هون آمن 100%. attachComputedStatus نفسها غير مُصدَّرة من
+// opportunities.js عمدًا (Internal helper) — بدل ما نعيد كتابة نفس
+// منطقها هون أو نصدّرها لغرض واحد، منستخدم fetchOpportunities()
+// المستوردة أصلًا فوق، لأنها بترجّع الفرص وهي مطبَّق عليها
+// attachComputedStatus داخليًا أصلًا (راجع fetchOpportunities بالأعلى)
+import { canWithdraw } from '../utils/participationPolicy'
 
 const MOCK_MODE = isMockMode()
 
@@ -167,6 +176,21 @@ export async function withdrawParticipation(participationId) {
     await wait()
     const participation = MOCK_PARTICIPATIONS.find((item) => item.id === participationId)
     if (!participation) return { success: false, error: 'Participation not found' }
+
+    // محاكاة للتحقق يلي لازم الباك اند الحقيقي يفرضه هو كمان (نفس نمط
+    // فحص minHours/maxHours بـ participateInOpportunity بأعلى الملف
+    // المجاور) — تعطيل زر الانسحاب بالواجهة (ParticipationCard عبر
+    // canWithdraw()) خط دفاع أول بس، مش كافي وحده: استدعاء مباشر لهاي
+    // الدالة، أو حالة واجهة قديمة/غير محدّثة، ممكن يحاول "سحب" مشاركة
+    // خلص القرار فيها فعليًا (accepted بعد ما قفل التسجيل، أو
+    // rejected/withdrawn أصلًا). نفس canWithdraw() المستخدمة بالضبط
+    // بـ ParticipationCard، حتى القاعدة ما تنحرف بمكانين
+    const opportunities = await fetchOpportunities()
+    const opportunity = opportunities.find((item) => item.id === participation.opportunityId) || null
+    if (!canWithdraw({ ...participation, opportunity })) {
+      return { success: false, error: 'This participation can no longer be withdrawn' }
+    }
+
     participation.status = PARTICIPATION_STATUS.WITHDRAWN
     participation.withdrawnDate = new Date().toISOString().slice(0, 10)
     return { success: true }

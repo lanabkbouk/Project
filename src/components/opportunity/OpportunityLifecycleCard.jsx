@@ -80,16 +80,20 @@ export default function OpportunityLifecycleCard() {
       <Typography variant="h6" className="mb-2">
         Withdrawal Policy
       </Typography>
-      <ul className="flex flex-col gap-1.5">
+      {/* تكديس عمودي (شارة بسطر، وصف تحتها) بدل صف أفقي — تسميات طويلة
+          زي "Accepted (while registration is open)" كانت بتوسّع الشارة
+          وتدفع النص فيصير السطر غير متوازن. عمودي بيضمن إن طول التسمية
+          (قصيرة أو طويلة) ما يأثر على تناسق الصف أبدًا */}
+      <ul className="flex flex-col gap-3">
         {WITHDRAWAL_POLICY_META.map((entry) => {
           const meta = getDisplayStatusMeta(entry.displayStatus);
           const Icon = meta?.icon;
 
           return (
-            <li key={entry.displayStatus} className="flex items-start gap-2 text-xs text-body">
+            <li key={entry.displayStatus} className="flex flex-col gap-1 text-xs text-body pb-2">
               <Chip
                 color={meta?.color || "gray"}
-                className="inline-flex items-center gap-1 !py-0.5 !text-[11px] shrink-0"
+                className="inline-flex items-center gap-1 !py-0.5 !text-[11px] w-fit"
               >
                 {Icon && <Icon size={11} aria-hidden="true" />}
                 {entry.label}

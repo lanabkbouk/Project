@@ -15,7 +15,7 @@ import { apiClient, getApiErrorMessage } from './api/client'
 import { isMockMode } from './api/mockMode'
 import { wait } from './api/delay'
 import { OPPORTUNITY_STATUS } from '../constants/opportunityStatus'
-import { getEffectiveOpportunityStatus } from '../utils/opportunityStatus'
+import { getEffectiveOpportunityStatus, isSuccessfulOpportunity } from '../utils/opportunityStatus'
 import { fetchAvailableSkills } from './skills'
 import { loadMockUsers } from './mock/mockUserStore'
 import { addMockParticipation, MOCK_PARTICIPATIONS } from './mock/mockParticipationsStore'
@@ -224,9 +224,12 @@ function computeMatchScore(opportunity, { skillIds, skillNames, city, categoryHi
 export async function fetchCompletedOpportunities() {
   if (MOCK_MODE) {
     await wait()
-    return MOCK_OPPORTUNITIES.map(attachComputedStatus).filter(
-      (opportunity) => opportunity.status === OPPORTUNITY_STATUS.COMPLETED,
-    )
+    // status===COMPLETED لحاله بيعني بس "فات تاريخ الانتهاء" — ممكن فرصة
+    // تنتهي بعدد متطوعين قليل جدًا أو حتى صفر وتضل تُحسب COMPLETED. هون
+    // تحديدًا (Success Stories) لازم فلتر أقوى: isSuccessfulOpportunity
+    // بتتأكد كمان إنها وصلت فعليًا لعدد المتطوعين الأدنى المطلوب
+    // (minVolunteers) قبل ما تنتهي — راجع utils/opportunityStatus.js
+    return MOCK_OPPORTUNITIES.map(attachComputedStatus).filter(isSuccessfulOpportunity)
   }
 
   try {
@@ -563,6 +566,28 @@ export async function participateInOpportunity(id, committedHours) {
     // opportunities.js وparticipations.js، راجع mockParticipationsStore.js)
     const email = getCurrentSessionEmail()
     const mockUser = email ? loadMockUsers().find((user) => user.email === email) : null
+
+    // ⚠️ فجوة كانت موجودة هون: ما كان في أي تحقق من وجود مشاركة سابقة لنفس
+    // المتطوع على نفس الفرصة قبل النداء على addMockParticipation، فكل
+    // ضغطة "Join" إضافية كانت تضيف سطر مشاركة جديد بدل ما تُرفض. وبما إن
+    // currentVolunteers بيتحسب لحظيًا من عدد سطور pending/accepted فقط
+    // (راجع computeLiveCurrentVolunteers فوق)، كل طلب مكرر كان يزيد
+    // العداد بالغلط ويقرّب الفرصة من الامتلاء (registration_closed) دون
+    // أي متطوعين إضافيين حقيقيين. withdrawn وrejected حالتان نهائيتان
+    // بالتصميم (راجع constants/participationStatus.js)، فمنطقيًا نسمح
+    // بإعادة التقديم بعدهما — مش تكرار فعلي لطلب لسا قائم.
+    if (email) {
+      const hasActiveParticipation = MOCK_PARTICIPATIONS.some(
+        (participation) =>
+          participation.opportunityId === id &&
+          participation.volunteerProfile?.email === email &&
+          participation.status !== PARTICIPATION_STATUS.WITHDRAWN &&
+          participation.status !== PARTICIPATION_STATUS.REJECTED,
+      )
+      if (hasActiveParticipation) {
+        return { success: false, error: 'You have already applied to this opportunity' }
+      }
+    }
 
     if (mockUser) {
       // skillIds مخزّنة بالبروفايل (مو أسماء) — لازم نحوّلها لأسماء

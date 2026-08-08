@@ -263,6 +263,25 @@ export default function CauseForm({
             required
           />
         </div>
+
+        {/* اختياري، افتراضيًا false — يغذّي منطق إنجاز "3 أنشطة جماعية"
+            الموجود بالفعل بالباك اند (AchievementService::checkThreeGroupActivities)،
+            فمنظمة بتعلّم الفرصة كـ "جماعية" بتساعد المتطوعين يفتحوا هالإنجاز */}
+        <label className="flex items-center gap-3 rounded-xl border border-heading/10 p-4 cursor-pointer">
+          <input
+            type="checkbox"
+            {...register("isGroup")}
+            className="h-5 w-5 rounded border-heading/20 text-primary focus:ring-primary/30"
+          />
+          <div>
+            <Typography variant="bodySm" className="font-medium text-heading">
+              Group opportunity
+            </Typography>
+            <Typography variant="caption" color="muted" className="mt-0.5 block">
+              Volunteers take part together as a group, rather than individually.
+            </Typography>
+          </div>
+        </label>
       </FormSection>
 
       <Button

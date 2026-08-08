@@ -48,6 +48,10 @@ export const opportunitySchema = z
       .number()
       .int('Volunteers needed must be a whole number.')
       .min(1, 'At least 1 volunteer is required.'),
+
+    // حقل اختياري (افتراضيًا false) — يغذّي منطق إنجاز "3 أنشطة جماعية"
+    // الموجود بالفعل بالباك اند (AchievementService::checkThreeGroupActivities)
+    isGroup: z.boolean().optional().default(false),
   })
   .refine((data) => new Date(data.endDate) >= new Date(data.startDate), {
     message: 'End date must be on or after the start date.',

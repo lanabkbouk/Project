@@ -43,6 +43,22 @@ export function isRegistrationOpen(opportunity, now = new Date()) {
   return getEffectiveOpportunityStatus(opportunity, now) === OPPORTUNITY_STATUS.REGISTRATION_OPEN;
 }
 
+/**
+ * بيفرّق بين فرصة "انتهى تاريخها" فقط (COMPLETED محسوبة، ممكن توصل
+ * بعدد متطوعين قليل جدًا أو حتى صفر) وفرصة "نجحت فعليًا" بالوصول
+ * للحد الأدنى المطلوب من المتطوعين (minVolunteers) قبل ما تنتهي —
+ * الأولى مجرد انتهاء زمني، الثانية إنجاز فعلي يستاهل يُعرض بسكشن
+ * "Success Stories". راجع services/opportunities.js → fetchCompletedOpportunities
+ * @param {{currentVolunteers?:number, minVolunteers?:number}} opportunity
+ * @param {Date} [now] - محقونة كوسيط لتسهيل الاختبار
+ */
+export function isSuccessfulOpportunity(opportunity, now = new Date()) {
+  if (getEffectiveOpportunityStatus(opportunity, now) !== OPPORTUNITY_STATUS.COMPLETED) return false;
+  // || 0 لازمة على الطرفين: minVolunteers ممكن يكون undefined ببيانات
+  // قديمة/ناقصة، وبدونها X >= undefined بترجع false صامتًا لكل الفرص
+  return (opportunity.currentVolunteers || 0) >= (opportunity.minVolunteers || 0);
+}
+
 const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 
 /**

@@ -65,6 +65,8 @@ const DEFAULT_VALUES = {
   totalHours: "",
   minVolunteers: "",
   maxVolunteers: "",
+  // اختياري، افتراضيًا false — راجع opportunityValidation.js وCauseForm.jsx
+  isGroup: false,
 };
 
 export default function CreateEditCause() {
@@ -132,6 +134,7 @@ export default function CreateEditCause() {
       totalHours: opportunity.totalHours,
       minVolunteers: opportunity.minVolunteers,
       maxVolunteers: opportunity.maxVolunteers,
+      isGroup: opportunity.isGroup || false,
     });
 
     if (opportunity.image) setPreviewUrl(opportunity.image);
