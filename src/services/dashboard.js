@@ -203,7 +203,7 @@ function buildAnalyticsTrends(opportunities, applicantsPerOpportunity) {
  *   الطلب أو انتهاء الفرصة — رقم "الوعد" الكلي، مش الساعات المؤكدة فعليًا
  *   بعد (تلك تُحسب لاحقًا لكل فرصة على حدة بعد انتهائها عبر Manage Hours)
  * @property {Array<{id:string, title:string, currentVolunteers:number, maxVolunteers:number}>} opportunitiesBreakdown
- * @property {Array<{id:string, volunteerName:string, opportunityTitle:string, status:string, date:string}>} recentActivity
+ * @property {Array<{id:string, volunteerName:string, opportunityTitle:string, opportunityId:string, status:string, date:string}>} recentActivity
  * @property {{metrics:Array<{key:string,label:string}>, weekly:Array<object>, monthly:Array<object>}} analyticsTrends
  */
 
@@ -289,6 +289,7 @@ export async function fetchOrganizationDashboard(organizationId) {
           id: applicant.id,
           volunteerName: applicant.volunteer?.name || 'A volunteer',
           opportunityTitle: opportunity.title,
+          opportunityId: opportunity.id,
           status: applicant.status,
           date: applicant.participatedAt,
         })),

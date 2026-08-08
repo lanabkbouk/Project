@@ -190,7 +190,7 @@ async function buildWithdrawalItems(seenApplicantStatus) {
  * محليًا كـ"مشاهَد".
  *
  * @param {{accountType?: string, organizationId?: string|number}} [context]
- * @returns {Promise<Array<{id:string, type:string, title:string, description:string, href:string}>>}
+ * @returns {Promise<Array<{id:string, type:string, title:string, description:string, href:string, seen:boolean}>>}
  */
 export async function fetchRecentNotifications({ accountType, organizationId } = {}) {
   // مسار المنظمة منفصل تمامًا: fetchOrganizationProfile أصلًا بتتعامل
@@ -244,6 +244,7 @@ export async function fetchRecentNotifications({ accountType, organizationId } =
       title: item.title || 'New update',
       description: item.description || item.message || '',
       href: item.href || item.link || ROUTES.HOME,
+      seen: Boolean(item.seen),
     }))
   } catch (error) {
     throw new Error(getApiErrorMessage(error, 'Failed to load notifications'), { cause: error })
