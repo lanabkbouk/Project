@@ -11,23 +11,23 @@ const ACHIEVEMENT_STYLES = [
   {
     match: (name) => name.toLowerCase().includes("first"),
     icon: Flag,
-    colorClasses: "bg-blue-100 text-blue-600",
+    colorClasses: "bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600",
   },
   {
     match: (name) => name.toLowerCase().includes("hour"),
     icon: Flame,
-    colorClasses: "bg-orange-100 text-orange-600",
+    colorClasses: "bg-gradient-to-br from-orange-100 to-orange-50 text-orange-600",
   },
   {
     match: (name) => name.toLowerCase().includes("group"),
     icon: Users,
-    colorClasses: "bg-purple-100 text-purple-600",
+    colorClasses: "bg-gradient-to-br from-purple-100 to-purple-50 text-purple-600",
   },
 ];
 
 const DEFAULT_STYLE = {
   icon: Award,
-  colorClasses: "bg-amber-100 text-amber-600",
+  colorClasses: "bg-gradient-to-br from-amber-100 to-amber-50 text-amber-600",
 };
 
 export function getAchievementStyle(name = "") {

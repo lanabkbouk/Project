@@ -3,7 +3,9 @@ import { fetchOrganizations } from '../../services/organizations'
 import { queryKeys } from '../../app/queryKeys'
 
 /**
- * يجلب قائمة المنظمات الموثّقة (فلترة status تصير داخل الـ service نفسه).
+ * يجلب قائمة المنظمات (فلترة الاسم/المدينة تصير داخل الـ service نفسه).
+ * TODO: فلترة "الموثّقة فقط" معطّلة مؤقتًا لحد ما الباك اند يضيف عمود
+ * status لجدول organizations — راجع التعليق بـ services/organizations.js
  * @param {{search?: string}} filters
  */
 export function useOrganizationsQuery({ search = '' } = {}) {

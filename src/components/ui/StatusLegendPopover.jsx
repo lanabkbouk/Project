@@ -34,14 +34,18 @@ export default function StatusLegendPopover({ className = "" }) {
           className="absolute z-50 mt-2 w-64 rounded-xl bg-field border-2 border-heading/20 shadow-2xl ring-1 ring-black/5 p-3 left-0"
         >
           <div className="flex flex-col gap-2.5">
-            {Object.values(OPPORTUNITY_STATUS_META).map((meta) => (
-              <div key={meta.label} className="flex items-start gap-2">
-                <Chip color={meta.color} className="shrink-0 mt-0.5">
-                  {meta.label}
-                </Chip>
-                <p className="text-xs text-body leading-snug">{meta.description}</p>
-              </div>
-            ))}
+            {Object.values(OPPORTUNITY_STATUS_META).map((meta) => {
+              const Icon = meta.icon;
+              return (
+                <div key={meta.label} className="flex items-start gap-2">
+                  <Chip color={meta.color} className="inline-flex items-center gap-1.5 shrink-0 mt-0.5">
+                    {Icon && <Icon size={13} aria-hidden="true" />}
+                    {meta.label}
+                  </Chip>
+                  <p className="text-xs text-body leading-snug">{meta.description}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

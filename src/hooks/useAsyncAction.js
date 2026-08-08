@@ -19,8 +19,10 @@ export default function useAsyncAction(action) {
           const message = result?.error || 'Something went wrong'
           setError(message)
           // نمرر fieldErrors كما هي (أو null) بدل ما نتجاهلها — الصفحة
-          // (Login/Register) هي يلي بتقرر تربطها بحقول الفورم أو لأ
-          return { success: false, error: message, fieldErrors: result?.fieldErrors || null }
+          // (Login/Register) هي يلي بتقرر تربطها بحقول الفورم أو لأ.
+          // نُبقي أي حقول إضافية رجعتها الخدمة (متل isTokenError بصفحة
+          // ResetPassword) عبر ...result بدل ما تُفقد صمتًا هون
+          return { ...result, success: false, error: message, fieldErrors: result?.fieldErrors || null }
         }
 
         return result

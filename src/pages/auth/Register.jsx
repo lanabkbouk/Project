@@ -10,6 +10,7 @@ import VolunteerForm from '../../components/forms/volunteerForm'
 import { ROUTES, AUTH_QUERY_KEYS } from '../../constants/paths'
 import { ACCOUNT_TYPES, isAccountType } from '../../constants/auth/accountTypes'
 import AuthShell from '../../components/auth/AuthShell'
+import AuthAlert from '../../components/auth/AuthAlert'
 import { useAuth } from '../../context/AuthContext'
 import useAsyncAction from '../../hooks/useAsyncAction'
 import { useImageUpload } from '../../hooks/useImageUpload'
@@ -199,15 +200,8 @@ export default function Register() {
               required
             />
 
-            {error || errors.root?.message ? (
-              <p className='rounded-lg border border-danger bg-red-500/10 px-3 py-2 text-sm text-danger'>
-                {error || errors.root?.message}
-              </p>
-            ) : null}
-
-            {successMessage ? (
-              <p className='rounded-lg border border-green-500 bg-green-500/10 px-3 py-2 text-sm text-green-700'>{successMessage}</p>
-            ) : null}
+            <AuthAlert variant='error'>{error || errors.root?.message}</AuthAlert>
+            <AuthAlert variant='success'>{successMessage}</AuthAlert>
 
             <Button type='submit' disabled={loading} fullWidth>
               {loading ? 'Creating...' : isVolunteer ? 'Create Account' : 'Register Organization'}

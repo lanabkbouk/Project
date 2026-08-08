@@ -9,42 +9,47 @@
 
 export default function Tabs({ tabs, activeTab, onChange, ariaLabel = "View" }) {
   return (
-    <div
-      role="tablist"
-      aria-label={ariaLabel}
-      className="inline-flex rounded-2xl bg-heading/5 border border-heading/10 p-1 mb-6"
-    >
-      {tabs.map((tab) => {
-        const Icon = tab.icon;
-        const isActive = activeTab === tab.id;
+    // overflow-x-auto بدل ما تنضغط التبويبات أو تنكسر لسطر جديد لما
+    // عددها كبير على شاشة موبايل ضيقة (مثلًا 7 تبويبات حالة المشاركة) —
+    // كل تبويب shrink-0 حتى يحافظ على حجمه الكامل ويصير قابل للسحب أفقيًا
+    <div className="mb-6 overflow-x-auto">
+      <div
+        role="tablist"
+        aria-label={ariaLabel}
+        className="inline-flex w-max rounded-2xl bg-heading/5 border border-heading/10 p-1"
+      >
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
 
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={isActive}
-            onClick={() => onChange(tab.id)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-              isActive ? "bg-field text-primary shadow-sm" : "text-heading/60 hover:text-heading"
-            }`}
-          >
-            {Icon ? <Icon size={15} className={isActive ? "text-primary" : ""} /> : null}
-            {tab.label}
-            {/* عداد اختياري (مثلًا عدد الفرص بكل تبويب) — يظهر بس لو
-                انمرر فعليًا، فما بيأثر على تبويبات ما إلها عداد أصلًا */}
-            {typeof tab.count === "number" ? (
-              <span
-                className={`ml-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
-                  isActive ? "bg-primary/15 text-primary" : "bg-heading/10 text-heading/50"
-                }`}
-              >
-                {tab.count}
-              </span>
-            ) : null}
-          </button>
-        );
-      })}
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onChange(tab.id)}
+              className={`flex shrink-0 items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                isActive ? "bg-field text-primary shadow-sm" : "text-heading/60 hover:text-heading"
+              }`}
+            >
+              {Icon ? <Icon size={15} className={isActive ? "text-primary" : ""} /> : null}
+              {tab.label}
+              {/* عداد اختياري (مثلًا عدد الفرص بكل تبويب) — يظهر بس لو
+                  انمرر فعليًا، فما بيأثر على تبويبات ما إلها عداد أصلًا */}
+              {typeof tab.count === "number" ? (
+                <span
+                  className={`ml-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
+                    isActive ? "bg-primary/15 text-primary" : "bg-heading/10 text-heading/50"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

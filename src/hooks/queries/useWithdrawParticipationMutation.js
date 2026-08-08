@@ -21,7 +21,11 @@ export function useWithdrawParticipationMutation() {
         Array.isArray(current)
           ? current.map((participation) =>
               participation.id === participationId
-                ? { ...participation, status: PARTICIPATION_STATUS.WITHDRAWN }
+                ? {
+                    ...participation,
+                    status: PARTICIPATION_STATUS.WITHDRAWN,
+                    withdrawnDate: new Date().toISOString().slice(0, 10),
+                  }
                 : participation,
             )
           : current,

@@ -17,7 +17,6 @@ import { useOrganizationOpportunitiesQuery } from "../../hooks/queries/useOrgani
 import { useShowMore } from "../../hooks/useShowMore";
 import { useAuth } from "../../context/AuthContext";
 import { ROUTES } from "../../constants/paths";
-import { getOrganizationStatusMeta, ORGANIZATION_STATUS } from "../../constants/organizationStatus";
 import { getOrganizationId } from "../../utils/auth/getOrganizationId";
 
 // تبويبان بدل قسمين منفصلين تحت بعض — نفس التصنيف بالضبط (Open Now
@@ -97,8 +96,6 @@ export default function OrganizationDetailsPage() {
     );
   }
 
-  const isVerified = organization.status === ORGANIZATION_STATUS.VERIFIED;
-  const statusMeta = getOrganizationStatusMeta(organization.status);
   const opportunitiesLoading = opportunitiesQuery.isPending;
 
   return (
@@ -131,13 +128,10 @@ export default function OrganizationDetailsPage() {
         <div>
           <div className="flex flex-wrap items-center gap-3 mb-2">
             <Typography variant="h1">{organization.name}</Typography>
-            {isVerified ? (
-              <span
-                className={`inline-flex items-center rounded-full text-xs font-semibold px-3 py-1 ${statusMeta.badgeClassName}`}
-              >
-                {statusMeta.label}
-              </span>
-            ) : null}
+            {/* TODO: عمود status غير متوفر من الباك اند حاليًا — إعادة
+                التفعيل بعد إضافته لجدول organizations (راجع مع مطور
+                الباك اند). شارة "Verified" مخفية مؤقتًا هون لنفس السبب
+                الموضّح بـ OrganizationCard.jsx */}
           </div>
           <div className="flex items-center gap-1 text-sm text-body">
             <MapPin size={16} className="text-primary" aria-hidden="true" />

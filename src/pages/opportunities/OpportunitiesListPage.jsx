@@ -8,18 +8,11 @@ import OpportunityTabs, { OPPORTUNITY_TABS } from "../../components/opportunity/
 import CardSkeleton from "../../components/ui/CardSkeleton";
 import EmptyState from "../../components/common/EmptyState";
 import { useCategoriesQuery } from "../../hooks/queries/useCategoriesQuery";
-import { useSkillsQuery } from "../../hooks/queries/useSkillsQuery";
 import { useOpportunitiesQuery } from "../../hooks/queries/useOpportunitiesQuery";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { useAuth } from "../../context/AuthContext";
 import { ACCOUNT_TYPES } from "../../constants/auth/accountTypes";
 import { OPPORTUNITY_STATUS } from "../../constants/opportunityStatus";
-
-// تحويل "id1,id2,id3" من الـ URL لمصفوفة نظيفة (بدون قيم فاضية ناتجة
-// عن فاصلة زائدة أو باراميتر غير موجود أصلًا)
-function parseIdsParam(value) {
-  return value ? value.split(",").filter(Boolean) : [];
-}
 
 export default function OpportunitiesListPage() {
   const { isAuthenticated, accountType, user } = useAuth();
@@ -32,11 +25,7 @@ export default function OpportunitiesListPage() {
   // فلتر، حتى ما نملي سجل المتصفح بخطوة رجوع منفصلة لكل ضغطة تصنيف
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const selectedCategoryIds = useMemo(
-    () => parseIdsParam(searchParams.get("categories")),
-    [searchParams],
-  );
-  const selectedSkillIds = useMemo(() => parseIdsParam(searchParams.get("skills")), [searchParams]);
+  const selectedCategoryId = searchParams.get("categories") || null;
   const search = searchParams.get("q") || "";
 
   const updateParam = useCallback(
@@ -53,28 +42,10 @@ export default function OpportunitiesListPage() {
     [setSearchParams],
   );
 
-  const toggleIdInParam = useCallback(
-    (key, currentIds, id) => {
-      const next = currentIds.includes(id)
-        ? currentIds.filter((existingId) => existingId !== id)
-        : [...currentIds, id];
-      updateParam(key, next.join(","));
-    },
-    [updateParam],
-  );
-
   const setSearch = (value) => updateParam("q", value);
-  const toggleCategory = (id) => toggleIdInParam("categories", selectedCategoryIds, id);
-  const toggleSkill = (id) => toggleIdInParam("skills", selectedSkillIds, id);
-  const clearAllFilters = () =>
-    setSearchParams(
-      (params) => {
-        params.delete("categories");
-        params.delete("skills");
-        return params;
-      },
-      { replace: true },
-    );
+  // ضغط نفس التصنيف المختار حاليًا يلغي الاختيار، وإلا يستبدله (اختيار
+  // مفرد فقط، وليس إضافة لمصفوفة)
+  const selectCategory = (id) => updateParam("categories", selectedCategoryId === id ? "" : id);
 
   // التبويب متاح بس للمتطوعين — الزائر والمنظمة بيشوفوا "كل الفرص" دايمًا
   const [activeTab, setActiveTab] = useState(OPPORTUNITY_TABS.ALL);
@@ -85,17 +56,14 @@ export default function OpportunitiesListPage() {
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const categoriesQuery = useCategoriesQuery();
-  const skillsQuery = useSkillsQuery();
   const opportunitiesQuery = useOpportunitiesQuery({
     isSuggestedTab,
     search: debouncedSearch,
-    categoryIds: selectedCategoryIds,
-    skillIds: selectedSkillIds,
+    categoryIds: selectedCategoryId ? [selectedCategoryId] : [],
     user,
   });
 
   const categories = categoriesQuery.data ?? [];
-  const skills = skillsQuery.data ?? [];
   const opportunities = opportunitiesQuery.data;
   // قرار: صفحة الاستكشاف (زائر أو متطوع، سواء) بتعرض بس الفرص المفتوحة
   // للتسجيل فعليًا. أي حالة تانية (مقفولة/شغالة/منتهية) ما إلها قيمة
@@ -160,14 +128,10 @@ export default function OpportunitiesListPage() {
         {!isSuggestedTab ? (
           <CategorySidebar
             categories={categories}
-            selectedCategoryIds={selectedCategoryIds}
-            onToggleCategory={toggleCategory}
-            skills={skills}
-            selectedSkillIds={selectedSkillIds}
-            onToggleSkill={toggleSkill}
+            selectedCategoryId={selectedCategoryId}
+            onSelectCategory={selectCategory}
             searchValue={search}
             onSearchChange={setSearch}
-            onClearAll={clearAllFilters}
           />
         ) : null}
 

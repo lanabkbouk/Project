@@ -10,36 +10,49 @@
 
 import { PARTICIPATION_STATUS } from '../../constants/participationStatus'
 
+// نفس نمط daysFromNow المستخدم بـ mockOpportunitiesStore.js — تواريخ
+// نسبية لـ Date.now() بدل تواريخ تقويمية ثابتة، وإلا joinedDate كانت
+// رح تصير "بالمستقبل" (أو بعيدة جدًا عن opportunityId المرتبطة فيها)
+// بمجرد ما التاريخ الحقيقي يتخطى التاريخ المكتوب يدويًا
+function daysFromNow(offset) {
+  const date = new Date()
+  date.setDate(date.getDate() + offset)
+  return date.toISOString().slice(0, 10)
+}
+
 // ⚠️ كل مشاركة هلق فيها volunteerId ثابت — قبل هيك، كل لقطة متقدم
 // كانت معزولة عن باقي مشاركات نفس المتطوع (حتى لو كان نفس الشخص شارك
 // بفرص تانية)، فكان مستحيل نحسب إحصائيات حقيقية (ساعات/فرص مكتملة).
 // هلق: نفس volunteerId بيتكرر عبر أكتر من مشاركة/منظمة، فمنقدر نحسب
 // "كم فرصة أكمل لدى هالمنظمة بالذات" مقابل "كم إجمالاً عالمنصة" بدقة.
 //
-// ملاحظة على التواريخ: o1 (2026-08-01)، o5 (2025-12-20)، وo6
-// (2025-07-14) انتهت فعليًا (تاريخ اليوم 2026-08-05) — يعني
-// attachComputedStatus بيحسبهم "completed" تلقائيًا. o2/o3/o4 لسا
-// بالمستقبل، فمشاركاتهم مش completed بعد.
+// ملاحظة على التواريخ: joinedDate كل مشاركة محسوبة كـ daysFromNow
+// بفارق سالب يطابق فارقها الأصلي عن opportunityId المرتبطة فيها (o1
+// نشطة/معلّقة حاليًا، o5/o6 منتهيتين فعليًا) — فمهما كان تاريخ التشغيل
+// الفعلي، attachComputedStatus بيحسب o5/o6 "completed" وo1 لسا نشطة،
+// بنفس الشكل النسبي دايمًا.
 export const MOCK_PARTICIPATIONS = [
   // — المتقدمين الحاليين على مراجعة (زي ما كانوا أصلًا) —
-  { id: 'p1', volunteerId: 'v1', opportunityId: 'o1', status: PARTICIPATION_STATUS.PENDING, committedHours: 3, hoursLogged: null, joinedDate: '2026-07-25' },
-  { id: 'p2', volunteerId: 'v2', opportunityId: 'o2', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 4, hoursLogged: null, joinedDate: '2026-07-20' },
-  { id: 'p5', volunteerId: 'v3', opportunityId: 'o1', status: PARTICIPATION_STATUS.REJECTED, committedHours: 2, hoursLogged: null, joinedDate: '2026-05-15' },
+  { id: 'p1', volunteerId: 'v1', opportunityId: 'o1', status: PARTICIPATION_STATUS.PENDING, committedHours: 3, hoursLogged: null, joinedDate: daysFromNow(-11) },
+  { id: 'p2', volunteerId: 'v2', opportunityId: 'o2', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 4, hoursLogged: null, joinedDate: daysFromNow(-16) },
+  { id: 'p5', volunteerId: 'v3', opportunityId: 'o1', status: PARTICIPATION_STATUS.REJECTED, committedHours: 2, hoursLogged: null, joinedDate: daysFromNow(-82), rejectionReason: 'The opportunity reached its volunteer capacity before your application was reviewed.' },
 
   // — سجل تاريخي إضافي (فرص منتهية فعليًا)، لحساب إحصائيات حقيقية —
   // Lina (v1): فرصتين مكتملتين بمنظمتين غير org1 (فرصتها الحالية
   // بمراجعة p1 بالأعلى) — حتى يبان الفرق بين "لدى هالمنظمة" (0) و"إجمالاً" (2)
-  { id: 'p20', volunteerId: 'v1', opportunityId: 'o6', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 6, hoursLogged: 6, joinedDate: '2025-07-01' },
-  { id: 'p21', volunteerId: 'v1', opportunityId: 'o5', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 4, hoursLogged: 4, joinedDate: '2025-12-10' },
+  { id: 'p20', volunteerId: 'v1', opportunityId: 'o6', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 6, hoursLogged: 6, joinedDate: daysFromNow(-400) },
+  { id: 'p21', volunteerId: 'v1', opportunityId: 'o5', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 4, hoursLogged: 4, joinedDate: daysFromNow(-238) },
 
   // Omar (v2): فرصة مكتملة إضافية بنفس منظمة o2 (org2) + فرصتين
   // بمنظمات تانية — حتى يبان "لدى هالمنظمة" (1) مقابل "إجمالاً" (3)
-  { id: 'p22', volunteerId: 'v2', opportunityId: 'o6', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 12, hoursLogged: 12, joinedDate: '2025-07-05' },
-  { id: 'p23', volunteerId: 'v2', opportunityId: 'o5', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 15, hoursLogged: 15, joinedDate: '2025-12-05' },
-  { id: 'p24', volunteerId: 'v2', opportunityId: 'o1', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 15, hoursLogged: 15, joinedDate: '2026-07-20' },
+  { id: 'p22', volunteerId: 'v2', opportunityId: 'o6', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 12, hoursLogged: 12, joinedDate: daysFromNow(-396) },
+  { id: 'p23', volunteerId: 'v2', opportunityId: 'o5', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 15, hoursLogged: 15, joinedDate: daysFromNow(-243) },
+  { id: 'p24', volunteerId: 'v2', opportunityId: 'o1', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 15, hoursLogged: 15, joinedDate: daysFromNow(-16) },
 
   // Maya (v3): فرصة مكتملة وحدة بس (منظمة تانية غير org1)
-  { id: 'p25', volunteerId: 'v3', opportunityId: 'o6', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 5, hoursLogged: 5, joinedDate: '2025-07-10' },
+  { id: 'p25', volunteerId: 'v3', opportunityId: 'o6', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 5, hoursLogged: 5, joinedDate: daysFromNow(-391) },
+  { id: 'temp1', volunteerId: 'v-lanaa@example.com', opportunityId: 'o6', status: PARTICIPATION_STATUS.ACCEPTED, committedHours: 6, hoursLogged: 6, joinedDate: daysFromNow(-200) },
+
 ]
 
 // بروفايل كل متطوع — مفتاح المصفوفة هلق volunteerId (مش participation

@@ -5,7 +5,9 @@
 // (تحديد المهارات المطلوبة من المتطوعين)، بدل تكرار نفس منطق التجميع
 // والعرض بملفين منفصلين.
 
+import { useState } from "react";
 import { Controller } from "react-hook-form";
+import { ChevronDown } from "lucide-react";
 import Skeleton from "../ui/Skeleton";
 import Typography from "../ui/Typography";
 import {
@@ -23,6 +25,19 @@ export default function SkillsSelector({
   error,
   helperText = "Select at least one skill from the list",
 }) {
+  // كل الفئات تبدأ مفتوحة (نفس السلوك القديم) — الطي اختياري بيد
+  // المتطوع فقط، ما منطويها تلقائيًا حتى لو كانت الفئات كتير
+  const [collapsedCategories, setCollapsedCategories] = useState(() => new Set());
+
+  const toggleCategory = (category) => {
+    setCollapsedCategories((current) => {
+      const next = new Set(current);
+      if (next.has(category)) next.delete(category);
+      else next.add(category);
+      return next;
+    });
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -65,53 +80,73 @@ export default function SkillsSelector({
               {Object.entries(grouped).map(([category, skills]) => {
                 const Icon = CATEGORY_ICONS[category];
                 const color = CATEGORY_COLORS[category];
+                const selectedCount = skills.filter((skill) => value.includes(skill.id)).length;
+                const isCollapsed = collapsedCategories.has(category);
 
                 return (
                   <div
                     key={category}
                     className="rounded-xl border border-heading/10 bg-field p-4 shadow-sm"
                   >
-                    {/* عنوان الفئة */}
-                    <div className="mb-3 flex items-center gap-2">
+                    {/* عنوان الفئة — قابل للطي/الفتح، وعدد المهارات
+                        المختارة يبقى ظاهر حتى لو الفئة مطوية */}
+                    <button
+                      type="button"
+                      onClick={() => toggleCategory(category)}
+                      aria-expanded={!isCollapsed}
+                      className="mb-3 flex w-full items-center gap-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    >
                       <span
                         className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-md border ${color}`}
                       >
                         {Icon && <Icon size={14} />}
                         {getCategoryLabel(category)}
                       </span>
+                      {selectedCount > 0 && (
+                        <span className="text-xs font-medium text-primary">
+                          {selectedCount} selected
+                        </span>
+                      )}
                       <div className="h-px flex-1 bg-heading/10"></div>
-                    </div>
+                      <ChevronDown
+                        size={16}
+                        className={`text-heading/40 transition-transform ${isCollapsed ? "" : "rotate-180"}`}
+                        aria-hidden="true"
+                      />
+                    </button>
 
                     {/* مهارات الفئة */}
-                    <div className="flex flex-wrap gap-2">
-                      {skills.map((skill) => {
-                        const isSelected = value.includes(skill.id);
-                        const selectedClass =
-                          CATEGORY_SELECTED_COLORS[category] ||
-                          "bg-primary text-bg border-primary";
+                    {!isCollapsed && (
+                      <div className="flex flex-wrap gap-2">
+                        {skills.map((skill) => {
+                          const isSelected = value.includes(skill.id);
+                          const selectedClass =
+                            CATEGORY_SELECTED_COLORS[category] ||
+                            "bg-primary text-bg border-primary";
 
-                        return (
-                          <button
-                            key={skill.id}
-                            type="button"
-                            onClick={() =>
-                              onChange(
+                          return (
+                            <button
+                              key={skill.id}
+                              type="button"
+                              onClick={() =>
+                                onChange(
+                                  isSelected
+                                    ? value.filter((id) => id !== skill.id)
+                                    : [...value, skill.id],
+                                )
+                              }
+                              className={`px-3 py-1.5 rounded-full text-xs border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
                                 isSelected
-                                  ? value.filter((id) => id !== skill.id)
-                                  : [...value, skill.id],
-                              )
-                            }
-                            className={`px-3 py-1.5 rounded-full text-xs border transition ${
-                              isSelected
-                                ? selectedClass
-                                : "bg-field text-heading/70 border-heading/15 hover:border-primary/50"
-                            }`}
-                          >
-                            {skill.name}
-                          </button>
-                        );
-                      })}
-                    </div>
+                                  ? selectedClass
+                                  : "bg-field text-heading/70 border-heading/15 hover:border-primary/50"
+                              }`}
+                            >
+                              {skill.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}

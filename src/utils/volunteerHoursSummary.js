@@ -27,6 +27,7 @@ import { OPPORTUNITY_STATUS } from '../constants/opportunityStatus'
  * @property {number} totalConfirmedHours - مجموع hoursLogged للمشاركات المكتملة والمقبولة فقط
  * @property {number} totalPledgedHours - مجموع committedHours لكل المشاركات غير المرفوضة (رقم الوعد، للمقارنة فقط)
  * @property {number} completedOpportunitiesCount - عدد الفرص المكتملة والمقبولة
+ * @property {number} activeOpportunitiesCount - عدد الفرص المقبولة الجارية حاليًا (opportunity.status === in_progress)
  * @property {number} organizationsCount - عدد المنظمات الفريدة التي لدى المتطوع ساعات مؤكدة معها
  * @property {Array<OrganizationHoursBreakdown>} byOrganization - مرتّبة تنازليًا حسب الساعات المؤكدة
  */
@@ -46,6 +47,15 @@ export function buildVolunteerHoursSummary(participations = []) {
       participation.status === PARTICIPATION_STATUS.ACCEPTED &&
       participation.opportunity?.status === OPPORTUNITY_STATUS.COMPLETED,
   )
+
+  // "نشطة" = مقبولة والفرصة عم تشتغل هلق فعليًا (in_progress) — حقل
+  // إضافي بس، ما بيأثر على totalConfirmedHours/completed فوق لأنه فلترة
+  // منفصلة تمامًا (in_progress ≠ completed أصلًا)
+  const activeOpportunitiesCount = participations.filter(
+    (participation) =>
+      participation.status === PARTICIPATION_STATUS.ACCEPTED &&
+      participation.opportunity?.status === OPPORTUNITY_STATUS.IN_PROGRESS,
+  ).length
 
   const totalConfirmedHours = completed.reduce(
     (sum, participation) => sum + (Number(participation.hoursLogged) || 0),
@@ -91,6 +101,7 @@ export function buildVolunteerHoursSummary(participations = []) {
     totalConfirmedHours,
     totalPledgedHours,
     completedOpportunitiesCount: completed.length,
+    activeOpportunitiesCount,
     organizationsCount: byOrganization.length,
     byOrganization,
   }

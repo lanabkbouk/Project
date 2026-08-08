@@ -6,6 +6,8 @@ export const ROUTES = {
   ORGANIZATION_PROFILE: '/organization-profile',
   LOGIN: '/login',
   REGISTER: '/register',
+  FORGOT_PASSWORD: '/forgot-password',
+  RESET_PASSWORD: '/reset-password',
   EXPLORE: '/explore',
   MY_VOLUNTEERING: '/my-volunteering',
   DASHBOARD: '/dashboard',

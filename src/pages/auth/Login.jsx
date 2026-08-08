@@ -1,12 +1,13 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Input from '../../components/ui/Input'
 import Button from '../../components/ui/Button'
 import { ROUTES, AUTH_QUERY_KEYS } from '../../constants/paths'
 import { ACCOUNT_TYPES } from '../../constants/auth/accountTypes'
 import AuthShell from '../../components/auth/AuthShell'
+import AuthAlert from '../../components/auth/AuthAlert'
 import { useAuth } from '../../context/AuthContext'
 import useAsyncAction from '../../hooks/useAsyncAction'
 import { loginSchema } from '../../utils/auth/validation'
@@ -20,10 +21,14 @@ const initialValues = {
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   // نفس هوك إدارة الـ loading/error المستخدم بصفحة Register — بدل ما كانت
   // Login تدير هالحالة يدويًا بـ useState منفصلة، صار السلوك موحّدًا بين
   // الصفحتين (نفس التعامل مع النجاح/الفشل/الاستثناءات غير المتوقعة)
   const { loading, error, execute, clearError } = useAsyncAction(loginUser)
+  // يظهر لمرة وحدة بعد التوجيه من ResetPassword.jsx (navigate state)،
+  // ويختفي فور أي تعديل بالفورم بدل ما يضل عالقًا بعد محاولة دخول فاشلة
+  const [showResetSuccess, setShowResetSuccess] = useState(Boolean(location.state?.resetSuccess))
 
   const {
     register,
@@ -39,6 +44,7 @@ export default function Login() {
 
   const handleFieldChange = useCallback(() => {
     clearError()
+    setShowResetSuccess(false)
   }, [clearError])
 
   // يفرّغ الباسورد بس (الإيميل بيضل زي ما هو) ويرجّع الفوكس له، جاهز
@@ -95,6 +101,10 @@ export default function Login() {
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} className='space-y-4' noValidate>
+        {showResetSuccess ? (
+          <AuthAlert variant='success'>Your password has been reset. Please sign in.</AuthAlert>
+        ) : null}
+
         <Input
           label='Email'
           type='email'
@@ -107,23 +117,34 @@ export default function Login() {
           required
         />
 
-        <Input
-          label='Password'
-          type='password'
-          name='password'
-          register={register}
-          registerOptions={{ onChange: handleFieldChange }}
-          placeholder='********'
-          error={errors.password?.message}
-          autoComplete='current-password'
-          required
-        />
+        <div>
+          <Input
+            label='Password'
+            type='password'
+            name='password'
+            register={register}
+            registerOptions={{ onChange: handleFieldChange }}
+            placeholder='********'
+            error={errors.password?.message}
+            autoComplete='current-password'
+            required
+          />
+          <div className='mt-1 flex justify-end'>
+            {/* لمسة بصرية بس عند فشل الدخول (كلمة مرور خاطئة غالبًا) —
+                الرابط نفسه ظاهر دائمًا بكل الأحوال، هون بس نبرزه أكثر
+                لحظة الفشل بدل ما نخفيه بالوضع الطبيعي */}
+            <Link
+              to={ROUTES.FORGOT_PASSWORD}
+              className={`text-sm hover:underline ${
+                error ? 'font-semibold text-danger' : 'text-primary'
+              }`}
+            >
+              Forgot password?
+            </Link>
+          </div>
+        </div>
 
-        {error || errors.root?.message ? (
-          <p className='rounded-lg border border-danger bg-red-500/10 px-3 py-2 text-sm text-danger'>
-            {error || errors.root?.message}
-          </p>
-        ) : null}
+        <AuthAlert variant='error'>{error || errors.root?.message}</AuthAlert>
 
         <Button type='submit' disabled={loading} fullWidth>
           {loading ? 'Signing In...' : 'Sign In'}

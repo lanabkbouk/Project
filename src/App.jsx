@@ -21,6 +21,8 @@ const About = lazy(() => import('./pages/about'))
 const Participates = lazy(() => import('./pages/participates'))
 const Login = lazy(() => import('./pages/auth/Login'))
 const Register = lazy(() => import('./pages/auth/Register'))
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'))
 const VolunteerProfile = lazy(() => import('./pages/volunteerProfile'))
 const OrgProfile = lazy(() => import('./pages/orgProfile'))
 const MyCauses = lazy(() => import('./pages/myCauses'))
@@ -107,6 +109,22 @@ const router = createBrowserRouter(
         element={
           <Suspense fallback={<PageLoader />}>
             <Register />
+          </Suspense>
+        }
+      />
+      <Route
+        path={ROUTES.FORGOT_PASSWORD}
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <ForgotPassword />
+          </Suspense>
+        }
+      />
+      <Route
+        path={ROUTES.RESET_PASSWORD}
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <ResetPassword />
           </Suspense>
         }
       />

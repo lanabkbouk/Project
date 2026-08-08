@@ -41,8 +41,44 @@ export default function VolunteerProfile() {
   useEffect(() => {
     if (location.hash !== '#achievements') return;
 
-    const section = document.getElementById('achievements');
-    section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // ⚠️ ما منقدر نسكرول فورًا لحظة mount — قسم "Volunteering Hours"
+    // فوق الإنجازات لسا Skeleton بهاللحظة، وبيكبر بشكل كبير (إحصائيات +
+    // بطاقة سردية + قائمة منظمات) لما بياناته تجهز بعد شوي، فيتحرك قسم
+    // الإنجازات لتحت والسكرول القديم بيوقف فعليًا عند قسم الساعات بدل
+    // الإنجازات.
+    //
+    // محاولة أولى بالاعتماد على "ثبات الموقع" عبر requestAnimationFrame
+    // فشلت: موقع القسم بيكون "ثابت" تمامًا حتى أثناء مرحلة الـ Skeleton
+    // نفسها (لسا ما تغيّر شي)، فكانت بتعتبره مستقر وتسكرول فورًا قبل ما
+    // البيانات توصل أصلًا. الحل الصحيح: نراقب تغييرات الـ DOM فعليًا
+    // (MutationObserver) ونعيد جدولة السكرول في كل مرة يصير فيها أي
+    // تغيير، لحد ما "تهدأ" الصفحة فعليًا (بدون أي تغييرات) لفترة قصيرة
+    // — هيك منتفاعل مع التحميل الفعلي بدل تخمين مدة ثابتة.
+    function scrollToAchievements() {
+      document.getElementById('achievements')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    let debounceId = setTimeout(scrollToAchievements, 150);
+
+    const observer = new MutationObserver(() => {
+      clearTimeout(debounceId);
+      debounceId = setTimeout(scrollToAchievements, 150);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // سقف أمان (3 ثواني) بحال الصفحة ضلّت تتغيّر بدون توقف — بننفّذ
+    // آخر محاولة سكرول ونوقف المراقبة، بدل ما نضل بلا نهاية
+    const safetyTimeout = setTimeout(() => {
+      observer.disconnect();
+      clearTimeout(debounceId);
+      scrollToAchievements();
+    }, 3000);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(debounceId);
+      clearTimeout(safetyTimeout);
+    };
   }, [location.hash]);
 
   // نفس هوك المهارات مستخدم هون وبـ ProfilePreview سوا — بفضل الكاش
@@ -51,7 +87,7 @@ export default function VolunteerProfile() {
   const availableSkills = skillsQuery.data ?? [];
   const skillsLoading = skillsQuery.isPending;
 
-  const updateProfileMutation = useUpdateVolunteerProfileMutation();
+  const updateProfileMutation = useUpdateVolunteerProfileMutation(user?.id);
 
   // useImageUpload يتكفّل بالمعاينة المحلية والتحقق من نوع/حجم الصورة —
   // نفس الـ hook المستخدم بصفحة Register وorgForm، بدل FileReader يدوي

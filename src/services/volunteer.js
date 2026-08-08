@@ -43,10 +43,11 @@ function buildVolunteerFormData({ values, photoFile }) {
 
 /**
  * يحفظ بروفايل المتطوع.
+ * @param {number|string} volunteerId
  * @param {{ values: object, photoFile?: File }} payload - بيانات الفورم الخام + الصورة (اختياري)
  * @returns {Promise<{success: boolean, data?: {imageUrl?: string}, error?: string}>}
  */
-export async function updateVolunteerProfile({ values, photoFile } = {}) {
+export async function updateVolunteerProfile(volunteerId, { values, photoFile } = {}) {
   if (MOCK_MODE) {
     await wait()
 
@@ -74,6 +75,10 @@ export async function updateVolunteerProfile({ values, photoFile } = {}) {
     }
 
     return { success: true, data: { imageUrl } }
+  }
+
+  if (!volunteerId) {
+    return { success: false, error: 'Volunteer id is required to update the profile' }
   }
 
   try {

@@ -43,7 +43,7 @@ export default function RecentActivityFeed({ activity = [] }) {
                 </Typography>
               </div>
 
-              <ParticipationStatusBadge status={item.status} />
+              <ParticipationStatusBadge participation={{ status: item.status }} />
             </li>
           ))}
         </ul>

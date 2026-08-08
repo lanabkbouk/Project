@@ -19,6 +19,20 @@ export const loginSchema = z.object({
   password: requiredText('Password is required.'),
 })
 
+export const forgotPasswordSchema = z.object({
+  email: requiredText('Email address is required.').email('Please enter a valid email address.'),
+})
+
+export const resetPasswordSchema = z
+  .object({
+    password: requiredText('Password is required.').min(8, 'Password must be at least 8 characters long.'),
+    confirmPassword: requiredText('Please confirm your password.'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match.',
+    path: ['confirmPassword'],
+  })
+
 const registerBaseSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),

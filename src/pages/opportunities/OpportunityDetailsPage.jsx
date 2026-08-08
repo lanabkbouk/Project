@@ -6,6 +6,7 @@ import Typography from "../../components/ui/Typography";
 import Chip from "../../components/ui/Chip";
 import Button from "../../components/ui/Button";
 import OpportunityProgressBar from "../../components/opportunity/OpportunityProgressBar";
+import OpportunityLifecycleCard from "../../components/opportunity/OpportunityLifecycleCard";
 import OpportunityStatusBadge from "../../components/opportunity/OpportunityStatusBadge";
 import StatusLegendPopover from "../../components/ui/StatusLegendPopover";
 import ParticipateHoursModal from "../../components/opportunity/ParticipateHoursModal";
@@ -256,6 +257,8 @@ export default function OpportunityDetailsPage() {
             {opportunity.description}
           </Typography>
 
+          <OpportunityLifecycleCard />
+
           <Button
             variant="primary"
             size="large"
@@ -334,9 +337,9 @@ export default function OpportunityDetailsPage() {
             // فقط، والضغط عليه أو على أي تصنيف تانٍ ينقل لصفحة القائمة
             // بفلترة حقيقية عبر رابط URL مباشر (نفس النظام الموحّد
             // المستخدم بصفحة التصفح نفسها الآن)
-            selectedCategoryIds={opportunity.category?.id ? [opportunity.category.id] : []}
-            onToggleCategory={(categoryId) =>
-              navigate(`${ROUTES.OPPORTUNITIES}?categories=${categoryId}`)
+            selectedCategoryId={opportunity.category?.id || null}
+            onSelectCategory={(categoryId) =>
+              navigate(categoryId ? `${ROUTES.OPPORTUNITIES}?categories=${categoryId}` : ROUTES.OPPORTUNITIES)
             }
           />
         </div>

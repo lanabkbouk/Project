@@ -1,15 +1,18 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Compass } from "lucide-react";
 import Typography from "../components/ui/Typography";
 import ParticipationCard from "../components/opportunity/ParticipationCard";
+import ParticipationStatusTabs, { PARTICIPATION_TAB } from "../components/opportunity/ParticipationStatusTabs";
 import Skeleton from "../components/ui/Skeleton";
 import EmptyState from "../components/common/EmptyState";
 import ShowMoreButton from "../components/common/ShowMoreButton";
 import { useMyParticipationsQuery } from "../hooks/queries/useMyParticipationsQuery";
 import { useShowMore } from "../hooks/useShowMore";
+import { useParticipationCounts } from "../hooks/useParticipationCounts";
 import { markHoursSeen } from "../utils/hoursSeenTracker";
 import { markStatusSeen } from "../utils/participationStatusSeenTracker";
+import { matchesParticipationStatusTab } from "../utils/participationDisplayStatus";
 import { PARTICIPATION_STATUS } from "../constants/participationStatus";
 import { CARD_SURFACE } from "../utils/surfaceStyles";
 import { ROUTES } from "../constants/paths";
@@ -17,9 +20,15 @@ import { ROUTES } from "../constants/paths";
 export default function Participates() {
   const navigate = useNavigate();
   const participationsQuery = useMyParticipationsQuery();
+  const [activeTab, setActiveTab] = useState(PARTICIPATION_TAB.ALL);
 
   const participations = useMemo(() => participationsQuery.data ?? [], [participationsQuery.data]);
-  const { visibleItems: visibleParticipations, hasMore, remainingCount, showMore } = useShowMore(participations);
+  const counts = useParticipationCounts(participations);
+  const filteredParticipations = useMemo(
+    () => participations.filter((participation) => matchesParticipationStatusTab(participation, activeTab)),
+    [participations, activeTab],
+  );
+  const { visibleItems: visibleParticipations, hasMore, remainingCount, showMore } = useShowMore(filteredParticipations);
   const loading = participationsQuery.isPending;
   const error = participationsQuery.isError
     ? participationsQuery.error?.message || "Failed to load your volunteering history"
@@ -80,13 +89,21 @@ export default function Participates() {
           onAction={() => navigate(ROUTES.EXPLORE)}
         />
       ) : (
-        <div className="flex flex-col gap-4">
-          {visibleParticipations.map((participation) => (
-            <ParticipationCard key={participation.id} participation={participation} />
-          ))}
+        <>
+          <ParticipationStatusTabs activeTab={activeTab} onChange={setActiveTab} counts={counts} />
 
-          {hasMore && <ShowMoreButton remainingCount={remainingCount} onClick={showMore} />}
-        </div>
+          {filteredParticipations.length === 0 ? (
+            <p className="py-12 text-center text-sm text-body">No participations in this status.</p>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {visibleParticipations.map((participation) => (
+                <ParticipationCard key={participation.id} participation={participation} />
+              ))}
+
+              {hasMore && <ShowMoreButton remainingCount={remainingCount} onClick={showMore} />}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -5,7 +5,9 @@ import { wait } from './api/delay'
 import { normalizeUser } from '../utils/auth/normalizeUser'
 import { validateAuthResponse } from '../utils/api/apiResponseSchemas'
 import { AUTH_STORAGE_KEY } from '../constants/auth/storage'
+import { ROUTES } from '../constants/paths'
 import { loadMockUsers, saveMockUsers, updateMockUser } from './mock/mockUserStore'
+import { generateResetToken, consumeResetToken } from './mock/mockPasswordResetStore'
 
 const MOCK_MODE = isMockMode()
 
@@ -51,6 +53,7 @@ const LARAVEL_FIELD_TO_FORM_FIELD = {
   organization_name: 'orgName',
   contact_person: 'contactPerson',
   verification_document: 'verificationImage',
+  password_confirmation: 'confirmPassword',
 }
 
 // أي حقل ما إله مقابل معروف (نادر) بيضل بإسمه الأصلي بدل ما يُفقد بصمت
@@ -310,6 +313,94 @@ export async function changeAdminPassword(payload) {
       success: false,
       error: getApiErrorMessage(error, 'Unable to update the password'),
       fieldErrors: translateFieldErrors(getApiFieldErrors(error)),
+    }
+  }
+}
+
+// طلب رابط إعادة تعيين كلمة المرور — ترجع نجاحًا دائمًا بغض النظر عن
+// وجود الإيميل من عدمه (منع Enumeration)، تمامًا كسلوك Laravel الحقيقي.
+// لا فرق بالتوقيت ولا بشكل الاستجابة بين الحالتين — الفرع الوحيد الذي
+// يتغيّر هو توليد الـ token فعليًا (أثر جانبي داخلي، غير مرئي للمستدعي)
+export async function requestPasswordReset({ email }) {
+  await wait()
+
+  const normalizedEmail = String(email || '').trim().toLowerCase()
+
+  if (MOCK_MODE) {
+    const mockUsers = loadMockUsers()
+    const existingUser = mockUsers.find((user) => user.email === normalizedEmail)
+
+    if (existingUser) {
+      const token = generateResetToken(normalizedEmail)
+      // ما في إرسال بريد فعلي بوضع Mock — نطبع الرابط الكامل بالـ console
+      // فقط هون (أبدًا بفرع real) عشان يمكن اختبار التدفّق كامل يدويًا
+      const resetLink = `${window.location.origin}${ROUTES.RESET_PASSWORD}?token=${token}&email=${encodeURIComponent(normalizedEmail)}`
+      console.info('[Mock] Password reset link:', resetLink)
+    }
+
+    return { success: true, data: {} }
+  }
+
+  try {
+    // TODO: تأكيد شكل/مسار الـ endpoint الحقيقي بالباك اند (Laravel) لما يجهز —
+    // المسار هون تقديري (اصطلاح Fortify/Breeze)، ومتوقَّع أنه يرجّع 200
+    // دائمًا بغض النظر عن وجود الإيميل (نفس سلوك فرع Mock أعلاه) — لو
+    // خالف الباك اند الحقيقي هذا الافتراض لازم تطبيع الاستجابة هون بحيث
+    // تبقى النتيجة عامة دائمًا مهما كان
+    await apiClient.post('/forgot-password', { email: normalizedEmail })
+    return { success: true, data: {} }
+  } catch (error) {
+    return {
+      success: false,
+      error: getApiErrorMessage(error, 'Unable to send reset link'),
+      fieldErrors: translateFieldErrors(getApiFieldErrors(error)),
+    }
+  }
+}
+
+// إعادة تعيين كلمة المرور عبر token مُستلَم من رابط البريد الإلكتروني
+export async function resetPassword({ token, email, password, passwordConfirmation }) {
+  await wait()
+
+  const normalizedEmail = String(email || '').trim().toLowerCase()
+
+  if (MOCK_MODE) {
+    const isValidToken = consumeResetToken({ email: normalizedEmail, token })
+    const updatedUser = isValidToken ? updateMockUser(normalizedEmail, { password }) : null
+
+    if (!updatedUser) {
+      return {
+        success: false,
+        error: 'This password reset link is invalid or has expired.',
+        isTokenError: true,
+      }
+    }
+
+    return { success: true, data: {} }
+  }
+
+  try {
+    // TODO: تأكيد شكل/مسار الـ endpoint الحقيقي بالباك اند (Laravel) لما يجهز —
+    // المسار هون تقديري (اصطلاح Fortify/Breeze)
+    await apiClient.post('/reset-password', {
+      token,
+      email: normalizedEmail,
+      password,
+      password_confirmation: passwordConfirmation,
+    })
+    return { success: true, data: {} }
+  } catch (error) {
+    const rawFieldErrors = getApiFieldErrors(error) || {}
+    // ⚠️ ما في حقل فورم مرئي اسمه "token" (المستخدم ما بيدخله يدويًا) —
+    // لو رجّع الباك اند خطأ عليه، نستخدمه فقط لاشتقاق isTokenError بدل
+    // تمريره لـ setError('token', ...) على حقل غير موجود أصلًا بالفورم
+    const { token: tokenFieldError, ...restFieldErrors } = rawFieldErrors
+
+    return {
+      success: false,
+      error: getApiErrorMessage(error, 'Unable to reset password'),
+      fieldErrors: translateFieldErrors(restFieldErrors),
+      isTokenError: Boolean(tokenFieldError),
     }
   }
 }

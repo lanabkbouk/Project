@@ -94,10 +94,19 @@ function computeAchievementsForVolunteer(volunteerId) {
     a3: completedOpportunitiesCount >= 3,
   }
 
+  // تقدّم كل إنجاز نحو هدفه (current/target) — تُستخدم فقط لعرض شريط
+  // تقدّم بصري بالواجهة، القيمة الحقيقية للفتح تبقى unlockedMap فوق
+  const progressMap = {
+    a1: { current: Math.min(completedOpportunitiesCount, 1), target: 1 },
+    a2: { current: Math.min(totalConfirmedHours, 10), target: 10 },
+    a3: { current: Math.min(completedOpportunitiesCount, 3), target: 3 },
+  }
+
   return ACHIEVEMENT_DEFINITIONS.map((definition) => ({
     ...definition,
     unlocked: unlockedMap[definition.id] || false,
     earnedDate: unlockedMap[definition.id] ? earliestCompleted?.joinedDate || null : null,
+    progress: progressMap[definition.id] || null,
   }))
 }
 
@@ -105,7 +114,7 @@ function computeAchievementsForVolunteer(volunteerId) {
  * Fetches the FULL achievement catalog for a volunteer, each entry flagged
  * with whether it's unlocked yet (so locked ones can still be displayed).
  * @param {string|number} [volunteerId] - Volunteer id (optional when using token-based "me" auth)
- * @returns {Promise<Array<{id:string, name:string, description:string, unlocked:boolean, earnedDate:string|null}>>}
+ * @returns {Promise<Array<{id:string, name:string, description:string, unlocked:boolean, earnedDate:string|null, progress:{current:number, target:number}|null}>>}
  */
 export async function fetchVolunteerAchievements(volunteerId) {
   if (MOCK_MODE) {
@@ -124,7 +133,12 @@ export async function fetchVolunteerAchievements(volunteerId) {
     })()
 
     if (!resolvedId) {
-      return ACHIEVEMENT_DEFINITIONS.map((definition) => ({ ...definition, unlocked: false, earnedDate: null }))
+      return ACHIEVEMENT_DEFINITIONS.map((definition) => ({
+        ...definition,
+        unlocked: false,
+        earnedDate: null,
+        progress: null,
+      }))
     }
 
     return computeAchievementsForVolunteer(resolvedId)

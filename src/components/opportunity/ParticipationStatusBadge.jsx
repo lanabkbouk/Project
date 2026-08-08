@@ -1,29 +1,28 @@
-import { Clock, CheckCircle2, XCircle } from "lucide-react";
 import Chip from "../ui/Chip";
-import { PARTICIPATION_STATUS, PARTICIPATION_STATUS_META } from "../../constants/participationStatus";
-
-// أيقونة لكل حالة — مستخدمة فقط لما withIcon=true (شاشة إدارة المتقدمين)،
-// حتى الشارة تصير أكثر بروزًا هناك دون التأثير على استخداماتها التانية
-// (بطاقة "مشاركاتي" عند المتطوع، وقائمة "أحدث النشاطات" بالداشبورد)
-const STATUS_ICONS = {
-  [PARTICIPATION_STATUS.PENDING]: Clock,
-  [PARTICIPATION_STATUS.ACCEPTED]: CheckCircle2,
-  [PARTICIPATION_STATUS.REJECTED]: XCircle,
-};
+import { getParticipationStatusMeta } from "../../utils/participationDisplayStatus";
 
 // شارة حالة المشاركة — كومبوننت مستقل حتى يُعاد استخدامه بأكثر من مكان
-// (بطاقة "مشاركاتي" عند المتطوع، وقائمة المتقدمين عند المنظمة لاحقًا)
-// بدون تكرار منطق تحويل الحالة إلى لون/نص في كل مكان لحاله
-export default function ParticipationStatusBadge({ status, withIcon = false, className = "" }) {
-  const meta = PARTICIPATION_STATUS_META[status];
+// (بطاقة "مشاركاتي" عند المتطوع، قائمة المتقدمين عند المنظمة، أحدث
+// النشاطات بالداشبورد) بدون تكرار منطق تحويل الحالة إلى لون/أيقونة/نص
+// في كل مكان لحاله. الأيقونة تظهر دايمًا مع اللون والنص سوا (مش اللون
+// لحاله) — هي عنصر التمييز البصري الأساسي بين الحالات يلي بتشارك نفس
+// اللون الرمادي (Completed/Withdrawn/Expired).
+//
+// participation يتوقّع {status, opportunity?} — opportunity اختياري:
+// لو انمرر (بطاقة "مشاركاتي" مثلًا)، الحالتين المُشتقّتين Active/Completed
+// بيظهروا صح. لو ما انمرر (قائمة المتقدمين، أحدث النشاطات — ما عندهم
+// كائن الفرصة الكامل أصلًا بالبيانات المتوفرة هلق)، الشارة بترجع تلقائيًا
+// لحالة المشاركة الخام (pending/accepted/...) بدون أي خطأ أو كسر.
+export default function ParticipationStatusBadge({ participation, className = "" }) {
+  const meta = getParticipationStatusMeta(participation);
 
   if (!meta) return null;
 
-  const Icon = STATUS_ICONS[status];
+  const Icon = meta.icon;
 
   return (
     <Chip color={meta.color} className={`inline-flex items-center gap-1.5 ${className}`}>
-      {withIcon && Icon && <Icon size={13} aria-hidden="true" />}
+      {Icon && <Icon size={13} aria-hidden="true" />}
       {meta.label}
     </Chip>
   );

@@ -80,7 +80,7 @@ export default function ApplicantCard({
             </div>
 
             {/* شارة الحالة — بارزة مع أيقونة، بمحاذاة أعلى البطاقة دايمًا */}
-            <ParticipationStatusBadge status={status} withIcon className="shrink-0" />
+            <ParticipationStatusBadge participation={{ status }} className="shrink-0" />
           </div>
 
           {volunteer.skills?.length > 0 && (

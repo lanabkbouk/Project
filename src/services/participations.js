@@ -19,7 +19,13 @@ const MOCK_MODE = isMockMode()
 
 /**
  * Fetches the current volunteer's participations (joined opportunities).
- * @returns {Promise<Array<{opportunityId:string, status:string, hoursLogged:number, joinedDate:string, opportunity:object}>>}
+ * @returns {Promise<Array<{opportunityId:string, status:string, hoursLogged:number, joinedDate:string, opportunity:object,
+ *   rejectionReason?:string, withdrawnDate?:string, canWithdraw?:boolean}>>}
+ *   rejectionReason/withdrawnDate/canWithdraw هي حقول اختيارية — الباك اند
+ *   الحقيقي متوقّع يرجّعها بنفس التسمية (camelCase) لما تكون موجودة
+ *   (rejectionReason فقط لما status==='rejected'، withdrawnDate فقط لما
+ *   status==='withdrawn')، وإلا الواجهة برجع لحسابها محليًا (راجع
+ *   utils/participationPolicy.js لـ canWithdraw)
  */
 export async function fetchMyParticipations() {
   if (MOCK_MODE) {
@@ -162,6 +168,7 @@ export async function withdrawParticipation(participationId) {
     const participation = MOCK_PARTICIPATIONS.find((item) => item.id === participationId)
     if (!participation) return { success: false, error: 'Participation not found' }
     participation.status = PARTICIPATION_STATUS.WITHDRAWN
+    participation.withdrawnDate = new Date().toISOString().slice(0, 10)
     return { success: true }
   }
 

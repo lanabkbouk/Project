@@ -35,9 +35,12 @@ import { ORGANIZATION_STATUS } from '../constants/organizationStatus'
 
 const MOCK_MODE = isMockMode()
 
-// دليل المنظمات العام يعرض الموثّقة فقط — نفس المنظمات المرجعية المستخدمة
-// أصلاً داخل MOCK_OPPORTUNITIES (org1..org4) حتى تبقى الفرص المعروضة
-// بصفحة تفاصيل كل منظمة متسقة مع بيانات الفرص الفعلية.
+// نفس المنظمات المرجعية المستخدمة أصلاً داخل MOCK_OPPORTUNITIES
+// (org1..org4) حتى تبقى الفرص المعروضة بصفحة تفاصيل كل منظمة متسقة
+// مع بيانات الفرص الفعلية.
+// ⚠️ الدليل حاليًا يعرض كل المنظمات بغض النظر عن التوثيق (راجع TODO
+// بـ fetchOrganizations تحت) — status هون VERIFIED بس لأنها بيانات mock،
+// مش لأنه في فلترة فعلية عليها.
 const MOCK_ORGANIZATIONS = [
   {
     id: 'org1',
@@ -109,8 +112,9 @@ function mapOrganizationFromApi(raw) {
 }
 
 /**
- * يجلب قائمة المنظمات الموثّقة (فلترة الاسم/المدينة تصير هون بوضع الـ mock،
- * وبتنتقل لـ query param ?search= بوضع real).
+ * يجلب قائمة المنظمات (فلترة الاسم/المدينة تصير هون بوضع الـ mock،
+ * وبتنتقل لـ query param ?search= بوضع real). فلترة "الموثّقة فقط"
+ * معطّلة مؤقتًا — راجع TODO تحت.
  * @param {{search?: string}} filters
  * @returns {Promise<Array<object>>}
  */
@@ -118,14 +122,17 @@ export async function fetchOrganizations({ search = '' } = {}) {
   if (MOCK_MODE) {
     await wait()
 
-    const verifiedOnly = MOCK_ORGANIZATIONS.filter(
-      (organization) => organization.status === ORGANIZATION_STATUS.VERIFIED,
-    )
-
+    // TODO: عمود status غير متوفر من الباك اند حاليًا — إعادة التفعيل
+    // بعد إضافته لجدول organizations (راجع مع مطور الباك اند). فلترة
+    // "الموثّقة فقط" هون كانت بتعتمد على org.status، يلي دايمًا null
+    // بوضع real (راجع mapOrganizationFromApi تحت) — فلو طبّقنا نفس
+    // الفلترة بوضع mock كمان، القائمة كانت رح تختلف بصمت بين الوضعين
+    // (مليانة بmock، فاضية بreal) بدون أي رسالة توضّح السبب. لحد ما
+    // الحقل يتوفر فعليًا، القائمة بتعرض كل المنظمات بغض النظر عن التوثيق.
     const normalizedSearch = search.trim().toLowerCase()
-    if (!normalizedSearch) return verifiedOnly
+    if (!normalizedSearch) return MOCK_ORGANIZATIONS
 
-    return verifiedOnly.filter(
+    return MOCK_ORGANIZATIONS.filter(
       (organization) =>
         organization.name.toLowerCase().includes(normalizedSearch) ||
         organization.city.toLowerCase().includes(normalizedSearch),

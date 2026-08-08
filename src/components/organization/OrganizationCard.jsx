@@ -10,12 +10,9 @@ import { useNavigate } from "react-router-dom";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
 import { ROUTES } from "../../constants/paths";
-import { getOrganizationStatusMeta, ORGANIZATION_STATUS } from "../../constants/organizationStatus";
 
 export default function OrganizationCard({ organization }) {
   const navigate = useNavigate();
-  const isVerified = organization.status === ORGANIZATION_STATUS.VERIFIED;
-  const statusMeta = getOrganizationStatusMeta(organization.status);
 
   const imageFallback = (
     <div className="flex w-full aspect-video items-center justify-center bg-primary/10">
@@ -23,13 +20,12 @@ export default function OrganizationCard({ organization }) {
     </div>
   );
 
-  const verifiedBadge = isVerified ? (
-    <span
-      className={`inline-flex items-center rounded-full text-xs font-semibold px-3 py-1 shadow-sm ${statusMeta.badgeClassName}`}
-    >
-      {statusMeta.label}
-    </span>
-  ) : null;
+  // TODO: عمود status غير متوفر من الباك اند حاليًا — إعادة التفعيل
+  // بعد إضافته لجدول organizations (راجع مع مطور الباك اند). شارة
+  // "Verified" كانت رح تظهر/تختفي بشكل عشوائي (دايمًا true بوضع mock،
+  // دايمًا false بوضع real) بدل ما تعكس حالة توثيق فعلية، فمخفية مؤقتًا
+  // بدل ما تضلّل الزائر.
+  const verifiedBadge = null;
 
   const goToProfile = () => navigate(`${ROUTES.ORGANIZATIONS}/${organization.id}`);
 
